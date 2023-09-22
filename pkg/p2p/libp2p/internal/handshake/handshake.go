@@ -137,7 +137,7 @@ func (h *Service) Handle(
 	}
 
 	if req.PeerType == "builder" {
-		stake, err := h.register.GetMinimalStake(ethAddress)
+		stake, err := h.register.GetStake(ethAddress)
 		if err != nil {
 			return p2p.Peer{}, err
 		}
