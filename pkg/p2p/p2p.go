@@ -97,5 +97,5 @@ type Notifier interface {
 }
 
 func NewStreamName(protocol, version, stream string) string {
-	return "primev/" + protocol + "/" + version + "/" + stream
+	return "/primev/" + protocol + "/" + version + "/" + stream
 }
