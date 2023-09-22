@@ -33,7 +33,7 @@ type Service struct {
 	peerType     p2p.PeerType
 	passcode     string
 	signer       signer.Signer
-	rollUp       register.Register
+	register     register.Register
 	minimumStake *big.Int
 }
 
@@ -137,7 +137,7 @@ func (h *Service) Handle(
 	}
 
 	if req.PeerType == "builder" {
-		stake, err := h.rollUp.GetMinimalStake(ethAddress)
+		stake, err := h.register.GetMinimalStake(ethAddress)
 		if err != nil {
 			return p2p.Peer{}, err
 		}
