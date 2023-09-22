@@ -15,7 +15,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/rollup"
+	"github.com/primevprotocol/mev-commit/pkg/register"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"golang.org/x/crypto/sha3"
 )
@@ -33,7 +33,7 @@ type Service struct {
 	peerType     p2p.PeerType
 	passcode     string
 	signer       signer.Signer
-	rollUp       rollup.Rollup
+	rollUp       register.Register
 	minimumStake *big.Int
 }
 
