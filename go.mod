@@ -1,14 +1,14 @@
 module github.com/primevprotocol/mev-commit
 
-go 1.21.1
+go 1.20
 
 require (
 	github.com/ethereum/go-ethereum v1.13.1
 	github.com/libp2p/go-libp2p v0.31.0
 	github.com/libp2p/go-msgio v0.3.0
-	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/crypto v0.12.0
 	golang.org/x/sync v0.3.0
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -29,9 +29,7 @@ require (
 	github.com/multiformats/go-multistream v0.4.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	golang.org/x/sys v0.11.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )

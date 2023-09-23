@@ -5,32 +5,32 @@ import (
 	"fmt"
 
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
-	"github.com/vmihailenco/msgpack/v5"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const delimitedReaderMaxSize = 1024 * 1024
 
-func NewReaderWriter[Req any, Resp any](s p2p.Stream) (Reader[Req], Writer[Resp]) {
-	return newReader[Req](s), newWriter[Resp](s)
+func NewReaderWriter(s p2p.Stream) (Reader, Writer) {
+	return newReader(s), newWriter(s)
 }
 
-type Reader[Msg any] struct {
+type Reader struct {
 	p2p.Stream
 }
 
-type Writer[Msg any] struct {
+type Writer struct {
 	p2p.Stream
 }
 
-func newReader[Msg any](s p2p.Stream) Reader[Msg] {
-	return Reader[Msg]{s}
+func newReader(s p2p.Stream) Reader {
+	return Reader{s}
 }
 
-func newWriter[Msg any](s p2p.Stream) Writer[Msg] {
-	return Writer[Msg]{s}
+func newWriter(s p2p.Stream) Writer {
+	return Writer{s}
 }
 
-func (r Reader[Msg]) ReadMsg(ctx context.Context) (*Msg, error) {
+func (r Reader) ReadMsg(ctx context.Context) (*anypb.Any, error) {
 	type result struct {
 		msgBuf []byte
 		err    error
@@ -49,18 +49,25 @@ func (r Reader[Msg]) ReadMsg(ctx context.Context) (*Msg, error) {
 		if res.err != nil {
 			return nil, fmt.Errorf("failed to read msg: %w", res.err)
 		}
-		msg := new(Msg)
-		if err := msgpack.Unmarshal(res.msgBuf, msg); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal msg: %w", err)
+
+		msg := &anypb.Any{}
+		if err := msg.Unmarshal(res.msgBuf); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal Any message: %w", err)
 		}
+
 		return msg, nil
 	}
 }
 
-func (w Writer[Msg]) WriteMsg(ctx context.Context, msg *Msg) error {
-	msgBuf, err := msgpack.Marshal(msg)
+func (w Writer) WriteMsg(ctx context.Context, msg proto.Message) error {
+	anyMessage, err := anypb.New(msg)
 	if err != nil {
-		return fmt.Errorf("failed marshaling msg: %w", err)
+		return fmt.Errorf("failed to create Any message: %w", err)
+	}
+
+	msgBuf, err := anyMessage.Marshal()
+	if err != nil {
+		return fmt.Errorf("failed marshaling Any message: %w", err)
 	}
 
 	errC := make(chan error, 1)
