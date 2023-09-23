@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
