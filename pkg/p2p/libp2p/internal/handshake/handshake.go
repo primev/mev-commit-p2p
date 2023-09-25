@@ -4,20 +4,16 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/register"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -28,13 +24,36 @@ const (
 
 // Handshake is the handshake protocol
 type Service struct {
-	privKey      *ecdsa.PrivateKey
-	ethAddress   common.Address
-	peerType     p2p.PeerType
-	passcode     string
-	signer       signer.Signer
-	register     register.Register
-	minimumStake *big.Int
+	privKey       *ecdsa.PrivateKey
+	ethAddress    common.Address
+	peerType      p2p.PeerType
+	passcode      string
+	signer        signer.Signer
+	register      register.Register
+	minimumStake  *big.Int
+	getEthAddress func(core.PeerID) (common.Address, error)
+}
+
+func New(
+	privKey *ecdsa.PrivateKey,
+	ethAddress common.Address,
+	peerType p2p.PeerType,
+	passcode string,
+	signer signer.Signer,
+	register register.Register,
+	minimumStake *big.Int,
+	getEthAddress func(core.PeerID) (common.Address, error),
+) *Service {
+	return &Service{
+		privKey:       privKey,
+		ethAddress:    ethAddress,
+		peerType:      peerType,
+		passcode:      passcode,
+		signer:        signer,
+		register:      register,
+		minimumStake:  minimumStake,
+		getEthAddress: getEthAddress,
+	}
 }
 
 func ProtocolID() protocol.ID {
@@ -57,31 +76,6 @@ type HandshakeResp struct {
 	Ack             *HandshakeReq
 }
 
-func getEthAddressFromPeerID(peerID core.PeerID) (common.Address, error) {
-	pubKey, err := peerID.ExtractPublicKey()
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	pubKeyBytes, err := pubKey.Raw()
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	pbDcom, err := crypto.DecompressPubkey(pubKeyBytes)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	pbDcomBytes := elliptic.Marshal(secp256k1.S256(), pbDcom.X, pbDcom.Y)
-
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(pbDcomBytes[1:])
-	address := hash.Sum(nil)[12:]
-
-	return common.BytesToAddress(address), nil
-}
-
 func (h *Service) verifySignature(
 	req *HandshakeReq,
 	peerID core.PeerID,
@@ -97,7 +91,7 @@ func (h *Service) verifySignature(
 		return common.Address{}, errors.New("signature verification failed")
 	}
 
-	observedEthAddress, err := getEthAddressFromPeerID(peerID)
+	observedEthAddress, err := h.getEthAddress(peerID)
 	if err != nil {
 		return common.Address{}, err
 	}
