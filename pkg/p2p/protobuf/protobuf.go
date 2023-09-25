@@ -6,7 +6,6 @@ import (
 
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const delimitedReaderMaxSize = 1024 * 1024
@@ -31,7 +30,7 @@ func newWriter(s p2p.Stream) Writer {
 	return Writer{s}
 }
 
-func (r Reader) ReadMsg(ctx context.Context) (*anypb.Any, error) {
+func (r Reader) ReadMsg(ctx context.Context, msg proto.Message) error {
 	type result struct {
 		msgBuf []byte
 		err    error
@@ -45,30 +44,24 @@ func (r Reader) ReadMsg(ctx context.Context) (*anypb.Any, error) {
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return ctx.Err()
 	case res := <-resultC:
 		if res.err != nil {
-			return nil, fmt.Errorf("failed to read msg: %w", res.err)
+			return fmt.Errorf("failed to read msg: %w", res.err)
 		}
 
-		msg := &anypb.Any{}
-		if err := msg.Unmarshal(res.msgBuf); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal Any message: %w", err)
+		if err := proto.Unmarshal(res.msgBuf, msg); err != nil {
+			return fmt.Errorf("failed to unmarshal message: %w", err)
 		}
 
-		return msg, nil
+		return nil
 	}
 }
 
 func (w Writer) WriteMsg(ctx context.Context, msg proto.Message) error {
-	anyMessage, err := anypb.New(msg)
+	msgBuf, err := proto.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("failed to create Any message: %w", err)
-	}
-
-	msgBuf, err := anyMessage.Marshal()
-	if err != nil {
-		return fmt.Errorf("failed marshaling Any message: %w", err)
+		return fmt.Errorf("failed marshaling message: %w", err)
 	}
 
 	errC := make(chan error, 1)
