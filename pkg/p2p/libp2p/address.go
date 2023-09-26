@@ -1,6 +1,7 @@
 package libp2p
 
 import (
+	"crypto/ecdsa"
 	"crypto/elliptic"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,11 +27,15 @@ func GetEthAddressFromPeerID(peerID core.PeerID) (common.Address, error) {
 		return common.Address{}, err
 	}
 
-	pbDcomBytes := elliptic.Marshal(secp256k1.S256(), pbDcom.X, pbDcom.Y)
+	return GetEthAddressFromPubKey(pbDcom), nil
+}
+
+func GetEthAddressFromPubKey(key *ecdsa.PublicKey) common.Address {
+	pbBytes := elliptic.Marshal(secp256k1.S256(), key.X, key.Y)
 
 	hash := sha3.NewLegacyKeccak256()
-	hash.Write(pbDcomBytes[1:])
+	hash.Write(pbBytes[1:])
 	address := hash.Sum(nil)[12:]
 
-	return common.BytesToAddress(address), nil
+	return common.BytesToAddress(address)
 }
