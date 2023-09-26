@@ -64,9 +64,11 @@ type Stream interface {
 	io.Closer
 }
 
+type Handler func(ctx context.Context, peer Peer, stream Stream) error
+
 type StreamSpec struct {
 	Name    string
-	Handler func(ctx context.Context, peer Peer, stream Stream) error
+	Handler Handler
 }
 
 type ProtocolSpec struct {
