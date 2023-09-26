@@ -80,16 +80,19 @@ func TestHandshake(t *testing.T) {
 
 			p, err := hs1.Handle(context.Background(), in, core.PeerID("test2"))
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
+				return
 			}
 			if p.EthAddress != common.HexToAddress("0x2") {
-				t.Fatalf(
+				t.Errorf(
 					"expected eth address %s, got %s",
 					common.HexToAddress("0x2"), p.EthAddress,
 				)
+				return
 			}
 			if p.Type != p2p.PeerTypeBuilder {
-				t.Fatalf("expected peer type %s, got %s", p2p.PeerTypeBuilder, p.Type)
+				t.Errorf("expected peer type %s, got %s", p2p.PeerTypeBuilder, p.Type)
+				return
 			}
 		}()
 
