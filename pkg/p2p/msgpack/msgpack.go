@@ -8,7 +8,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-const delimitedReaderMaxSize = 1024 * 1024
+const delimitedReaderMaxSize = 1024 * 1024 //nolint:unused
 
 func NewReaderWriter[Req any, Resp any](s p2p.Stream) (Reader[Req], Writer[Resp]) {
 	return newReader[Req](s), newWriter[Resp](s)

@@ -91,7 +91,7 @@ func (r *peerRegistry) addPeer(c network.Conn, p p2p.Peer) (exists bool) {
 	return false
 }
 
-func (r *peerRegistry) removePeer(peer p2p.Peer) (found bool, peerID core.PeerID) {
+func (r *peerRegistry) removePeer(peer p2p.Peer) (found bool, peerID core.PeerID) { //nolint:unused
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -122,7 +122,7 @@ func (r *peerRegistry) getPeerID(ethAddress common.Address) (core.PeerID, bool) 
 	return peerID, ok
 }
 
-func (r *peerRegistry) getPeers() []p2p.Peer {
+func (r *peerRegistry) getPeers() []p2p.Peer { //nolint:unused
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
