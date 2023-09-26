@@ -125,7 +125,7 @@ func (d *Discovery) checkAndAddPeers() {
 		case <-d.quit:
 			return
 		case peer := <-d.checkPeers:
-			d.sem.Acquire(context.Background(), 1)
+			_ = d.sem.Acquire(context.Background(), 1)
 			go func() {
 				defer d.sem.Release(1)
 

@@ -18,7 +18,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
 	rcmgr "github.com/libp2p/go-libp2p/p2p/host/resource-manager"
-	rcmgrObs "github.com/libp2p/go-libp2p/p2p/host/resource-manager/obs"
 	connmgr "github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p/internal/handshake"
@@ -71,10 +70,10 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	if opts.MetricsReg != nil {
-		rcmgrObs.MustRegisterWith(opts.MetricsReg)
+		rcmgr.MustRegisterWith(opts.MetricsReg)
 	}
 
-	str, err := rcmgrObs.NewStatsTraceReporter()
+	str, err := rcmgr.NewStatsTraceReporter()
 	if err != nil {
 		return nil, err
 	}
