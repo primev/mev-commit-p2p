@@ -3,7 +3,6 @@ package preconfirmation
 import (
 	"context"
 	"crypto/ecdsa"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -53,41 +52,37 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 				Name:    "bid",
 				Handler: p.handleBid,
 			},
-			// { // This is going to be a stream exclusively from the builder to the searcher
-			// 	Name:    "commitment",
-			// 	Handler: p.handleCommitment,
-			// },
+			{ // This is going to be a stream exclusively from the builder to the searcher
+				Name:    "commitment",
+				Handler: p.handleCommitment,
+			},
 		},
 	}
 }
 
-type UnsignedPreConfBid struct {
-	TxnHash     string   `json:"txnHash"`
-	Bid         *big.Int `json:"bid"`
-	Blocknumber *big.Int `json:"blocknumber"`
-	// UUID    string `json:"uuid"` // Assuming string representation for byte16
-}
+// handlecommitment is meant to be used by the searcher exclusively to read the commitment value from the builder.
+// They should verify the authenticity of the commitment
+func (p *Preconfirmation) handleCommitment(
+	ctx context.Context,
+	peer p2p.Peer,
+	stream p2p.Stream,
+) error {
+	r, _ := msgpack.NewReaderWriter[preconf.PreconfCommitment, preconf.PreconfCommitment](stream)
+	commitment, err := r.ReadMsg(ctx)
+	if err != nil {
+		return err
+	}
 
-type PreConfBid struct { // Adds blocknumber for pre-conf bid - Will need to manage how to reciever acts on a bid / TTL is the blocknumber
-	UnsignedPreConfBid
+	// Process commitment as a searcher
+	providerAddress, err := commitment.VerifyBuilderSignature()
+	userAddress, err := commitment.VerifySearcherSignature()
+	_ = providerAddress
+	_ = userAddress
 
-	BidHash   []byte `json:"bidhash"`
-	Signature []byte `json:"signature"`
-}
+	// Check that user address is personal address
+	// me == useraddress
 
-type PreconfCommitment struct {
-	PreConfBid
-
-	DataHash            []byte `json:"data_hash"`
-	CommitmentSignature []byte `json:"commitment_signature"`
-}
-
-// golang interface
-type IPreconfBid interface {
-	GetTxnHash() string
-	GetBidAmt() *big.Int
-	VerifySearcherSignature() (common.Address, error)
-	BidOriginator() (common.Address, *ecdsa.PublicKey, error)
+	return nil
 }
 
 func (p *Preconfirmation) verifyBid(
