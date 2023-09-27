@@ -72,6 +72,18 @@ type IPreconfBidBuilder interface {
 	ConstructCommitment(*ecdsa.PrivateKey) (PreconfCommitment, error) // Verfiy Signature and than constrcut the commitment
 }
 
+type Signer interface {
+	Sign([]byte) ([]byte, error)
+}
+
+type PrivateKeySigner struct {
+	PrivKey *ecdsa.PrivateKey
+}
+
+func (p PrivateKeySigner) Sign([]byte) ([]byte, error) {
+	return crypto.Sign([]byte{}, p.PrivKey)
+}
+
 func (p PreconfCommitment) VerifyBuilderSignature() (common.Address, error) {
 	if p.DataHash == nil || p.CommitmentSignature == nil {
 		return common.Address{}, ErrMissingHashSignature
@@ -132,7 +144,7 @@ func (p PreconfCommitment) CommitmentOriginator() (common.Address, *ecdsa.Public
 	return crypto.PubkeyToAddress(*pubkey), pubkey, nil
 }
 
-func (p PreConfBid) ConstructCommitment(privKey *ecdsa.PrivateKey) (PreconfCommitment, error) {
+func (p PreConfBid) ConstructCommitment(signer Signer) (PreconfCommitment, error) {
 	_, err := p.VerifySearcherSignature()
 	if err != nil {
 		return PreconfCommitment{}, err
@@ -141,7 +153,7 @@ func (p PreConfBid) ConstructCommitment(privKey *ecdsa.PrivateKey) (PreconfCommi
 		PreConfBid: p,
 	}
 
-	err = commitment.constructHashAndSignature(privKey)
+	err = commitment.constructHashAndSignature(signer)
 	if err != nil {
 		return PreconfCommitment{}, err
 	}
@@ -151,7 +163,7 @@ func (p PreConfBid) ConstructCommitment(privKey *ecdsa.PrivateKey) (PreconfCommi
 
 // Adds bidHash and Signature to preconfbid
 // Fails atomically
-func (p *PreconfCommitment) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err error) {
+func (p *PreconfCommitment) constructHashAndSignature(signer Signer) (err error) {
 	if p.DataHash != nil || p.CommitmentSignature != nil {
 		return ErrAlreadySignedCommitment
 	}
@@ -162,7 +174,8 @@ func (p *PreconfCommitment) constructHashAndSignature(privKey *ecdsa.PrivateKey)
 	if err != nil {
 		return err
 	}
-	sig, err := crypto.Sign(dataHash, privKey)
+
+	sig, err := signer.Sign(dataHash)
 	if err != nil {
 		return err
 	}

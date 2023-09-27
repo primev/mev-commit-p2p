@@ -42,6 +42,7 @@ func TestCommitment(t *testing.T) {
 		t.Fatalf("Failed to connect to the Ethereum client: %v", err)
 	}
 	key, _ := crypto.GenerateKey()
+	signer := PrivateKeySigner{key}
 	bid, err := ConstructSignedBid(big.NewInt(10), "0xkadrtik", big.NewInt(2), key)
 	if err != nil {
 		t.Fatal(err)
@@ -50,7 +51,7 @@ func TestCommitment(t *testing.T) {
 	b, _ := json.Marshal(bid)
 	var bid2 PreConfBid
 	json.Unmarshal(b, &bid2)
-	commit, err := bid2.ConstructCommitment(key)
+	commit, err := bid2.ConstructCommitment(signer)
 
 	if err != nil {
 		t.Fatal(err)

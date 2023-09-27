@@ -7,6 +7,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/primevprotocol/mev-commit/pkg/p2p"
+	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
+
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"golang.org/x/sync/semaphore"
@@ -24,16 +29,18 @@ type P2PService interface {
 }
 
 type Preconfirmation struct {
+	signer   preconf.Signer
 	topo     topology.Topology
 	streamer P2PService
 	sem      *semaphore.Weighted
 	quit     chan struct{}
 }
 
-func New(topo topology.Topology, streamer P2PService) *Preconfirmation {
+func New(topo topology.Topology, streamer P2PService, key *ecdsa.PrivateKey) *Preconfirmation {
 	return &Preconfirmation{
 		topo:     topo,
 		streamer: streamer,
+		signer:   preconf.PrivateKeySigner{PrivKey: key},
 	}
 }
 
@@ -131,7 +138,18 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	/* TODO(@ckartik): Determine if the bid is to be acted on - e.g constructed into a pre-confimration */
-	_ = ethAddress
+	searcherStream, err := p.streamer.NewStream(ctx, p2p.Peer{EthAddress: ethAddress, Type: p2p.PeerTypeSearcher}, ProtocolName, ProtocolVersion, "commitment")
+	if err != nil {
+		return err
+	}
+
+	commitment, err := bid.ConstructCommitment(p.signer)
+	if err != nil {
+		return err
+	}
+
+	_, w := msgpack.NewReaderWriter[preconf.PreconfCommitment, preconf.PreconfCommitment](searcherStream)
+	w.WriteMsg(ctx, &commitment)
 	// if recieved from searcher broadcast to builder peers
 	// elseif recieved from builder, don't broadcast
 
