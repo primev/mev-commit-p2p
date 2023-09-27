@@ -111,13 +111,15 @@ func (p *Preconfirmation) BroadcastBid(ctx context.Context, peer p2p.Peer, bid *
 }
 
 // handlebid is the function that is called when a bid is received
+// TODO(@ckartik):
+// When you open a stream with a searcher - the other side of the stream has the handler
 func (p *Preconfirmation) handleBid(
 	ctx context.Context,
 	peer p2p.Peer,
 	stream p2p.Stream,
 ) error {
-
-	r, _ := msgpack.NewReaderWriter[PreConfBid, PreConfBid](stream)
+	// TODO(@ckartik): Change to reader only once availble
+	r, _ := msgpack.NewReaderWriter[preconf.PreConfBid, preconf.PreConfBid](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
