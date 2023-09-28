@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"golang.org/x/sync/semaphore"
@@ -17,19 +18,19 @@ const (
 
 type P2PService interface {
 	p2p.Streamer
-	p2p.Addressbook
 	Connect(context.Context, []byte) (p2p.Peer, error)
 }
 
 type Topology interface {
 	AddPeers(...p2p.Peer)
+	IsConnected(common.Address) bool
 }
 
 type Discovery struct {
 	topo       Topology
 	streamer   P2PService
 	logger     *slog.Logger
-	checkPeers chan PeerInfo
+	checkPeers chan p2p.PeerInfo
 	sem        *semaphore.Weighted
 	quit       chan struct{}
 }
@@ -44,7 +45,7 @@ func New(
 		streamer:   streamer,
 		logger:     logger.With("protocol", ProtocolName),
 		sem:        semaphore.NewWeighted(checkWorkers),
-		checkPeers: make(chan PeerInfo),
+		checkPeers: make(chan p2p.PeerInfo),
 		quit:       make(chan struct{}),
 	}
 	go d.checkAndAddPeers()
@@ -64,14 +65,8 @@ func (d *Discovery) Protocol() p2p.ProtocolSpec {
 	}
 }
 
-type PeerInfo struct {
-	ID       string
-	PeerType string
-	Underlay []byte
-}
-
 type peersList struct {
-	Peers []PeerInfo
+	Peers []p2p.PeerInfo
 }
 
 func (d *Discovery) handlePeersList(ctx context.Context, peer p2p.Peer, s p2p.Stream) error {
@@ -84,6 +79,9 @@ func (d *Discovery) handlePeersList(ctx context.Context, peer p2p.Peer, s p2p.St
 	}
 
 	for _, p := range peers.Peers {
+		if d.topo.IsConnected(p.EthAddress) {
+			continue
+		}
 		select {
 		case d.checkPeers <- p:
 		case <-ctx.Done():
@@ -96,7 +94,11 @@ func (d *Discovery) handlePeersList(ctx context.Context, peer p2p.Peer, s p2p.St
 	return nil
 }
 
-func (d *Discovery) BroadcastPeers(ctx context.Context, peer p2p.Peer, peers []PeerInfo) error {
+func (d *Discovery) BroadcastPeers(
+	ctx context.Context,
+	peer p2p.Peer,
+	peers []p2p.PeerInfo,
+) error {
 	stream, err := d.streamer.NewStream(ctx, peer, ProtocolName, ProtocolVersion, "peersList")
 	if err != nil {
 		d.logger.Error("failed to create stream", "err", err, "to_peer", peer)
