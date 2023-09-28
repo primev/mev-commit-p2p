@@ -22,7 +22,7 @@ type Topology interface {
 }
 
 type Announcer interface {
-	BroadcastPeers(context.Context, p2p.Peer, [][]byte) error
+	BroadcastPeers(context.Context, p2p.Peer, []p2p.PeerInfo) error
 }
 
 type topology struct {
@@ -34,7 +34,7 @@ type topology struct {
 	announcer   Announcer
 }
 
-func New(a p2p.Addressbook, logger *slog.Logger) Topology {
+func New(a p2p.Addressbook, logger *slog.Logger) *topology {
 	return &topology{
 		builders:    make(map[common.Address]p2p.Peer),
 		searchers:   make(map[common.Address]p2p.Peer),
@@ -53,7 +53,7 @@ func (t *topology) Connected(p p2p.Peer) {
 	if t.announcer != nil {
 		// Whether its a builder or searcher, we want to broadcast the builder peers
 		peersToBroadcast := t.GetPeers(Query{Type: p2p.PeerTypeBuilder})
-		var underlays [][]byte
+		var underlays []p2p.PeerInfo
 		for _, peer := range peersToBroadcast {
 			if peer.EthAddress == p.EthAddress {
 				continue
@@ -63,7 +63,10 @@ func (t *topology) Connected(p p2p.Peer) {
 				t.logger.Error("failed to get peer info", "err", err, "peer", peer)
 				continue
 			}
-			underlays = append(underlays, u)
+			underlays = append(underlays, p2p.PeerInfo{
+				EthAddress: peer.EthAddress,
+				Underlay:   u,
+			})
 		}
 
 		if len(underlays) == 0 {

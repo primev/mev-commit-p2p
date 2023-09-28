@@ -39,14 +39,15 @@ type Service struct {
 }
 
 type Options struct {
-	PrivKey      *ecdsa.PrivateKey
-	Secret       string
-	PeerType     p2p.PeerType
-	Register     register.Register
-	MinimumStake *big.Int
-	ListenPort   int
-	Logger       *slog.Logger
-	MetricsReg   *prometheus.Registry
+	PrivKey        *ecdsa.PrivateKey
+	Secret         string
+	PeerType       p2p.PeerType
+	Register       register.Register
+	MinimumStake   *big.Int
+	ListenPort     int
+	Logger         *slog.Logger
+	MetricsReg     *prometheus.Registry
+	BootstrapAddrs []string
 }
 
 func New(opts *Options) (*Service, error) {
@@ -133,12 +134,20 @@ func New(opts *Options) (*Service, error) {
 	host.Network().Notify(s.peers)
 
 	s.host.SetStreamHandler(handshake.ProtocolID(), s.handleConnectReq)
+
+	if len(opts.BootstrapAddrs) > 0 {
+		go s.startBootstrapper(opts.BootstrapAddrs)
+	}
 	return s, nil
 }
 
 func (s *Service) Close() error {
 	s.baseCtxCancel()
 	return s.host.Close()
+}
+
+func (s *Service) SetNotifier(n p2p.Notifier) {
+	s.notifier = n
 }
 
 func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
