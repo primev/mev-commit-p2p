@@ -186,6 +186,10 @@ func (p *PreconfCommitment) constructHashAndSignature(signer Signer) (err error)
 	return nil
 }
 
+func ConvertIntoSignedBid(unsignedBid UnsignedPreConfBid, signer Signer) (PreConfBid, error) {
+	return unsignedBid.constructHashAndSignature(signer)
+}
+
 // Returns a PreConfBid Object with an EIP712 signature of the payload
 func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, key *ecdsa.PrivateKey) (IPreconfBidSearcher, error) {
 	bid := &PreConfBid{
@@ -224,7 +228,29 @@ func (p PreConfBid) VerifySearcherSignature() (common.Address, error) {
 
 // Adds bidHash and Signature to preconfbid
 // Fails atomically
-func (p *PreConfBid) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err error) {
+func (p *UnsignedPreConfBid) constructHashAndSignature(signer Signer) (PreConfBid, error) {
+	internalPayload := constructBidPayload(p.TxnHash, p.Bid, p.Blocknumber)
+
+	bidHash, _, err := apitypes.TypedDataAndHash(internalPayload)
+	if err != nil {
+		return PreConfBid{}, err
+	}
+
+	sig, err := signer.Sign(bidHash)
+	if err != nil {
+		return PreConfBid{}, err
+	}
+
+	return PreConfBid{
+		UnsignedPreConfBid: *p,
+		BidHash:            bidHash,
+		Signature:          sig,
+	}, nil
+}
+
+// Adds bidHash and Signature to preconfbid
+// Fails atomically
+func (p *PreConfBid) constructHashAndSignature(signer Signer) (err error) {
 	if p.BidHash != nil || p.Signature != nil {
 		return ErrAlreadySignedBid
 	}
@@ -235,7 +261,8 @@ func (p *PreConfBid) constructHashAndSignature(privKey *ecdsa.PrivateKey) (err e
 	if err != nil {
 		return err
 	}
-	sig, err := crypto.Sign(bidHash, privKey)
+
+	sig, err := signer.Sign(bidHash)
 	if err != nil {
 		return err
 	}
