@@ -44,6 +44,9 @@ func NewNode(opts *Options) (*Node, error) {
 		Logger:       opts.Logger,
 		ListenPort:   opts.ListenPort,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	topo := topology.New(p2pSvc, opts.Logger)
 	disc := discovery.New(topo, p2pSvc, opts.Logger)
