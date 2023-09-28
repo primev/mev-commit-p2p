@@ -199,8 +199,8 @@ func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, k
 			Blocknumber: blocknumber,
 		},
 	}
-
-	err := bid.constructHashAndSignature(key)
+	// init signer
+	err := bid.constructHashAndSignature(PrivateKeySigner{key})
 	if err != nil {
 		return nil, err
 	}
