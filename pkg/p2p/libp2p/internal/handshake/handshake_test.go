@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"errors"
 	"math/big"
 	"testing"
 
@@ -19,6 +20,10 @@ type testRegister struct{}
 
 func (t *testRegister) GetStake(_ common.Address) (*big.Int, error) {
 	return big.NewInt(5), nil
+}
+
+func (t *testRegister) GetMinimumStake() (*big.Int, error) {
+	return nil, errors.New("not implemented")
 }
 
 type testSigner struct {

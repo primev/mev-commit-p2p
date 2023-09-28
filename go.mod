@@ -11,6 +11,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/crypto v0.12.0
 	golang.org/x/sync v0.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

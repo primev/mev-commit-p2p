@@ -2,6 +2,8 @@ package node
 
 import (
 	"crypto/ecdsa"
+	"errors"
+	"io"
 	"log/slog"
 
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
@@ -9,7 +11,6 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/register"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Options struct {
@@ -17,11 +18,11 @@ type Options struct {
 	Secret     string
 	PeerType   string
 	Logger     *slog.Logger
-	MetricsReg *prometheus.Registry
 	ListenPort int
 }
 
 type Node struct {
+	closers []io.Closer
 }
 
 func NewNode(opts *Options) (*Node, error) {
@@ -41,7 +42,6 @@ func NewNode(opts *Options) (*Node, error) {
 		Register:     reg,
 		MinimumStake: minStake,
 		Logger:       opts.Logger,
-		MetricsReg:   opts.MetricsReg,
 		ListenPort:   opts.ListenPort,
 	})
 
@@ -57,4 +57,13 @@ func NewNode(opts *Options) (*Node, error) {
 	p2pSvc.AddProtocol(disc.Protocol())
 
 	return &Node{}, nil
+}
+
+func (n *Node) Close() error {
+	var err error
+	for _, c := range n.closers {
+		err = errors.Join(err, c.Close())
+	}
+
+	return err
 }

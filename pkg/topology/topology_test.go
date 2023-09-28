@@ -26,7 +26,7 @@ type announcer struct {
 	broadcasts []p2p.Peer
 }
 
-func (a *announcer) BroadcastPeers(_ context.Context, p p2p.Peer, peers [][]byte) error {
+func (a *announcer) BroadcastPeers(_ context.Context, p p2p.Peer, peers []p2p.PeerInfo) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -37,7 +37,7 @@ func (a *announcer) BroadcastPeers(_ context.Context, p p2p.Peer, peers [][]byte
 		return errors.New("wrong number of peers")
 	}
 
-	if string(peers[0]) != "test" {
+	if string(peers[0].Underlay) != "test" {
 		return errors.New("wrong peer underlay")
 	}
 
