@@ -10,7 +10,6 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
-	"golang.org/x/sync/semaphore"
 )
 
 const (
@@ -28,10 +27,8 @@ type Preconfirmation struct {
 	signer   preconf.Signer
 	topo     topology.Topology
 	streamer P2PService
-	sem      *semaphore.Weighted
 	cs       CommitmentsStore
 	us       UserStore
-	quit     chan struct{}
 }
 
 func New(topo topology.Topology, streamer P2PService, key *ecdsa.PrivateKey) *Preconfirmation {
@@ -58,8 +55,7 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 // BidHash -> map of preconfs
 // Key: BidHash
 // Value: List of preconfs
-var commitments map[string][]preconf.PreconfCommitment
-
+// var commitments map[string][]preconf.PreconfCommitment
 type CommitmentsStore interface {
 	GetCommitments(bidHash []byte) ([]preconf.PreconfCommitment, error)
 	AddCommitment(bidHash []byte, commitment *preconf.PreconfCommitment) error
@@ -108,7 +104,10 @@ func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreCo
 		_ = userAddress
 
 		// Verify the bid details correspond.
-		p.cs.AddCommitment(signedBid.BidHash, commitment)
+		err = p.cs.AddCommitment(signedBid.BidHash, commitment)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
