@@ -31,6 +31,8 @@ type Preconfirmation struct {
 	topo     topology.Topology
 	streamer P2PService
 	sem      *semaphore.Weighted
+	cs       CommitmentsStore
+	us       UserStore
 	quit     chan struct{}
 }
 
@@ -55,9 +57,21 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 	}
 }
 
-// Local store of bids out
-var bidsOut = make(map[common.Address]preconf.PreConfBid)
+// BidHash -> map of preconfs
+// Key: BidHash
+// Value: List of preconfs
+var commitments map[string][]preconf.PreconfCommitment
 
+type CommitmentsStore interface {
+	GetCommitments(bidHash []byte) ([]preconf.PreconfCommitment, error)
+	AddCommitment(bidHash []byte, commitment *preconf.PreconfCommitment) error
+}
+
+type UserStore interface {
+	CheckUserRegistred(common.Address) bool
+}
+
+// SendBid is meant to be called by the searcher to construct and send bids to the builder
 func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreConfBid) error {
 	signedBid, err := preconf.ConvertIntoSignedBid(bid, p.signer)
 	if err != nil {
@@ -65,6 +79,8 @@ func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreCo
 	}
 
 	builders := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
+
+	// TODO(@ckartik): Push into a channel and process in parallel
 	for _, builder := range builders {
 		// Create a new connection
 		builderStream, err := p.streamer.NewStream(ctx, builder, ProtocolName, ProtocolVersion, "bid")
@@ -82,34 +98,28 @@ func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreCo
 
 		// Process commitment as a searcher
 		providerAddress, err := commitment.VerifyBuilderSignature()
+		if err != nil {
+			return err
+		}
 		userAddress, err := commitment.VerifySearcherSignature()
+		if err != nil {
+			return err
+		}
+
 		_ = providerAddress
 		_ = userAddress
 
 		// Verify the bid details correspond.
+		p.cs.AddCommitment(signedBid.BidHash, commitment)
 	}
 
 	return nil
 }
 
-func (p *Preconfirmation) verifyBid(
-	bid *preconf.PreConfBid,
-) (common.Address, error) {
-
-	ethAddress, err := bid.VerifySearcherSignature()
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	return ethAddress, nil
-}
-
 var ErrInvalidSearcherTypeForBid = errors.New("invalid searcher type for bid")
 
 // handlebid is the function that is called when a bid is received
-// TODO(@ckartik):
-// When you open a stream with a searcher - the other side of the stream has the handler
-// handlebid could have a bid sent by a searcher node or a builder node.
+// It is meant to be used by the builder exclusively to read the bid value from the searcher.
 func (p *Preconfirmation) handleBid(
 	ctx context.Context,
 	peer p2p.Peer,
@@ -126,19 +136,20 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	ethAddress, err := p.verifyBid(bid)
+	ethAddress, err := bid.VerifySearcherSignature()
 	if err != nil {
 		return err
 	}
 
-	if peer.EthAddress != ethAddress {
-		return errors.New("eth address does not match")
+	if p.us.CheckUserRegistred(ethAddress) {
+		// More conditional Logic to determine signing of bid
+		commitment, err := bid.ConstructCommitment(p.signer)
+		if err != nil {
+			return err
+		}
+
+		return w.WriteMsg(ctx, &commitment)
 	}
 
-	commitment, err := bid.ConstructCommitment(p.signer)
-	if err != nil {
-		return err
-	}
-
-	return w.WriteMsg(ctx, &commitment)
+	return nil
 }
