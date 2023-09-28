@@ -89,6 +89,9 @@ func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreCo
 		}
 
 		commitment, err := r.ReadMsg(ctx)
+		if err != nil {
+			return err
+		}
 
 		// Process commitment as a searcher
 		providerAddress, err := commitment.VerifyBuilderSignature()
