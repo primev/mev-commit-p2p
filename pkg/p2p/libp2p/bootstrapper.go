@@ -34,7 +34,7 @@ func (p *Service) startBootstrapper(addrs []string) {
 			}
 
 			p.logger.Info("connected to bootstrap peer", "peer", peer)
-			time.Sleep(1 * time.Minute)
 		}
+		time.Sleep(1 * time.Minute)
 	}
 }
