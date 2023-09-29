@@ -26,32 +26,66 @@ func main() {
 	app := &cli.App{
 		Name:  "mev-commit",
 		Usage: "Entry point for mev-commit",
-		Flags: []cli.Flag{
-			optionConfig,
-		},
 		Commands: []*cli.Command{
 			{
 				Name:  "start",
 				Usage: "Start mev-commit",
+				Flags: []cli.Flag{
+					optionConfig,
+				},
 				Action: func(c *cli.Context) error {
 					return start(c)
 				},
 			},
-		},
-	}
+			{
+				Name: "create-key",
+				Action: func(c *cli.Context) error {
+					return createKey(c)
+				},
+			},
+		}}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(app.Writer, "exited with error: %v\n", err)
 	}
 }
 
+func createKey(c *cli.Context) error {
+	privKey, err := crypto.GenerateKey()
+	if err != nil {
+		return err
+	}
+
+	if len(c.Args().Slice()) != 1 {
+		return fmt.Errorf("usage: mev-commit create-key <output_file>")
+	}
+
+	outputFile := c.Args().Slice()[0]
+
+	f, err := os.Create(outputFile)
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	if err := crypto.SaveECDSA(outputFile, privKey); err != nil {
+		return err
+	}
+
+	fmt.Fprintf(c.App.Writer, "Private key saved to file: %s\n", outputFile)
+	return nil
+}
+
 type config struct {
-	PrivKeyFile string `yaml:"priv_key_file" json:"priv_key_file"`
-	Secret      string `yaml:"secret" json:"secret"`
-	PeerType    string `yaml:"peer_type" json:"peer_type"`
-	ListenPort  int    `yaml:"listen_port" json:"listen_port"`
-	LogFmt      string `yaml:"log_fmt" json:"log_fmt"`
-	LogLevel    string `yaml:"log_level" json:"log_level"`
+	PrivKeyFile string   `yaml:"priv_key_file" json:"priv_key_file"`
+	Secret      string   `yaml:"secret" json:"secret"`
+	PeerType    string   `yaml:"peer_type" json:"peer_type"`
+	P2PPort     int      `yaml:"p2p_port" json:"p2p_port"`
+	HTTPPort    int      `yaml:"http_port" json:"http_port"`
+	LogFmt      string   `yaml:"log_fmt" json:"log_fmt"`
+	LogLevel    string   `yaml:"log_level" json:"log_level"`
+	Bootnodes   []string `yaml:"bootnodes" json:"bootnodes"`
 }
 
 func checkConfig(cfg config) error {
@@ -67,8 +101,12 @@ func checkConfig(cfg config) error {
 		return fmt.Errorf("peer_type is required")
 	}
 
-	if cfg.ListenPort == 0 {
-		return fmt.Errorf("listen_port is required")
+	if cfg.P2PPort == 0 {
+		return fmt.Errorf("p2p_port is required")
+	}
+
+	if cfg.HTTPPort == 0 {
+		return fmt.Errorf("HTTP_port is required")
 	}
 
 	return nil
@@ -111,11 +149,13 @@ func start(c *cli.Context) error {
 	}
 
 	nd, err := node.NewNode(&node.Options{
-		PrivKey:    privKey,
-		Secret:     cfg.Secret,
-		PeerType:   cfg.PeerType,
-		ListenPort: cfg.ListenPort,
-		Logger:     logger,
+		PrivKey:   privKey,
+		Secret:    cfg.Secret,
+		PeerType:  cfg.PeerType,
+		P2PPort:   cfg.P2PPort,
+		HTTPPort:  cfg.HTTPPort,
+		Logger:    logger,
+		Bootnodes: cfg.Bootnodes,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)
