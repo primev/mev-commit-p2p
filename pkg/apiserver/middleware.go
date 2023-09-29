@@ -9,7 +9,6 @@ import (
 type responseStatusRecorder struct {
 	http.ResponseWriter
 	status int
-	size   int
 }
 
 func (r *responseStatusRecorder) WriteHeader(status int) {

@@ -19,9 +19,9 @@ type StatusResponse struct {
 // struct. Otherwise, the message will be encoded as JSON.
 func WriteResponse(w http.ResponseWriter, code int, message any) error {
 	var b bytes.Buffer
-	switch message.(type) {
+	switch message := message.(type) {
 	case string:
-		err := json.NewEncoder(&b).Encode(StatusResponse{Code: code, Message: message.(string)})
+		err := json.NewEncoder(&b).Encode(StatusResponse{Code: code, Message: message})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return fmt.Errorf("failed to encode status response: %w", err)
@@ -45,7 +45,10 @@ func WriteResponse(w http.ResponseWriter, code int, message any) error {
 func MethodHandler(method string, handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != method {
-			WriteResponse(w, http.StatusMethodNotAllowed, "method not allowed")
+			err := WriteResponse(w, http.StatusMethodNotAllowed, "method not allowed")
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 		handler(w, r)

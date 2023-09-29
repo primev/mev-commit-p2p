@@ -15,8 +15,6 @@ const (
 	defaultNamespace = "primev"
 )
 
-type searcherKey struct{}
-
 // Service wraps http.Server with additional functionality for metrics and
 // other common middlewares.
 type Service struct {

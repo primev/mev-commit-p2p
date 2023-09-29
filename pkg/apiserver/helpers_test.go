@@ -129,7 +129,7 @@ func TestWriteResponse(t *testing.T) {
 		}
 		buf.WriteByte('\n')
 
-		if bytes.Compare(w.Body.Bytes(), buf.Bytes()) != 0 {
+		if !bytes.Equal(w.Body.Bytes(), buf.Bytes()) {
 			t.Fatalf("expected body %q, got %q", buf.String(), w.Body.String())
 		}
 	})
@@ -157,7 +157,7 @@ func TestWriteResponse(t *testing.T) {
 		}
 		buf.WriteByte('\n')
 
-		if bytes.Compare(w.Body.Bytes(), buf.Bytes()) != 0 {
+		if !bytes.Equal(w.Body.Bytes(), buf.Bytes()) {
 			t.Fatalf("expected body %q, got %q", buf.String(), w.Body.String())
 		}
 	})
