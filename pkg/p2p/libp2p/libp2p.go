@@ -267,6 +267,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 
 	p, err := s.hsSvc.Handshake(ctx, addrInfo.ID, stream)
 	if err != nil {
+		_ = s.host.Network().ClosePeer(addrInfo.ID)
 		return p2p.Peer{}, err
 	}
 
