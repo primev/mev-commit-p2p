@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -65,9 +66,15 @@ type UserStore interface {
 	CheckUserRegistred(common.Address) bool
 }
 
+/*
+
+	TxnHash     string   `json:"txnHash"`
+	Bid         *big.Int `json:"bid"`
+	Blocknumber *big.Int `json:"blocknumber"`
+*/
 // SendBid is meant to be called by the searcher to construct and send bids to the builder
-func (p *Preconfirmation) SendBid(ctx context.Context, bid preconf.UnsignedPreConfBid) error {
-	signedBid, err := preconf.ConvertIntoSignedBid(bid, p.signer)
+func (p *Preconfirmation) SendBid(ctx context.Context, txnHash string, bidamt *big.Int, blockNumber *big.Int) error {
+	signedBid, err := preconf.ConstructSignedBid(bidamt, txnHash, blockNumber, p.signer)
 	if err != nil {
 		return err
 	}
@@ -143,7 +150,7 @@ func (p *Preconfirmation) handleBid(
 
 	if p.us.CheckUserRegistred(ethAddress) {
 		// More conditional Logic to determine signing of bid
-		commitment, err := bid.ConstructCommitment(p.signer)
+		commitment, err := preconf.ConstructCommitment(*bid, p.signer)
 		if err != nil {
 			return err
 		}
