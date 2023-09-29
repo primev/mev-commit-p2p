@@ -28,6 +28,18 @@ func (t *testTopo) AddPeers(peers ...p2p.Peer) {
 	t.peers = append(t.peers, peers...)
 }
 
+func (t *testTopo) IsConnected(addr common.Address) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	for _, p := range t.peers {
+		if p.EthAddress == addr {
+			return true
+		}
+	}
+	return false
+}
+
 func newTestLogger(w io.Writer) *slog.Logger {
 	testLogger := slog.NewTextHandler(w, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -55,12 +67,6 @@ func TestDiscovery(t *testing.T) {
 				}
 				return client, nil
 			}),
-			p2ptest.WithAddressbookFunc(func(p p2p.Peer) ([]byte, error) {
-				if p.EthAddress != client.EthAddress {
-					return nil, errors.New("invalid peer")
-				}
-				return []byte("test"), nil
-			}),
 		)
 
 		topo := &testTopo{}
@@ -74,11 +80,10 @@ func TestDiscovery(t *testing.T) {
 
 		svc.SetPeerHandler(server, d.Protocol())
 
-		err := d.BroadcastPeers(context.Background(), server, []discovery.PeerInfo{
+		err := d.BroadcastPeers(context.Background(), server, []p2p.PeerInfo{
 			{
-				ID:       common.HexToAddress("0x1").Hex(),
-				PeerType: p2p.PeerTypeBuilder.String(),
-				Underlay: []byte("test"),
+				EthAddress: common.HexToAddress("0x1"),
+				Underlay:   []byte("test"),
 			},
 		})
 		if err != nil {
