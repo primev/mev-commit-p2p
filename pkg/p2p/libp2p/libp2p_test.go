@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"math/big"
 	"os"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -178,4 +180,90 @@ func TestP2PService(t *testing.T) {
 			t.Fatalf("expected host id %s, got %s", client.HostID(), clientAddr.ID)
 		}
 	})
+}
+
+type testNotifier struct {
+	mu    sync.Mutex
+	peers []p2p.Peer
+}
+
+func (t *testNotifier) Connected(p p2p.Peer) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.peers = append(t.peers, p)
+}
+
+func (t *testNotifier) Disconnected(p p2p.Peer) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	for i, peer := range t.peers {
+		if peer.EthAddress == p.EthAddress {
+			t.peers = append(t.peers[:i], t.peers[i+1:]...)
+			return
+		}
+	}
+}
+
+func TestBootstrap(t *testing.T) {
+	testDefaultOptions := libp2p.Options{
+		Secret:       "test",
+		ListenPort:   0,
+		PeerType:     p2p.PeerTypeBuilder,
+		Register:     registermock.New(10),
+		MinimumStake: big.NewInt(5),
+		Logger:       newTestLogger(t, os.Stdout),
+	}
+
+	privKey, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bnOpts := testDefaultOptions
+	bnOpts.PrivKey = privKey
+	bnOpts.PeerType = p2p.PeerTypeBootnode
+
+	bootnode, err := libp2p.New(&bnOpts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	notifier := &testNotifier{}
+	bootnode.SetNotifier(notifier)
+
+	privKey, err = crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	n1Opts := testDefaultOptions
+	n1Opts.BootstrapAddrs = []string{bootnode.AddrString()}
+	n1Opts.PrivKey = privKey
+
+	p1, err := libp2p.New(&n1Opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start := time.Now()
+	for {
+		if time.Since(start) > 10*time.Second {
+			t.Fatal("timed out waiting for peers to connect")
+		}
+
+		if p1.PeerCount() == 1 {
+			if len(notifier.peers) != 1 {
+				t.Fatalf("expected 1 peer, got %d", len(notifier.peers))
+			}
+			if notifier.peers[0].Type != p2p.PeerTypeBuilder {
+				t.Fatalf(
+					"expected peer type %s, got %s",
+					p2p.PeerTypeBuilder, notifier.peers[0].Type,
+				)
+			}
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
+	}
 }

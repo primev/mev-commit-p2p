@@ -39,14 +39,15 @@ type Service struct {
 }
 
 type Options struct {
-	PrivKey      *ecdsa.PrivateKey
-	Secret       string
-	PeerType     p2p.PeerType
-	Register     register.Register
-	MinimumStake *big.Int
-	ListenPort   int
-	Logger       *slog.Logger
-	MetricsReg   *prometheus.Registry
+	PrivKey        *ecdsa.PrivateKey
+	Secret         string
+	PeerType       p2p.PeerType
+	Register       register.Register
+	MinimumStake   *big.Int
+	ListenPort     int
+	Logger         *slog.Logger
+	MetricsReg     *prometheus.Registry
+	BootstrapAddrs []string
 }
 
 func New(opts *Options) (*Service, error) {
@@ -133,12 +134,20 @@ func New(opts *Options) (*Service, error) {
 	host.Network().Notify(s.peers)
 
 	s.host.SetStreamHandler(handshake.ProtocolID(), s.handleConnectReq)
+
+	if len(opts.BootstrapAddrs) > 0 {
+		go s.startBootstrapper(opts.BootstrapAddrs)
+	}
 	return s, nil
 }
 
 func (s *Service) Close() error {
 	s.baseCtxCancel()
 	return s.host.Close()
+}
+
+func (s *Service) SetNotifier(n p2p.Notifier) {
+	s.notifier = n
 }
 
 func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
@@ -169,6 +178,15 @@ func (s *Service) disconnected(p p2p.Peer) {
 	if s.notifier != nil {
 		s.notifier.Disconnected(p)
 
+	}
+}
+
+func (s *Service) Self() map[string]interface{} {
+	return map[string]interface{}{
+		"Ethereum Address": s.ethAddress.Hex(),
+		"Peer Type":        s.peerType.String(),
+		"Underlay":         s.host.ID().String(),
+		"Addresses":        s.host.Addrs(),
 	}
 }
 
@@ -249,6 +267,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 
 	p, err := s.hsSvc.Handshake(ctx, addrInfo.ID, stream)
 	if err != nil {
+		_ = s.host.Network().ClosePeer(addrInfo.ID)
 		return p2p.Peer{}, err
 	}
 

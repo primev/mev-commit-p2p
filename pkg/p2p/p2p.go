@@ -56,6 +56,11 @@ type Peer struct {
 	Type       PeerType
 }
 
+type PeerInfo struct {
+	EthAddress common.Address
+	Underlay   []byte
+}
+
 type Stream interface {
 	ReadMsg() ([]byte, error)
 	WriteMsg([]byte) error

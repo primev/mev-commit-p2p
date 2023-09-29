@@ -18,3 +18,7 @@ func New(stake int64) register.Register {
 func (t *mockRegister) GetStake(_ common.Address) (*big.Int, error) {
 	return big.NewInt(t.stake), nil
 }
+
+func (t *mockRegister) GetMinimumStake() (*big.Int, error) {
+	return big.NewInt(0), nil
+}
