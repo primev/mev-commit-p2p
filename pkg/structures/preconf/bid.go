@@ -80,8 +80,8 @@ type PrivateKeySigner struct {
 	PrivKey *ecdsa.PrivateKey
 }
 
-func (p PrivateKeySigner) Sign([]byte) ([]byte, error) {
-	return crypto.Sign([]byte{}, p.PrivKey)
+func (p PrivateKeySigner) Sign(digest []byte) ([]byte, error) {
+	return crypto.Sign(digest, p.PrivKey)
 }
 
 func (p PreconfCommitment) VerifyBuilderSignature() (common.Address, error) {
