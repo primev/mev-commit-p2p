@@ -13,6 +13,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	defaultP2PPort  = 13522
+	defaultHTTPPort = 13523
+)
+
 var (
 	optionConfig = &cli.StringFlag{
 		Name:     "config",
@@ -88,7 +93,7 @@ type config struct {
 	Bootnodes   []string `yaml:"bootnodes" json:"bootnodes"`
 }
 
-func checkConfig(cfg config) error {
+func checkConfig(cfg *config) error {
 	if cfg.PrivKeyFile == "" {
 		return fmt.Errorf("priv_key_file is required")
 	}
@@ -102,11 +107,19 @@ func checkConfig(cfg config) error {
 	}
 
 	if cfg.P2PPort == 0 {
-		return fmt.Errorf("p2p_port is required")
+		cfg.P2PPort = defaultP2PPort
 	}
 
 	if cfg.HTTPPort == 0 {
-		return fmt.Errorf("HTTP_port is required")
+		cfg.HTTPPort = defaultHTTPPort
+	}
+
+	if cfg.LogFmt == "" {
+		cfg.LogFmt = "text"
+	}
+
+	if cfg.LogLevel == "" {
+		cfg.LogLevel = "info"
 	}
 
 	return nil
@@ -126,16 +139,8 @@ func start(c *cli.Context) error {
 		return fmt.Errorf("failed to unmarshal config file at '%s': %w", configFile, err)
 	}
 
-	if err := checkConfig(cfg); err != nil {
+	if err := checkConfig(&cfg); err != nil {
 		return fmt.Errorf("invalid config file at '%s': %w", configFile, err)
-	}
-
-	if cfg.LogFmt == "" {
-		cfg.LogFmt = "text"
-	}
-
-	if cfg.LogLevel == "" {
-		cfg.LogLevel = "info"
 	}
 
 	logger, err := newLogger(cfg.LogLevel, cfg.LogFmt, c.App.Writer)
