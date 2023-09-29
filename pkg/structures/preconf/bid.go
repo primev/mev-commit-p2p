@@ -105,7 +105,7 @@ func (p PreConfBid) BidOriginator() (common.Address, *ecdsa.PublicKey, error) {
 }
 
 func (p PreconfCommitment) CommitmentOriginator() (common.Address, *ecdsa.PublicKey, error) {
-	_, err := VerifyBuilderSignature(p)
+	_, err := p.VerifyBuilderSignature()
 	if err != nil {
 		return common.Address{}, nil, err
 	}
