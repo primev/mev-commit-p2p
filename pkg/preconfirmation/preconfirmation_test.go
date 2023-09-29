@@ -36,11 +36,9 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 }
 
 func (t *testTopo) Connected(p2p.Peer) {
-	return
 }
 
 func (t *testTopo) Disconnected(p2p.Peer) {
-	return
 }
 
 func TestPreconfBidSubmission(t *testing.T) {
