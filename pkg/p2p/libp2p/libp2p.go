@@ -181,6 +181,15 @@ func (s *Service) disconnected(p p2p.Peer) {
 	}
 }
 
+func (s *Service) Self() map[string]interface{} {
+	return map[string]interface{}{
+		"Ethereum Address": s.ethAddress.Hex(),
+		"Peer Type":        s.peerType.String(),
+		"Underlay":         s.host.ID().String(),
+		"Addresses":        s.host.Addrs(),
+	}
+}
+
 func (s *Service) AddProtocol(spec p2p.ProtocolSpec) {
 	for _, streamSpec := range spec.StreamSpecs {
 		ss := streamSpec
@@ -258,6 +267,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 
 	p, err := s.hsSvc.Handshake(ctx, addrInfo.ID, stream)
 	if err != nil {
+		_ = s.host.Network().ClosePeer(addrInfo.ID)
 		return p2p.Peer{}, err
 	}
 

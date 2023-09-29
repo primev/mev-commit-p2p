@@ -3,9 +3,13 @@ package node
 import (
 	"crypto/ecdsa"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
 
+	"github.com/primevprotocol/mev-commit/pkg/apiserver"
+	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
@@ -14,11 +18,14 @@ import (
 )
 
 type Options struct {
-	PrivKey    *ecdsa.PrivateKey
-	Secret     string
-	PeerType   string
-	Logger     *slog.Logger
-	ListenPort int
+	Version   string
+	PrivKey   *ecdsa.PrivateKey
+	Secret    string
+	PeerType  string
+	Logger    *slog.Logger
+	P2PPort   int
+	HTTPPort  int
+	Bootnodes []string
 }
 
 type Node struct {
@@ -33,23 +40,30 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 
+	srv := apiserver.New(opts.Version, opts.Logger)
+
+	closers := make([]io.Closer, 0)
 	peerType := p2p.FromString(opts.PeerType)
 
 	p2pSvc, err := libp2p.New(&libp2p.Options{
-		PrivKey:      opts.PrivKey,
-		Secret:       opts.Secret,
-		PeerType:     peerType,
-		Register:     reg,
-		MinimumStake: minStake,
-		Logger:       opts.Logger,
-		ListenPort:   opts.ListenPort,
+		PrivKey:        opts.PrivKey,
+		Secret:         opts.Secret,
+		PeerType:       peerType,
+		Register:       reg,
+		MinimumStake:   minStake,
+		Logger:         opts.Logger,
+		ListenPort:     opts.P2PPort,
+		MetricsReg:     srv.MetricsRegistry(),
+		BootstrapAddrs: opts.Bootnodes,
 	})
 	if err != nil {
 		return nil, err
 	}
+	closers = append(closers, p2pSvc)
 
 	topo := topology.New(p2pSvc, opts.Logger)
 	disc := discovery.New(topo, p2pSvc, opts.Logger)
+	closers = append(closers, disc)
 
 	// Set the announcer for the topology service
 	topo.SetAnnouncer(disc)
@@ -59,7 +73,21 @@ func NewNode(opts *Options) (*Node, error) {
 	// Register the discovery protocol with the p2p service
 	p2pSvc.AddProtocol(disc.Protocol())
 
-	return &Node{}, nil
+	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger)
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%d", opts.HTTPPort),
+		Handler: srv.Router(),
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			opts.Logger.Error("failed to start server", "err", err)
+		}
+	}()
+	closers = append(closers, server)
+
+	return &Node{closers: closers}, nil
 }
 
 func (n *Node) Close() error {
