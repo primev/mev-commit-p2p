@@ -78,6 +78,5 @@ func TestPreconfBidSubmission(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// TODO(@ckartik): Verify output.
 	})
 }

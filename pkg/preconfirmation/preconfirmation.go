@@ -70,7 +70,12 @@ type UserStore interface {
 	CheckUserRegistred(common.Address) bool
 }
 
-// SendBid is meant to be called by the searcher to construct and send bids to the builder
+// SendBid is meant to be called by the searcher to construct and send bids to the builder.
+// It takes the txnHash, the bid amount in wei and the maximum valid block number.
+// It waits for commitments from all builders and then returns.
+// TODO(@ckartik): construct seperate go-routine to wait for commitments, with a context that cancels if a timeout is reached.
+//
+// It returns an error if the bid is not valid.
 func (p *Preconfirmation) SendBid(ctx context.Context, txnHash string, bidamt *big.Int, blockNumber *big.Int) error {
 	signedBid, err := preconf.ConstructSignedBid(bidamt, txnHash, blockNumber, p.signer)
 	if err != nil {
@@ -99,17 +104,14 @@ func (p *Preconfirmation) SendBid(ctx context.Context, txnHash string, bidamt *b
 		}
 
 		// Process commitment as a searcher
-		providerAddress, err := commitment.VerifyBuilderSignature()
+		_, err = commitment.VerifyBuilderSignature()
 		if err != nil {
 			return err
 		}
-		userAddress, err := commitment.VerifySearcherSignature()
+		_, err = commitment.VerifySearcherSignature()
 		if err != nil {
 			return err
 		}
-
-		_ = providerAddress
-		_ = userAddress
 
 		// Verify the bid details correspond.
 		err = p.cs.AddCommitment(signedBid.BidHash, commitment)
