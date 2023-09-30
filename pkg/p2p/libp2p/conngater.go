@@ -103,23 +103,15 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	enoughStake := stake.Cmp(cg.minimumStake) >= 0
 
-	// s<>b connection
-	if (cg.selfType == p2p.PeerTypeSearcher) && enoughStake {
-		return Accept
-	}
-
-	// b<>b connection
-	if (cg.selfType == p2p.PeerTypeBuilder) && enoughStake {
-		return Accept
-	}
-
+	// possible s<>s connection
 	// ! s<>s connection
 	if (cg.selfType == p2p.PeerTypeSearcher) && !enoughStake {
 		return DenySearcherToSearcher
 	}
 
-	// deny the connection if the stake is not enough.
-	return DenyBlockedPeer
+	// Reject potential s<>s connections and accept the remaining requests,
+	// allowing authentication during the handshake phase
+	return Accept
 }
 
 // resolveConnectionAllowance resolves the connection allowance based on trusted and blocked statuses
