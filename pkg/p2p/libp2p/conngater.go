@@ -1,6 +1,7 @@
 package libp2p
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/libp2p/go-libp2p/core/control"
@@ -15,6 +16,8 @@ type connectionAllowance int
 
 const (
 	Undecided connectionAllowance = iota
+	DenyUnresolvedAddress
+	DenyBadRegisterCall
 	DenyBlockedPeer
 	DenyNotEnoughStake
 	DenySearcherToSearcher
@@ -23,6 +26,8 @@ const (
 
 var connectionAllowanceStrings = map[connectionAllowance]string{
 	Undecided:              "Undecided",
+	DenyUnresolvedAddress:  "DenyUnresolvedAddress",
+	DenyBadRegisterCall:    "DenyBadRegisterCall",
 	DenyBlockedPeer:        "DenyBlockedPeer",
 	DenyNotEnoughStake:     "DenyNotEnoughStake",
 	DenySearcherToSearcher: "DenySearcherToSearcher",
@@ -84,35 +89,34 @@ func (cg *connectionGater) checkPeerBlocked(p peer.ID) connectionAllowance {
 // checkPeerStake checks if a peer has enough stake and returns the appropriate
 // connection allowance status
 func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
-	//NOTE: Temporarily allow searchers in the whitelist
-	//	for _, v := range config.SearcherPeerIDs {
-	//		pid, _ := peer.Decode(v)
-	//		if p == pid {
-	//			if cg.registerPeer(p, commons.Searcher) {
-	//				return Accept
-	//			} else {
-	//				return DenySearcherToSearcher
-	//			}
-	//		}
-	//	}
-	//
-
+	// get eth address
 	ethAddress, err := GetEthAddressFromPeerID(p)
 	if err != nil {
-		return DenyBlockedPeer
+		return DenyUnresolvedAddress
 	}
 
 	// get stake
 	stake, err := cg.register.GetStake(ethAddress)
 	if err != nil {
-		return DenyBlockedPeer
+		return DenyBadRegisterCall
 	}
 
-	// check minimal stake
-	if stake.Cmp(cg.minimumStake) >= 0 {
-		//if cg.registerPeer(p, commons.Builder) {
+	enoughStake := stake.Cmp(cg.minimumStake) >= 0
+
+	// s<>b connection
+	if (cg.selfType == p2p.PeerTypeSearcher) && enoughStake {
 		return Accept
-		//}
+	}
+
+	// b<>b connection
+	if (cg.selfType == p2p.PeerTypeBuilder) && enoughStake {
+		fmt.Println("--")
+		return Accept
+	}
+
+	// ! s<>s connection
+	if (cg.selfType == p2p.PeerTypeSearcher) && !enoughStake {
+		return DenySearcherToSearcher
 	}
 
 	// deny the connection if the stake is not enough.
