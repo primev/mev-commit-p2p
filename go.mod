@@ -1,6 +1,6 @@
 module github.com/primevprotocol/mev-commit
 
-go 1.21
+go 1.21.1
 
 require (
 	github.com/ethereum/go-ethereum v1.13.2
