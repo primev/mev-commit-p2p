@@ -26,13 +26,17 @@ type P2PService interface {
 
 type Preconfirmation struct {
 	signer   preconf.Signer
-	topo     topology.Topology
+	topo     Topology
 	streamer P2PService
 	cs       CommitmentsStore
 	us       UserStore
 }
 
-func New(topo topology.Topology, streamer P2PService, key *ecdsa.PrivateKey) *Preconfirmation {
+type Topology interface {
+	GetPeers(topology.Query) []p2p.Peer
+}
+
+func New(topo Topology, streamer P2PService, key *ecdsa.PrivateKey) *Preconfirmation {
 	return &Preconfirmation{
 		topo:     topo,
 		streamer: streamer,

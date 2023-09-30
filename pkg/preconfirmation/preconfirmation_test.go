@@ -12,7 +12,6 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
-	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -74,7 +73,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 		p := preconfirmation.New(topo, svc, key)
 
 		svc.SetPeerHandler(server, p.Protocol())
-		err := p.SendBid(context.Background(), preconf.UnsignedPreConfBid{TxnHash: "0x4c03a845396b770ad41b975d6bd3bf8c2bd5cca36867a3301f9598f2e3e9518d", Bid: big.NewInt(10), Blocknumber: big.NewInt(10)})
+		err := p.SendBid(context.Background(), "0x4c03a845396b770ad41b975d6bd3bf8c2bd5cca36867a3301f9598f2e3e9518d", big.NewInt(10), big.NewInt(10))
 		if err != nil {
 			t.Fatal(err)
 		}
