@@ -86,8 +86,11 @@ func New(opts *Options) (*Service, error) {
 		return nil, err
 	}
 
+	conngtr := newConnectionGater(opts.Register, opts.PeerType, opts.MinimumStake)
+
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
+		libp2p.ConnectionGater(conngtr),
 		libp2p.Identity(libp2pKey),
 		libp2p.ConnectionManager(connmgr),
 		libp2p.DefaultTransports,
