@@ -1,7 +1,6 @@
 package libp2p
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/libp2p/go-libp2p/core/control"
@@ -73,6 +72,7 @@ func (cg *connectionGater) checkPeerTrusted(p peer.ID) connectionAllowance {
 	return Undecided
 }
 
+// TODO @iowar blocker implementation: consult the team
 // checkPeerBlocked checks if a peer is blocked and returns the appropriate connection allowance status
 func (cg *connectionGater) checkPeerBlocked(p peer.ID) connectionAllowance {
 	//	// check if the peer is in the list of blocked peers, and deny the connection if found
@@ -110,7 +110,6 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	// b<>b connection
 	if (cg.selfType == p2p.PeerTypeBuilder) && enoughStake {
-		fmt.Println("--")
 		return Accept
 	}
 
