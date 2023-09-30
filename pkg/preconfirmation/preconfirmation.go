@@ -67,7 +67,7 @@ type CommitmentsStore interface {
 }
 
 type UserStore interface {
-	CheckUserRegistred(common.Address) bool
+	CheckUserRegistred(*common.Address) bool
 }
 
 // SendBid is meant to be called by the searcher to construct and send bids to the builder.
@@ -155,7 +155,7 @@ func (p *Preconfirmation) handleBid(
 			return err
 		}
 
-		return w.WriteMsg(ctx, &commitment)
+		return w.WriteMsg(ctx, commitment)
 	}
 
 	return nil
