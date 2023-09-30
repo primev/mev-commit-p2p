@@ -78,15 +78,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		// start := time.Now()
-		// for {
-		// 	if time.Since(start) > 5*time.Second {
-		// 		t.Fatal("timed out")
-		// 	}
-		// 	if len(topo.peers) == 1 {
-		// 		break
-		// 	}
-		// 	time.Sleep(100 * time.Millisecond)
-		// }
+		// TODO(@ckartik): Verify output.
 	})
 }

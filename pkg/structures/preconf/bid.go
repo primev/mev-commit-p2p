@@ -20,15 +20,6 @@ var (
 	ErrAlreadySignedCommitment = errors.New("commitment is already hashed or signed")
 )
 
-// type UnsignedPreConfBid struct {
-// 	TxnHash     string   `json:"txnHash"`
-// 	Bid         *big.Int `json:"bid"`
-// 	Blocknumber *big.Int `json:"blocknumber"`
-// 	// UUID    string `json:"uuid"` // Assuming string representation for byte16
-// }
-
-// Most of the bid details can go to the data-availabilty layer if needed, and only have the hash+sig live on chian
-// Preconf bid structure
 // PreConfBid represents the bid data.
 type PreConfBid struct { // Adds blocknumber for pre-conf bid - Will need to manage how to reciever acts on a bid / TTL is the blocknumber
 	TxnHash     string   `json:"txnHash"`

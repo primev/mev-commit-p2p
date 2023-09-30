@@ -70,12 +70,6 @@ type UserStore interface {
 	CheckUserRegistred(common.Address) bool
 }
 
-/*
-
-	TxnHash     string   `json:"txnHash"`
-	Bid         *big.Int `json:"bid"`
-	Blocknumber *big.Int `json:"blocknumber"`
-*/
 // SendBid is meant to be called by the searcher to construct and send bids to the builder
 func (p *Preconfirmation) SendBid(ctx context.Context, txnHash string, bidamt *big.Int, blockNumber *big.Int) error {
 	signedBid, err := preconf.ConstructSignedBid(bidamt, txnHash, blockNumber, p.signer)
