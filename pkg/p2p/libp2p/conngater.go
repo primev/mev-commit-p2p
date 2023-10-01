@@ -23,15 +23,15 @@ const (
 	Accept
 )
 
-var connectionAllowanceStrings = map[connectionAllowance]string{
-	Undecided:              "Undecided",
-	DenyUnresolvedAddress:  "DenyUnresolvedAddress",
-	DenyBadRegisterCall:    "DenyBadRegisterCall",
-	DenyBlockedPeer:        "DenyBlockedPeer",
-	DenyNotEnoughStake:     "DenyNotEnoughStake",
-	DenySearcherToSearcher: "DenySearcherToSearcher",
-	Accept:                 "Allow",
-}
+//var connectionAllowanceStrings = map[connectionAllowance]string{
+//	Undecided:              "Undecided",
+//	DenyUnresolvedAddress:  "DenyUnresolvedAddress",
+//	DenyBadRegisterCall:    "DenyBadRegisterCall",
+//	DenyBlockedPeer:        "DenyBlockedPeer",
+//	DenyNotEnoughStake:     "DenyNotEnoughStake",
+//	DenySearcherToSearcher: "DenySearcherToSearcher",
+//	Accept:                 "Allow",
+//}
 
 func (c connectionAllowance) isDeny() bool {
 	return !(c == Accept || c == Undecided)
@@ -149,11 +149,7 @@ func (cg *connectionGater) InterceptPeerDial(p peer.ID) bool {
 // TODO rate limiter
 func (cg *connectionGater) InterceptAddrDial(p peer.ID, addr multiaddr.Multiaddr) bool {
 	allowance := cg.checkAllowedPeer(p)
-	if allowance.isDeny() {
-		return false
-	}
-
-	return true
+	return !allowance.isDeny()
 }
 
 // InterceptAccept intercepts the process of accepting a connection
@@ -179,8 +175,6 @@ func (cg *connectionGater) InterceptSecured(dir network.Direction, p peer.ID, co
 	} else {
 		return cg.validateOutboundConnection(p, connMultiaddrs)
 	}
-
-	return true
 }
 
 // InterceptUpgraded intercepts the process of upgrading a connection
@@ -198,11 +192,7 @@ func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs n
 	//cg.metrics.IncomingConnectionCount.Inc()
 
 	allowance := cg.checkPeerStake(p)
-	if allowance.isDeny() {
-		return false
-	}
-
-	return true
+	return !allowance.isDeny()
 }
 
 // validateOutboundConnection validates an outbound connection by extracting
@@ -213,9 +203,5 @@ func (cg *connectionGater) validateOutboundConnection(p peer.ID, connMultiaddrs 
 	//cg.metrics.OutgoingConnectionCount.Inc()
 
 	allowance := cg.checkPeerStake(p)
-	if allowance.isDeny() {
-		return false
-	}
-
-	return true
+	return !allowance.isDeny()
 }
