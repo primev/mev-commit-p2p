@@ -143,7 +143,7 @@ func ConstructCommitment(p PreConfBid, signer Signer) (*PreconfCommitment, error
 }
 
 // Returns a PreConfBid Object with an EIP712 signature of the payload
-func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, signer Signer) (PreConfBid, error) {
+func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, signer Signer) (*PreConfBid, error) {
 	bid := PreConfBid{
 		Bid:         bidamt,
 		TxnHash:     txnhash,
@@ -154,18 +154,18 @@ func ConstructSignedBid(bidamt *big.Int, txnhash string, blocknumber *big.Int, s
 
 	bidHash, _, err := apitypes.TypedDataAndHash(internalPayload)
 	if err != nil {
-		return PreConfBid{}, err
+		return nil, err
 	}
 
 	sig, err := signer.Sign(bidHash)
 	if err != nil {
-		return PreConfBid{}, err
+		return nil, err
 	}
 
 	bid.BidHash = bidHash
 	bid.Signature = sig
 
-	return bid, nil
+	return &bid, nil
 }
 
 // Verifies the bid

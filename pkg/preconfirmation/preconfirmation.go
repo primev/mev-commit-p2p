@@ -93,7 +93,7 @@ func (p *Preconfirmation) SendBid(ctx context.Context, txnHash string, bidamt *b
 		}
 
 		r, w := msgpack.NewReaderWriter[preconf.PreconfCommitment, preconf.PreConfBid](builderStream)
-		err = w.WriteMsg(ctx, &signedBid)
+		err = w.WriteMsg(ctx, signedBid)
 		if err != nil {
 			return err
 		}
