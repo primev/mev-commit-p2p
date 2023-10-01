@@ -83,32 +83,36 @@ func eipVerify(internalPayload apitypes.TypedData, expectedhash []byte, signatur
 	return &c, err
 }
 
-func (p *PreConfBid) BidOriginator() (common.Address, *ecdsa.PublicKey, error) {
+func (p *PreConfBid) BidOriginator() (*common.Address, *ecdsa.PublicKey, error) {
 	_, err := p.VerifySearcherSignature()
 	if err != nil {
-		return common.Address{}, nil, err
+		return nil, nil, err
 	}
 
 	pubkey, err := crypto.SigToPub(p.BidHash, p.Signature)
 	if err != nil {
-		return common.Address{}, nil, err
+		return nil, nil, err
 	}
 
-	return crypto.PubkeyToAddress(*pubkey), pubkey, nil
+	address := crypto.PubkeyToAddress(*pubkey)
+
+	return &address, pubkey, nil
 }
 
-func (p *PreconfCommitment) CommitmentOriginator() (common.Address, *ecdsa.PublicKey, error) {
+func (p *PreconfCommitment) CommitmentOriginator() (*common.Address, *ecdsa.PublicKey, error) {
 	_, err := p.VerifyBuilderSignature()
 	if err != nil {
-		return common.Address{}, nil, err
+		return nil, nil, err
 	}
 
 	pubkey, err := crypto.SigToPub(p.DataHash, p.CommitmentSignature)
 	if err != nil {
-		return common.Address{}, nil, err
+		return nil, nil, err
 	}
 
-	return crypto.PubkeyToAddress(*pubkey), pubkey, nil
+	address := crypto.PubkeyToAddress(*pubkey)
+
+	return &address, pubkey, nil
 }
 
 func ConstructCommitment(p PreConfBid, signer Signer) (*PreconfCommitment, error) {
