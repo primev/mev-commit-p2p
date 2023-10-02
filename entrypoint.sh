@@ -8,16 +8,16 @@ CONFIG_PATH="/config"
 
 # Generate the private key based on node type
 if [ "$NODE_TYPE" = "bootnode" ]; then
-    /app/mev-commit create-key ${KEY_PATH}/bootnode1
-    PRIV_KEY_FILE="${KEY_PATH}/bootnode1"
+    /app/mev-commit create-key ${KEY_PATH}/bootnode
+    PRIV_KEY_FILE="${KEY_PATH}/bootnode"
     CONFIG_FILE="${CONFIG_PATH}/bootnode.yml"
 elif [ "$NODE_TYPE" = "builder" ]; then
-    /app/mev-commit create-key ${KEY_PATH}/builder1
-    PRIV_KEY_FILE="${KEY_PATH}/builder1"
+    /app/mev-commit create-key ${KEY_PATH}/builder
+    PRIV_KEY_FILE="${KEY_PATH}/builder"
     CONFIG_FILE="${CONFIG_PATH}/builder.yml"
 else
-    /app/mev-commit create-key ${KEY_PATH}/searcher1
-    PRIV_KEY_FILE="${KEY_PATH}/searcher1"
+    /app/mev-commit create-key ${KEY_PATH}/searcher
+    PRIV_KEY_FILE="${KEY_PATH}/searcher"
     CONFIG_FILE="${CONFIG_PATH}/searcher.yml"
 fi
 
