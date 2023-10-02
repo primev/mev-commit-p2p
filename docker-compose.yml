@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  bootnode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - NODE_TYPE=bootnode
+    volumes:
+      - bootnode-keys:/keys
+    networks:
+      mev-net:
+        ipv4_address: 172.28.0.2
+
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - bootnode
+    environment:
+      - NODE_TYPE=builder
+    volumes:
+      - builder-keys:/keys
+    networks:
+      - mev-net
+
+  searcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - bootnode
+    environment:
+      - NODE_TYPE=searcher
+    volumes:
+      - searcher-keys:/keys
+    networks:
+      - mev-net
+
+volumes:
+  bootnode-keys:
+  builder-keys:
+  searcher-keys:
+
+networks:
+  mev-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
