@@ -1,1 +1,52 @@
 # mev-commit
+mev-commit is a P2P software that creates a network of builders and searchers. Searchers can use it to broadcast bids to multiple builders and get pre-confirmations from them.
+
+## Quickstart
+- The software needs an ECDSA private key. This key creates the ethereum address for the node as well as used for the P2P network. Users can use an existing key or create a new key using the `create-key` command.
+```
+NAME:
+   mev-commit create-key
+
+USAGE:
+   mev-commit create-key [command options] [arguments...]
+
+OPTIONS:
+   --help, -h  show help
+
+```
+
+- Once the key is available the users need to create a yaml config file. Example config files are available in the `config` folder. The important options are defined below:
+```
+# Path to private key file.
+priv_key_file: ~/.mev-commit/keys/nodekey
+# Type of peer. Options are builder and searcher.
+peer_type: builder
+# Port used for P2P traffic. If not configured, 13522 is the default.
+p2p_port: 13522
+# Port used for HTTP traffic. If not configured, 13523 is the default.
+http_port: 13523
+# Secret for the node. This is used to authorize the nodes. The value doesnt matter as long as it is sufficiently unique. It is signed using the private key.
+secret: hello
+# Format used for the logs. Options are "text" or "json".
+log_fmt: text
+# Log level. Options are "debug", "info", "warn" or "error".
+log_level: debug
+# Bootnodes used for bootstrapping the network.
+bootnodes:
+  - /ip4/35.91.118.20/tcp/13524/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
+```
+
+- After the config file is ready, run `mev-commit start` with the config option.
+```
+NAME:
+   mev-commit start - Start mev-commit
+
+USAGE:
+   mev-commit start [command options] [arguments...]
+
+OPTIONS:
+   --config value  path to config file [$MEV_COMMIT_CONFIG]
+   --help, -h      show help
+
+```
+
