@@ -12,7 +12,7 @@ RUN apk add --no-cache jq
 
 COPY --from=builder /app/mev-commit /app/mev-commit
 COPY --from=builder /app/config /config
-COPY entrypoint.sh /entrypoint.sh
+COPY --from=builder /app/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 13522 13523
