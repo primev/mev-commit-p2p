@@ -1,0 +1,9 @@
+priv_key_file: /keys/searcher
+peer_type: searcher
+p2p_port: 13522
+http_port: 13523
+secret: hello
+log_fmt: text
+log_level: debug
+bootnodes:
+  - /ip4/<localhost>/tcp/13522/p2p/<p2p_ID>
