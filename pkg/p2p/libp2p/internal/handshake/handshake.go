@@ -73,10 +73,9 @@ type HandshakeReq struct {
 type HandshakeResp struct {
 	ObservedAddress common.Address
 	PeerType        string
-	Ack             *HandshakeReq
 }
 
-func (h *Service) verifySignature(
+func (h *Service) verifyReq(
 	req *HandshakeReq,
 	peerID core.PeerID,
 ) (common.Address, error) {
@@ -100,6 +99,17 @@ func (h *Service) verifySignature(
 		return common.Address{}, errors.New("observed address mismatch")
 	}
 
+	if req.PeerType == "builder" {
+		stake, err := h.register.GetStake(ethAddress)
+		if err != nil {
+			return common.Address{}, err
+		}
+
+		if stake.Cmp(h.minimumStake) < 0 {
+			return common.Address{}, errors.New("stake insufficient")
+		}
+	}
+
 	return ethAddress, nil
 }
 
@@ -111,6 +121,18 @@ func (h *Service) createSignature() ([]byte, error) {
 	}
 
 	return sig, nil
+}
+
+func (h *Service) verifyResp(resp *HandshakeResp) error {
+	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ethAddress.Bytes()) {
+		return errors.New("observed address mismatch")
+	}
+
+	if resp.PeerType != h.peerType.String() {
+		return errors.New("peer type mismatch")
+	}
+
+	return nil
 }
 
 func (h *Service) Handle(
@@ -125,20 +147,9 @@ func (h *Service) Handle(
 		return p2p.Peer{}, err
 	}
 
-	ethAddress, err := h.verifySignature(req, peerID)
+	ethAddress, err := h.verifyReq(req, peerID)
 	if err != nil {
 		return p2p.Peer{}, err
-	}
-
-	if req.PeerType == "builder" {
-		stake, err := h.register.GetStake(ethAddress)
-		if err != nil {
-			return p2p.Peer{}, err
-		}
-
-		if stake.Cmp(h.minimumStake) < 0 {
-			return p2p.Peer{}, errors.New("stake insufficient")
-		}
 	}
 
 	sig, err := h.createSignature()
@@ -149,14 +160,30 @@ func (h *Service) Handle(
 	resp := &HandshakeResp{
 		ObservedAddress: ethAddress,
 		PeerType:        req.PeerType,
-		Ack: &HandshakeReq{
-			PeerType: h.peerType.String(),
-			Token:    h.passcode,
-			Sig:      sig,
-		},
 	}
 
 	if err := w.WriteMsg(ctx, resp); err != nil {
+		return p2p.Peer{}, err
+	}
+
+	ar, aw := msgpack.NewReaderWriter[HandshakeResp, HandshakeReq](stream)
+
+	err = aw.WriteMsg(ctx, &HandshakeReq{
+		PeerType: h.peerType.String(),
+		Token:    h.passcode,
+		Sig:      sig,
+	},
+	)
+	if err != nil {
+		return p2p.Peer{}, err
+	}
+
+	ack, err := ar.ReadMsg(ctx)
+	if err != nil {
+		return p2p.Peer{}, err
+	}
+
+	if err := h.verifyResp(ack); err != nil {
 		return p2p.Peer{}, err
 	}
 
@@ -194,25 +221,32 @@ func (h *Service) Handshake(
 		return p2p.Peer{}, err
 	}
 
-	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ethAddress.Bytes()) {
-		return p2p.Peer{}, errors.New("observed address mismatch")
+	if err := h.verifyResp(resp); err != nil {
+		return p2p.Peer{}, err
 	}
 
-	if resp.PeerType != h.peerType.String() {
-		return p2p.Peer{}, errors.New("peer type mismatch")
+	ar, aw := msgpack.NewReaderWriter[HandshakeReq, HandshakeResp](stream)
+
+	ack, err := ar.ReadMsg(ctx)
+	if err != nil {
+		return p2p.Peer{}, err
 	}
 
-	if resp.Ack == nil {
-		return p2p.Peer{}, errors.New("ack not received")
+	ethAddress, err := h.verifyReq(ack, peerID)
+	if err != nil {
+		return p2p.Peer{}, err
 	}
 
-	ethAddress, err := h.verifySignature(resp.Ack, peerID)
+	err = aw.WriteMsg(ctx, &HandshakeResp{
+		ObservedAddress: ethAddress,
+		PeerType:        ack.PeerType,
+	})
 	if err != nil {
 		return p2p.Peer{}, err
 	}
 
 	return p2p.Peer{
 		EthAddress: ethAddress,
-		Type:       p2p.FromString(resp.Ack.PeerType),
+		Type:       p2p.FromString(ack.PeerType),
 	}, nil
 }
