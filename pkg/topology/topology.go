@@ -96,7 +96,7 @@ func (t *topology) Disconnected(p p2p.Peer) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	t.logger.With("peer", p).Info("disconnected")
+	t.logger.Info("disconnected", "peer", p)
 
 	switch p.Type {
 	case p2p.PeerTypeBuilder:

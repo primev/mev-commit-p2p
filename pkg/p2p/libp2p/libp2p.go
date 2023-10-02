@@ -105,10 +105,7 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	for _, addr := range host.Addrs() {
-		opts.Logger.With(
-			"addr", addr,
-			"host", host.ID().Pretty(),
-		).Info("p2p address")
+		opts.Logger.Info("p2p address", "addr", addr, "host_address", host.ID().Pretty())
 	}
 
 	ethAddress, err := GetEthAddressFromPeerID(host.ID())
