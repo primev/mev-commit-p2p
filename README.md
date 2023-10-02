@@ -50,3 +50,26 @@ OPTIONS:
 
 ```
 
+- After the node is started, users can check the status of the peers connected to the node using the `/topology` endpoint on the HTTP port.
+```
+{
+   self: {
+      Addresses: [
+         "/ip4/127.0.0.1/tcp/13526",
+         "/ip4/192.168.1.103/tcp/13526",
+         "/ip4/192.168.100.5/tcp/18625"
+      ],
+      Ethereum Address: "0x55B3B672DEB14178615F648911e76b7FE1B23e5D",
+      Peer Type: "builder",
+      Underlay: "16Uiu2HAmBykfyf9A5DnRguHNS1mvSaprzYEkjRf6uafLU4javG4L"
+   },
+   connected_peers: {
+      builders: [
+         {
+            EthAddress: "0xca61596ccef983eb7cae42340ec553dd89881403",
+            Type: 1
+         }
+      ]
+   }
+}
+```
