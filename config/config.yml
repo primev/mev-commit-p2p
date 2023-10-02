@@ -1,0 +1,9 @@
+priv_key_file: ~/.mev-commit/keys/node1
+peer_type: builder
+p2p_port: 13524
+http_port: 13525
+secret: hello
+log_fmt: text
+log_level: debug
+bootnodes:
+  - /ip4/localhost/tcp/13522/p2p/26Uiu2HAm1T4Pc777L6VerTUXMDS5VcHmBrAW4EUKjH5EXoRtB9Ft 
