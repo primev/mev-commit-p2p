@@ -61,6 +61,7 @@ func TestDiscovery(t *testing.T) {
 		}
 
 		svc := p2ptest.New(
+			&client,
 			p2ptest.WithConnectFunc(func(addr []byte) (p2p.Peer, error) {
 				if string(addr) != "test" {
 					return p2p.Peer{}, errors.New("invalid address")
