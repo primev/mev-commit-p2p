@@ -73,9 +73,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		svc := p2ptest.New(
 			&client,
-			p2ptest.WithConnectFunc(func(addr []byte) (p2p.Peer, error) {
-				return client, nil
-			}),
 		)
 
 		topo := &testTopo{}
