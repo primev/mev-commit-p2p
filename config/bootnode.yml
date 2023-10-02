@@ -1,0 +1,7 @@
+priv_key_file: /keys/bootnode1
+peer_type: bootnode
+p2p_port: 13522
+http_port: 13523
+secret: hello
+log_fmt: text
+log_level: debug
