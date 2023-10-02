@@ -70,6 +70,7 @@ func pipe(a, b *testStream) {
 type Option func(*P2PTest)
 
 type P2PTest struct {
+	self            *p2p.Peer
 	handlers        map[string]p2p.ProtocolSpec
 	connectFunc     func([]byte) (p2p.Peer, error)
 	addressbookFunc func(p2p.Peer) ([]byte, error)
@@ -87,9 +88,10 @@ func WithAddressbookFunc(fn func(p p2p.Peer) ([]byte, error)) Option {
 	}
 }
 
-func New(opts ...Option) *P2PTest {
+func New(selfNode *p2p.Peer, opts ...Option) *P2PTest {
 	p := &P2PTest{
 		handlers: make(map[string]p2p.ProtocolSpec),
+		self:     selfNode,
 	}
 
 	for _, opt := range opts {
@@ -146,7 +148,7 @@ func (p *P2PTest) NewStream(
 	go func() {
 		defer in.Close()
 
-		err := handler(context.Background(), peer, in)
+		err := handler(context.Background(), *p.self, in)
 		if err != nil {
 			panic(err)
 		}

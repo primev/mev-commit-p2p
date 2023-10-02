@@ -31,7 +31,7 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	return []p2p.Peer{{EthAddress: common.HexToAddress("0x2"), Type: p2p.PeerTypeSearcher}}
+	return []p2p.Peer{{EthAddress: common.HexToAddress("0x2"), Type: p2p.PeerTypeBuilder}}
 }
 
 func (t *testTopo) Connected(p2p.Peer) {
@@ -68,10 +68,11 @@ func TestPreconfBidSubmission(t *testing.T) {
 		}
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
-			Type:       p2p.PeerTypeSearcher,
+			Type:       p2p.PeerTypeBuilder,
 		}
 
 		svc := p2ptest.New(
+			&client,
 			p2ptest.WithConnectFunc(func(addr []byte) (p2p.Peer, error) {
 				return client, nil
 			}),
