@@ -1,4 +1,4 @@
-priv_key_file: /keys/builder1
+priv_key_file: /keys/builder
 peer_type: builder
 p2p_port: 13522
 http_port: 13523

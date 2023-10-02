@@ -1,4 +1,4 @@
-priv_key_file: /keys/bootnode1
+priv_key_file: /keys/bootnode
 peer_type: bootnode
 p2p_port: 13522
 http_port: 13523

@@ -1,4 +1,4 @@
-priv_key_file: /keys/searcher1
+priv_key_file: /keys/searcher
 peer_type: searcher
 p2p_port: 13522
 http_port: 13523
