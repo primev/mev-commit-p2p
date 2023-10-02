@@ -18,16 +18,10 @@ const (
 	ProtocolVersion = "1.0.0"
 )
 
-type P2PService interface {
-	p2p.Streamer
-	p2p.Addressbook
-	Connect(context.Context, []byte) (p2p.Peer, error)
-}
-
 type Preconfirmation struct {
 	signer   preconf.Signer
 	topo     Topology
-	streamer P2PService
+	streamer p2p.Streamer
 	cs       CommitmentsStore
 	us       UserStore
 }
@@ -36,11 +30,13 @@ type Topology interface {
 	GetPeers(topology.Query) []p2p.Peer
 }
 
-func New(topo Topology, streamer P2PService, key *ecdsa.PrivateKey) *Preconfirmation {
+func New(topo Topology, streamer p2p.Streamer, key *ecdsa.PrivateKey, us UserStore, cs CommitmentsStore) *Preconfirmation {
 	return &Preconfirmation{
 		topo:     topo,
 		streamer: streamer,
 		signer:   preconf.PrivateKeySigner{PrivKey: key},
+		us:       us,
+		cs:       cs,
 	}
 }
 
