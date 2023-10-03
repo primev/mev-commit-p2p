@@ -79,6 +79,7 @@ func (t *topology) Connected(p p2p.Peer) {
 		}
 
 		if p.Type == p2p.PeerTypeBuilder {
+			t.logger.Info("builder connected broadcasting to previous searchers", "peer", p)
 			// If the peer is a builder, we want to broadcast to the searcher peers
 			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeSearcher})
 			builderUnderlay, err := t.addressbook.GetPeerInfo(p)
@@ -95,7 +96,6 @@ func (t *topology) Connected(p p2p.Peer) {
 				})
 				if err != nil {
 					t.logger.Error("failed to broadcast peer", "err", err, "peer", peer)
-					continue
 				}
 			}
 		}

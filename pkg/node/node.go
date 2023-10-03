@@ -6,15 +6,21 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/common"
+	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
+	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	"github.com/primevprotocol/mev-commit/pkg/register"
+	"github.com/primevprotocol/mev-commit/pkg/searcherapi"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
+	"google.golang.org/grpc"
 )
 
 type Options struct {
@@ -25,6 +31,7 @@ type Options struct {
 	Logger    *slog.Logger
 	P2PPort   int
 	HTTPPort  int
+	RPCPort   int
 	Bootnodes []string
 }
 
@@ -87,6 +94,31 @@ func NewNode(opts *Options) (*Node, error) {
 	}()
 	closers = append(closers, server)
 
+	switch opts.PeerType {
+	case p2p.PeerTypeBuilder.String():
+		preconf := preconfirmation.New(topo, p2pSvc, opts.PrivKey, nil, opts.Logger)
+		p2pSvc.AddProtocol(preconf.Protocol())
+
+	case p2p.PeerTypeSearcher.String():
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.RPCPort))
+		if err != nil {
+			return nil, err
+		}
+
+		preconf := preconfirmation.New(topo, p2pSvc, opts.PrivKey, dummyUserStore{}, opts.Logger)
+		grpcServer := grpc.NewServer()
+		searcherAPI := searcherapi.NewService(preconf, opts.Logger)
+		searcherapiv1.RegisterSearcherServer(grpcServer, searcherAPI)
+
+		go func() {
+			err := grpcServer.Serve(lis)
+			if err != nil {
+				opts.Logger.Error("failed to start grpc server", "err", err)
+			}
+		}()
+		closers = append(closers, lis)
+	}
+
 	return &Node{closers: closers}, nil
 }
 
@@ -97,4 +129,10 @@ func (n *Node) Close() error {
 	}
 
 	return err
+}
+
+type dummyUserStore struct{}
+
+func (dummyUserStore) CheckUserRegistred(_ *common.Address) bool {
+	return true
 }
