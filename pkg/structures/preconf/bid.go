@@ -56,7 +56,7 @@ func (p *PreconfCommitment) VerifyBuilderSignature() (*common.Address, error) {
 
 	internalPayload := constructCommitmentPayload(p.TxnHash, p.Bid, p.Blocknumber, p.BidHash, p.Signature)
 
-	return eipVerify(internalPayload, p.DataHash, p.Signature)
+	return eipVerify(internalPayload, p.DataHash, p.CommitmentSignature)
 }
 
 func eipVerify(internalPayload apitypes.TypedData, expectedhash []byte, signature []byte) (*common.Address, error) {
