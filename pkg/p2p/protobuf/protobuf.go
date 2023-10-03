@@ -9,20 +9,17 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type IProtobuf interface {
+type Encoder interface {
 	ReadMsg(context.Context, *pb.Message) error
 	WriteMsg(context.Context, *pb.Message) error
 }
 
 type protobuf struct {
-	in  p2p.Stream
-	out p2p.Stream
+	p2p.Stream
 }
 
-const delimitedReaderMaxSize = 1024 * 1024 //nolint:unused
-
-func NewReaderWriter(in p2p.Stream, out p2p.Stream) IProtobuf {
-	return &protobuf{in: in, out: out}
+func NewReaderWriter(s p2p.Stream) Encoder {
+	return &protobuf{s}
 }
 
 func (p *protobuf) ReadMsg(ctx context.Context, msg *pb.Message) error {
@@ -33,7 +30,7 @@ func (p *protobuf) ReadMsg(ctx context.Context, msg *pb.Message) error {
 
 	resultC := make(chan result, 1)
 	go func() {
-		msgBuf, err := p.in.ReadMsg()
+		msgBuf, err := p.Stream.ReadMsg()
 		resultC <- result{msgBuf: msgBuf, err: err}
 	}()
 
@@ -61,7 +58,7 @@ func (p *protobuf) WriteMsg(ctx context.Context, msg *pb.Message) error {
 
 	errC := make(chan error, 1)
 	go func() {
-		errC <- p.out.WriteMsg(msgBuf)
+		errC <- p.Stream.WriteMsg(msgBuf)
 	}()
 
 	select {

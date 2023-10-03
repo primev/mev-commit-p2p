@@ -31,14 +31,15 @@ func TestProtobufEncodingDecoding(t *testing.T) {
 			},
 		}
 
-		iproto := protobuf.NewReaderWriter(in, out)
+		reader := protobuf.NewReaderWriter(in)
+		writer := protobuf.NewReaderWriter(out)
 
-		if err := iproto.WriteMsg(context.Background(), test); err != nil {
+		if err := writer.WriteMsg(context.Background(), test); err != nil {
 			t.Fatal(err)
 		}
 
 		var res pb.Message
-		err := iproto.ReadMsg(context.Background(), &res)
+		err := reader.ReadMsg(context.Background(), &res)
 		if err != nil {
 			t.Fatal(err)
 		}
