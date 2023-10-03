@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package rpc.seacherapi.v1;
+
+option go_package = "github.com/primevprotocol/mev-commit/rpc/seacherapi/v1;searcherapiv1";
+
+service Searcher {
+  rpc SendBid(Bid) returns (stream Commitment) {}
+}
+
+message Bid {
+  string txn_hash = 1;
+  int64 bid_amt = 2;
+  int64 block_number = 3;
+};
+
+message Commitment {
+  Bid bid = 1;
+  bytes bid_hash = 4;
+  bytes signature = 5;
+  bytes data_hash = 6;
+  bytes commitment_signature = 7;
+};

@@ -2,8 +2,10 @@ package preconfirmation_test
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"math/big"
-	"sync"
+	"os"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -15,47 +17,27 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
-type testTopo struct {
-	mu    sync.Mutex
-	peers []p2p.Peer
-}
-
-func (t *testTopo) AddPeers(peers ...p2p.Peer) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
-	t.peers = append(t.peers, peers...)
-}
+type testTopo struct{}
 
 func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-
 	return []p2p.Peer{{EthAddress: common.HexToAddress("0x2"), Type: p2p.PeerTypeBuilder}}
 }
 
-func (t *testTopo) Connected(p2p.Peer) {
-}
+type testCommitmentStore struct{}
 
-func (t *testTopo) Disconnected(p2p.Peer) {
-}
-
-type testCommitmentStore struct {
-}
-
-func (t *testCommitmentStore) GetCommitments(bidHash []byte) ([]preconf.PreconfCommitment, error) {
-	return []preconf.PreconfCommitment{}, nil
-}
-
-func (t *testCommitmentStore) AddCommitment(bidHash []byte, commitment *preconf.PreconfCommitment) error {
-	return nil
-}
-
-type testUserStore struct {
-}
+type testUserStore struct{}
 
 func (t *testUserStore) CheckUserRegistred(_ *common.Address) bool {
 	return true
+}
+
+func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
+	t.Helper()
+
+	testLogger := slog.NewTextHandler(w, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	return slog.New(testLogger)
 }
 
 func TestPreconfBidSubmission(t *testing.T) {
@@ -77,17 +59,29 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		topo := &testTopo{}
 		us := &testUserStore{}
-		cs := &testCommitmentStore{}
 		key, _ := crypto.GenerateKey()
-		p := preconfirmation.New(topo, svc, key, us, cs)
+		p := preconfirmation.New(topo, svc, key, us, newTestLogger(t, os.Stdout))
 
-		// svc.SetPeerHandler(client, p.Protocol())
 		svc.SetPeerHandler(server, p.Protocol())
 
-		err := p.SendBid(context.Background(), "0x4c03a845396b770ad41b975d6bd3bf8c2bd5cca36867a3301f9598f2e3e9518d", big.NewInt(10), big.NewInt(10))
+		respC, err := p.SendBid(
+			context.Background(),
+			"0x4c03a845396b770ad41b975d6bd3bf8c2bd5cca36867a3301f9598f2e3e9518d",
+			big.NewInt(10),
+			big.NewInt(10),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		resp := <-respC
+
+		if resp.DataHash == nil {
+			t.Fatal("datahash is nil")
+		}
+
+		if resp.CommitmentSignature == nil {
+			t.Fatal("commitment signature is nil")
+		}
 	})
 }
