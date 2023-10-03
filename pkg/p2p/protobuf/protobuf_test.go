@@ -54,7 +54,7 @@ func TestProtobufEncodingDecoding(t *testing.T) {
 		}
 
 		if !bytes.Equal(testBytes, resBytes) {
-			t.Fatalf("expected %v, got %v", test, res)
+			t.Fatalf("expected %v, got %v", testBytes, resBytes)
 		}
 	})
 }
