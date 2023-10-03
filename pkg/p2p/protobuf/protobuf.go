@@ -19,7 +19,7 @@ type protobuf struct {
 	out p2p.Stream
 }
 
-const delimitedReaderMaxSize = 1024 * 1024
+const delimitedReaderMaxSize = 1024 * 1024 //nolint:unused
 
 func NewReaderWriter(in p2p.Stream, out p2p.Stream) IProtobuf {
 	return &protobuf{in: in, out: out}
