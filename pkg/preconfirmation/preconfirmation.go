@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 

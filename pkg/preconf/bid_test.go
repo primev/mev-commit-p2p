@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/stretchr/testify/assert"
 )
 
