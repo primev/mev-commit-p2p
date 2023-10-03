@@ -6,7 +6,7 @@ import (
 	"math/big"
 
 	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/structures/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

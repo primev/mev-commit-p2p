@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
