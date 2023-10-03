@@ -89,7 +89,7 @@ type config struct {
 	PeerType    string   `yaml:"peer_type" json:"peer_type"`
 	P2PPort     int      `yaml:"p2p_port" json:"p2p_port"`
 	HTTPPort    int      `yaml:"http_port" json:"http_port"`
-	RPCPort     int      `yaml:"rpc_port" json:"http_port"`
+	RPCPort     int      `yaml:"rpc_port" json:"rpc_port"`
 	LogFmt      string   `yaml:"log_fmt" json:"log_fmt"`
 	LogLevel    string   `yaml:"log_level" json:"log_level"`
 	Bootnodes   []string `yaml:"bootnodes" json:"bootnodes"`
@@ -165,6 +165,7 @@ func start(c *cli.Context) error {
 		PeerType:  cfg.PeerType,
 		P2PPort:   cfg.P2PPort,
 		HTTPPort:  cfg.HTTPPort,
+		RPCPort:   cfg.RPCPort,
 		Logger:    logger,
 		Bootnodes: cfg.Bootnodes,
 	})

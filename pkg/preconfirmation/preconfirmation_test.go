@@ -22,8 +22,6 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 	return []p2p.Peer{{EthAddress: common.HexToAddress("0x2"), Type: p2p.PeerTypeBuilder}}
 }
 
-type testCommitmentStore struct{}
-
 type testUserStore struct{}
 
 func (t *testUserStore) CheckUserRegistred(_ *common.Address) bool {
