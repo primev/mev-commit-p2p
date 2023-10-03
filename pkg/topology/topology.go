@@ -77,6 +77,28 @@ func (t *topology) Connected(p p2p.Peer) {
 		if err != nil {
 			t.logger.Error("failed to broadcast peers", "err", err, "peer", p)
 		}
+
+		if p.Type == p2p.PeerTypeBuilder {
+			// If the peer is a builder, we want to broadcast to the searcher peers
+			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeSearcher})
+			builderUnderlay, err := t.addressbook.GetPeerInfo(p)
+			if err != nil {
+				t.logger.Error("failed to get peer info", "err", err, "peer", p)
+				return
+			}
+			for _, peer := range peersToBroadcastTo {
+				err := t.announcer.BroadcastPeers(context.Background(), peer, []p2p.PeerInfo{
+					{
+						EthAddress: p.EthAddress,
+						Underlay:   builderUnderlay,
+					},
+				})
+				if err != nil {
+					t.logger.Error("failed to broadcast peer", "err", err, "peer", peer)
+					continue
+				}
+			}
+		}
 	}
 }
 
