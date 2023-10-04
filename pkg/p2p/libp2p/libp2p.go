@@ -113,7 +113,7 @@ func New(opts *Options) (*Service, error) {
 		return nil, err
 	}
 
-	hsSvc := handshake.New(
+	hsSvc, err := handshake.New(
 		opts.PrivKey,
 		ethAddress,
 		opts.PeerType,
@@ -123,6 +123,9 @@ func New(opts *Options) (*Service, error) {
 		opts.MinimumStake,
 		GetEthAddressFromPeerID,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	baseCtx, baseCtxCancel := context.WithCancel(context.Background())
 

@@ -52,7 +52,7 @@ func TestHandshake(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		hs1 := handshake.New(
+		hs1, err := handshake.New(
 			privKey1,
 			common.HexToAddress("0x1"),
 			p2p.PeerTypeBuilder,
@@ -64,7 +64,11 @@ func TestHandshake(t *testing.T) {
 				return common.HexToAddress("0x2"), nil
 			},
 		)
-		hs2 := handshake.New(
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		hs2, err := handshake.New(
 			privKey2,
 			common.HexToAddress("0x2"),
 			p2p.PeerTypeBuilder,
@@ -76,6 +80,9 @@ func TestHandshake(t *testing.T) {
 				return common.HexToAddress("0x1"), nil
 			},
 		)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		out, in := p2ptest.NewDuplexStream()
 
