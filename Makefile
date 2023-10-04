@@ -6,6 +6,7 @@ LDFLAGS ?= -s -w \
 -X github.com/primevprotocol/mev-commit.commitHash="$(COMMIT_HASH)"
 
 .PHONY: build
+build: export CGO_ENABLED=0
 build: bin
 	go build -ldflags '$(LDFLAGS)' -o bin/mev-commit ./cmd
 
