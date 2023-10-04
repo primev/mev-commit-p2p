@@ -5,7 +5,7 @@ package rpc.providerapi.v1;
 option go_package = "github.com/primevprotocol/mev-commit/rpc/providerapi/v1;providerapi";
 
 service Provider {
-  rpc BidFeed(stream AcceptedBid) returns (stream Bid)
+  rpc ReceiveBids(stream AcceptedBid) returns (stream Bid){}
 }
 
 message Bid {
