@@ -5,14 +5,13 @@ mev-commit is a P2P software that creates a network of builders and searchers. S
 - The software needs an ECDSA private key. This key creates the ethereum address for the node as well as used for the P2P network. Users can use an existing key or create a new key using the `create-key` command.
 ```
 NAME:
-   mev-commit create-key
+   mev-commit create-key - Create a new ECDSA private key and save it to a file
 
 USAGE:
-   mev-commit create-key [command options] [arguments...]
+   mev-commit create-key [command options] <output_file>
 
 OPTIONS:
    --help, -h  show help
-
 ```
 
 - Once the key is available the users need to create a yaml config file. Example config files are available in the `config` folder. The important options are defined below:
@@ -39,7 +38,7 @@ bootnodes:
 - After the config file is ready, run `mev-commit start` with the config option.
 ```
 NAME:
-   mev-commit start - Start mev-commit
+   mev-commit start - Start the mev-commit node
 
 USAGE:
    mev-commit start [command options] [arguments...]
@@ -47,7 +46,6 @@ USAGE:
 OPTIONS:
    --config value  path to config file [$MEV_COMMIT_CONFIG]
    --help, -h      show help
-
 ```
 
 - After the node is started, users can check the status of the peers connected to the node using the `/topology` endpoint on the HTTP port.
@@ -66,8 +64,7 @@ OPTIONS:
    connected_peers: {
       builders: [
          {
-            EthAddress: "0xca61596ccef983eb7cae42340ec553dd89881403",
-            Type: 1
+            "0xca61596ccef983eb7cae42340ec553dd89881403"
          }
       ]
    }
