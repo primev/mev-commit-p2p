@@ -5,9 +5,12 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	mevcommit "github.com/primevprotocol/mev-commit"
 	"github.com/primevprotocol/mev-commit/pkg/node"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
@@ -30,12 +33,13 @@ var (
 
 func main() {
 	app := &cli.App{
-		Name:  "mev-commit",
-		Usage: "Entry point for mev-commit",
+		Name:    "mev-commit",
+		Usage:   "Entry point for mev-commit",
+		Version: mevcommit.Version(),
 		Commands: []*cli.Command{
 			{
 				Name:  "start",
-				Usage: "Start mev-commit",
+				Usage: "Start the mev-commit node",
 				Flags: []cli.Flag{
 					optionConfig,
 				},
@@ -44,7 +48,9 @@ func main() {
 				},
 			},
 			{
-				Name: "create-key",
+				Name:      "create-key",
+				Usage:     "Create a new ECDSA private key and save it to a file",
+				ArgsUsage: "<output_file>",
 				Action: func(c *cli.Context) error {
 					return createKey(c)
 				},
@@ -154,7 +160,17 @@ func start(c *cli.Context) error {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	privKey, err := crypto.LoadECDSA(cfg.PrivKeyFile)
+	privKeyFile := cfg.PrivKeyFile
+	if strings.HasPrefix(privKeyFile, "~/") {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get user home directory: %w", err)
+		}
+
+		privKeyFile = filepath.Join(homeDir, privKeyFile[2:])
+	}
+
+	privKey, err := crypto.LoadECDSA(privKeyFile)
 	if err != nil {
 		return fmt.Errorf("failed to load private key from file '%s': %w", cfg.PrivKeyFile, err)
 	}

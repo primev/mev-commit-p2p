@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
@@ -39,8 +40,8 @@ type debugapi struct {
 }
 
 type topologyResponse struct {
-	Self           map[string]interface{} `json:"self"`
-	ConnectedPeers map[string][]p2p.Peer  `json:"connected_peers"`
+	Self           map[string]interface{}      `json:"self"`
+	ConnectedPeers map[string][]common.Address `json:"connected_peers"`
 }
 
 func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
@@ -50,17 +51,24 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 
 	topoResp := topologyResponse{
 		Self:           d.p2p.Self(),
-		ConnectedPeers: make(map[string][]p2p.Peer),
+		ConnectedPeers: make(map[string][]common.Address),
 	}
 
 	if len(builders) > 0 {
-		topoResp.ConnectedPeers["builders"] = builders
+		connectedBuilders := make([]common.Address, len(builders))
+		for _, builder := range builders {
+			connectedBuilders = append(connectedBuilders, builder.EthAddress)
+		}
+		topoResp.ConnectedPeers["builders"] = connectedBuilders
 	}
 	if len(searchers) > 0 {
-		topoResp.ConnectedPeers["searchers"] = searchers
+		connectedSearchers := make([]common.Address, len(searchers))
+		for _, searcher := range searchers {
+			connectedSearchers = append(connectedSearchers, searcher.EthAddress)
+		}
+		topoResp.ConnectedPeers["searchers"] = connectedSearchers
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	err := apiserver.WriteResponse(w, http.StatusOK, topoResp)
 	if err != nil {
 		logger.Error("error writing response", "err", err)
