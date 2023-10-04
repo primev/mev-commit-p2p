@@ -31,6 +31,7 @@ type Service struct {
 	signer        signer.Signer
 	register      register.Register
 	minimumStake  *big.Int
+	handshakeReq  *HandshakeReq
 	getEthAddress func(core.PeerID) (common.Address, error)
 }
 
@@ -43,8 +44,8 @@ func New(
 	register register.Register,
 	minimumStake *big.Int,
 	getEthAddress func(core.PeerID) (common.Address, error),
-) *Service {
-	return &Service{
+) (*Service, error) {
+	s := &Service{
 		privKey:       privKey,
 		ethAddress:    ethAddress,
 		peerType:      peerType,
@@ -54,6 +55,13 @@ func New(
 		minimumStake:  minimumStake,
 		getEthAddress: getEthAddress,
 	}
+
+	err := s.setHandshakeReq()
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
 func ProtocolID() protocol.ID {
@@ -123,6 +131,22 @@ func (h *Service) createSignature() ([]byte, error) {
 	return sig, nil
 }
 
+func (h *Service) setHandshakeReq() error {
+	sig, err := h.createSignature()
+	if err != nil {
+		return err
+	}
+
+	req := &HandshakeReq{
+		PeerType: h.peerType.String(),
+		Token:    h.passcode,
+		Sig:      sig,
+	}
+
+	h.handshakeReq = req
+	return nil
+}
+
 func (h *Service) verifyResp(resp *HandshakeResp) error {
 	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ethAddress.Bytes()) {
 		return errors.New("observed address mismatch")
@@ -152,11 +176,6 @@ func (h *Service) Handle(
 		return p2p.Peer{}, err
 	}
 
-	sig, err := h.createSignature()
-	if err != nil {
-		return p2p.Peer{}, err
-	}
-
 	resp := &HandshakeResp{
 		ObservedAddress: ethAddress,
 		PeerType:        req.PeerType,
@@ -168,12 +187,7 @@ func (h *Service) Handle(
 
 	ar, aw := msgpack.NewReaderWriter[HandshakeResp, HandshakeReq](stream)
 
-	err = aw.WriteMsg(ctx, &HandshakeReq{
-		PeerType: h.peerType.String(),
-		Token:    h.passcode,
-		Sig:      sig,
-	},
-	)
+	err = aw.WriteMsg(ctx, h.handshakeReq)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
@@ -199,20 +213,9 @@ func (h *Service) Handshake(
 	stream p2p.Stream,
 ) (p2p.Peer, error) {
 
-	sig, err := h.createSignature()
-	if err != nil {
-		return p2p.Peer{}, err
-	}
-
-	req := &HandshakeReq{
-		PeerType: h.peerType.String(),
-		Token:    h.passcode,
-		Sig:      sig,
-	}
-
 	r, w := msgpack.NewReaderWriter[HandshakeResp, HandshakeReq](stream)
 
-	if err := w.WriteMsg(ctx, req); err != nil {
+	if err := w.WriteMsg(ctx, h.handshakeReq); err != nil {
 		return p2p.Peer{}, err
 	}
 
