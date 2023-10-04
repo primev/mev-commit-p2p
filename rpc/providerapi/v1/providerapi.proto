@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package rpc.providerapi.v1;
+
+option go_package = "github.com/primevprotocol/mev-commit/rpc/providerapi/v1;providerapi";
+
+service Provider {
+  rpc BidFeed(stream AcceptedBid) returns (stream Bid)
+}
+
+message Bid {
+  string txn_hash = 1;
+  int64 bid_amt = 2;
+  int64 block_number = 3;
+  string bid_hash = 4;
+};
+
+message AcceptedBid {
+  string bid_hash = 1;
+};
