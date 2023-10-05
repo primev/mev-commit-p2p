@@ -1,4 +1,4 @@
-name: Deploy and Test Services
+name: Deploy and Test mev-commit infra
 
 on:
   workflow_run:
