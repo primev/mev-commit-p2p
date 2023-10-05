@@ -56,15 +56,15 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 
 	if len(builders) > 0 {
 		connectedBuilders := make([]common.Address, len(builders))
-		for _, builder := range builders {
-			connectedBuilders = append(connectedBuilders, builder.EthAddress)
+		for idx, builder := range builders {
+			connectedBuilders[idx] = builder.EthAddress
 		}
 		topoResp.ConnectedPeers["builders"] = connectedBuilders
 	}
 	if len(searchers) > 0 {
 		connectedSearchers := make([]common.Address, len(searchers))
-		for _, searcher := range searchers {
-			connectedSearchers = append(connectedSearchers, searcher.EthAddress)
+		for idx, searcher := range searchers {
+			connectedSearchers[idx] = searcher.EthAddress
 		}
 		topoResp.ConnectedPeers["searchers"] = connectedSearchers
 	}
