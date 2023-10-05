@@ -43,6 +43,7 @@ func (s *Service) ProcessBid(
 		delete(s.bidsInProcess, string(bid.BidHash))
 		s.bidsMu.Unlock()
 
+		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
 		return nil, ctx.Err()
 	case s.receiver <- &builderapiv1.Bid{
 		TxnHash:     bid.TxnHash,
@@ -51,6 +52,7 @@ func (s *Service) ProcessBid(
 		BidHash:     bid.BidHash,
 	}:
 	}
+	s.logger.Info("sent bid to builder node", "bid", bid)
 
 	return respC, nil
 }
@@ -62,8 +64,10 @@ func (s *Service) ReceiveBids(
 	for {
 		select {
 		case <-srv.Context().Done():
+			s.logger.Error("context cancelled for receiving bid", "err", srv.Context().Err())
 			return srv.Context().Err()
 		case bid := <-s.receiver:
+			s.logger.Info("received bid from node", "bid", bid)
 			err := srv.Send(bid)
 			if err != nil {
 				return err
@@ -76,14 +80,18 @@ func (s *Service) SendProcessedBids(srv builderapiv1.Builder_SendProcessedBidsSe
 	for {
 		status, err := srv.Recv()
 		if err != nil {
+			s.logger.Error("error receiving bid status", "err", err)
 			return err
 		}
 
 		s.bidsMu.Lock()
-		if callback, ok := s.bidsInProcess[string(status.BidHash)]; ok {
-			callback(status.Status)
-			delete(s.bidsInProcess, string(status.BidHash))
-		}
+		callback, ok := s.bidsInProcess[string(status.BidHash)]
+		delete(s.bidsInProcess, string(status.BidHash))
 		s.bidsMu.Unlock()
+
+		if ok {
+			s.logger.Info("received bid status from node", "status", status)
+			callback(status.Status)
+		}
 	}
 }
