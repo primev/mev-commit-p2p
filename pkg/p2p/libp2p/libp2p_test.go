@@ -51,7 +51,9 @@ func newTestService(t *testing.T) *libp2p.Service {
 }
 
 func TestP2PService(t *testing.T) {
-	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping protocols test in short mode")
+	}
 
 	t.Run("new and close", func(t *testing.T) {
 		svc := newTestService(t)
@@ -205,6 +207,10 @@ func (t *testNotifier) Disconnected(p p2p.Peer) {
 }
 
 func TestBootstrap(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping bootstrap test in short mode")
+	}
+
 	testDefaultOptions := libp2p.Options{
 		Secret:       "test",
 		ListenPort:   0,
