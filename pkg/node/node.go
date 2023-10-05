@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -10,15 +11,18 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
+	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
 	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
+	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	"github.com/primevprotocol/mev-commit/pkg/register"
-	"github.com/primevprotocol/mev-commit/pkg/searcherapi"
+	builderapi "github.com/primevprotocol/mev-commit/pkg/rpc/builder"
+	searcherapi "github.com/primevprotocol/mev-commit/pkg/rpc/searcher"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
 )
@@ -47,7 +51,7 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 
-	srv := apiserver.New(opts.Version, opts.Logger)
+	srv := apiserver.New(opts.Version, opts.Logger.With("component", "apiserver"))
 
 	closers := make([]io.Closer, 0)
 	peerType := p2p.FromString(opts.PeerType)
@@ -58,7 +62,7 @@ func NewNode(opts *Options) (*Node, error) {
 		PeerType:       peerType,
 		Register:       reg,
 		MinimumStake:   minStake,
-		Logger:         opts.Logger,
+		Logger:         opts.Logger.With("component", "p2p"),
 		ListenPort:     opts.P2PPort,
 		MetricsReg:     srv.MetricsRegistry(),
 		BootstrapAddrs: opts.Bootnodes,
@@ -68,8 +72,8 @@ func NewNode(opts *Options) (*Node, error) {
 	}
 	closers = append(closers, p2pSvc)
 
-	topo := topology.New(p2pSvc, opts.Logger)
-	disc := discovery.New(topo, p2pSvc, opts.Logger)
+	topo := topology.New(p2pSvc, opts.Logger.With("component", "topology"))
+	disc := discovery.New(topo, p2pSvc, opts.Logger.With("component", "discovery_protocol"))
 	closers = append(closers, disc)
 
 	// Set the announcer for the topology service
@@ -80,7 +84,7 @@ func NewNode(opts *Options) (*Node, error) {
 	// Register the discovery protocol with the p2p service
 	p2pSvc.AddProtocol(disc.Protocol())
 
-	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger)
+	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger.With("component", "debugapi"))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", opts.HTTPPort),
@@ -94,30 +98,54 @@ func NewNode(opts *Options) (*Node, error) {
 	}()
 	closers = append(closers, server)
 
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.RPCPort))
+	if err != nil {
+		return nil, err
+	}
+	grpcServer := grpc.NewServer()
+
+	preconfSigner := preconf.NewSigner(opts.PrivKey)
+
 	switch opts.PeerType {
 	case p2p.PeerTypeBuilder.String():
-		preconf := preconfirmation.New(topo, p2pSvc, opts.PrivKey, nil, opts.Logger)
-		p2pSvc.AddProtocol(preconf.Protocol())
+		builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
+		builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
+
+		preconfProto := preconfirmation.New(
+			topo,
+			p2pSvc,
+			preconfSigner,
+			noOpUserStore{},
+			builderAPI,
+			opts.Logger.With("component", "preconfirmation_protocol"),
+		)
+		// Only register handler for builder
+		p2pSvc.AddProtocol(preconfProto.Protocol())
 
 	case p2p.PeerTypeSearcher.String():
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.RPCPort))
-		if err != nil {
-			return nil, err
-		}
+		preconfProto := preconfirmation.New(
+			topo,
+			p2pSvc,
+			preconfSigner,
+			noOpUserStore{},
+			noOpBidProcessor{},
+			opts.Logger.With("component", "preconfirmation_protocol"),
+		)
 
-		preconf := preconfirmation.New(topo, p2pSvc, opts.PrivKey, dummyUserStore{}, opts.Logger)
-		grpcServer := grpc.NewServer()
-		searcherAPI := searcherapi.NewService(preconf, opts.Logger)
+		searcherAPI := searcherapi.NewService(
+			preconfProto,
+			opts.Logger.With("component", "searcherapi"),
+		)
 		searcherapiv1.RegisterSearcherServer(grpcServer, searcherAPI)
-
-		go func() {
-			err := grpcServer.Serve(lis)
-			if err != nil {
-				opts.Logger.Error("failed to start grpc server", "err", err)
-			}
-		}()
-		closers = append(closers, lis)
 	}
+
+	go func() {
+		err := grpcServer.Serve(lis)
+		if err != nil {
+			opts.Logger.Error("failed to start grpc server", "err", err)
+		}
+	}()
+	closers = append(closers, lis)
 
 	return &Node{closers: closers}, nil
 }
@@ -131,8 +159,21 @@ func (n *Node) Close() error {
 	return err
 }
 
-type dummyUserStore struct{}
+type noOpUserStore struct{}
 
-func (dummyUserStore) CheckUserRegistred(_ *common.Address) bool {
+func (noOpUserStore) CheckUserRegistred(_ *common.Address) bool {
 	return true
+}
+
+type noOpBidProcessor struct{}
+
+func (noOpBidProcessor) ProcessBid(
+	_ context.Context,
+	_ *preconf.Bid,
+) (chan builderapiv1.BidResponse_Status, error) {
+	statusC := make(chan builderapiv1.BidResponse_Status)
+	statusC <- builderapiv1.BidResponse_STATUS_REJECTED
+	close(statusC)
+
+	return statusC, nil
 }

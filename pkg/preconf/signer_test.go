@@ -13,49 +13,63 @@ func TestBids(t *testing.T) {
 	t.Parallel()
 
 	t.Run("bid", func(t *testing.T) {
-		key, _ := crypto.GenerateKey()
-
-		bid, err := preconf.ConstructSignedBid(big.NewInt(10), "0xkartik", big.NewInt(2), preconf.PrivateKeySigner{PrivKey: key})
+		key, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
-		address, err := bid.VerifySearcherSignature()
 
+		signer := preconf.NewSigner(key)
+
+		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		address, err := signer.VerifyBid(bid)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		expectedAddress := crypto.PubkeyToAddress(key.PublicKey)
 
-		originatorAddress, pubkey, err := bid.BidOriginator()
+		originatorAddress, pubkey, err := signer.BidOriginator(bid)
 		if err != nil {
-			t.Fail()
+			t.Fatal(err)
 		}
 		assert.Equal(t, expectedAddress, *originatorAddress)
 		assert.Equal(t, expectedAddress, *address)
 		assert.Equal(t, key.PublicKey, *pubkey)
 	})
 	t.Run("commitment", func(t *testing.T) {
-		userKey, _ := crypto.GenerateKey()
-		userSigner := preconf.PrivateKeySigner{PrivKey: userKey}
-
-		builderKey, _ := crypto.GenerateKey()
-		builderSigner := preconf.PrivateKeySigner{PrivKey: builderKey}
-
-		bid, err := preconf.ConstructSignedBid(big.NewInt(10), "0xkartik", big.NewInt(2), userSigner)
+		userKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
-		commitment, err := preconf.ConstructCommitment(*bid, builderSigner)
+
+		userSigner := preconf.NewSigner(userKey)
+
+		builderKey, err := crypto.GenerateKey()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		builderSigner := preconf.NewSigner(builderKey)
+
+		bid, err := userSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		commitment, err := builderSigner.ConstructCommitment(bid)
 		if err != nil {
 			t.Fail()
 		}
-		address, err := commitment.VerifyBuilderSignature()
+
+		address, err := userSigner.VerifyCommitment(commitment)
 		if err != nil {
 			t.Fail()
 		}
 
 		assert.Equal(t, crypto.PubkeyToAddress(builderKey.PublicKey), *address)
-
 	})
 }
