@@ -137,7 +137,7 @@ func New(opts *Options) (*Service, error) {
 		host:          host,
 		peers:         newPeerRegistry(),
 		hsSvc:         hsSvc,
-		logger:        opts.Logger.With("service", "libp2p"),
+		logger:        opts.Logger,
 	}
 	s.peers.setDisconnector(s)
 

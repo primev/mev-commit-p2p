@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package rpc.builderapi.v1;
+
+option go_package = "github.com/primevprotocol/mev-commit/rpc/builderapi/v1;builderapiv1";
+
+service Builder {
+  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
+  // The mev-commit node will stream bids to the builder.
+  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
+  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
+  // The builder will stream processed bids to the mev-commit node.
+  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
+}
+
+message EmptyMessage {};
+
+message Bid {
+  string txn_hash = 1;
+  int64 bid_amt = 2;
+  int64 block_number = 3;
+  bytes bid_hash = 4;
+};
+
+message BidResponse {
+  bytes bid_hash = 1;
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACCEPTED = 1;
+    STATUS_REJECTED = 2;
+  }
+  Status status = 2;
+};
+

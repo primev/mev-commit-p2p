@@ -25,7 +25,7 @@ func NewService(sender PreconfSender, logger *slog.Logger) *Service {
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconf.PreconfCommitment, error)
+	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconf.Commitment, error)
 }
 
 func (s *Service) SendBid(
@@ -48,8 +48,8 @@ func (s *Service) SendBid(
 		err := srv.Send(&searcherapiv1.Commitment{
 			Bid: &searcherapiv1.Bid{
 				TxnHash:     resp.TxnHash,
-				BidAmt:      resp.Bid.Int64(),
-				BlockNumber: resp.Blocknumber.Int64(),
+				BidAmt:      resp.BidAmt.Int64(),
+				BlockNumber: resp.BlockNumber.Int64(),
 			},
 			BidHash:             resp.BidHash,
 			Signature:           resp.Signature,

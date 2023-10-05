@@ -2,13 +2,13 @@ package preconfirmation
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"log/slog"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/preconf"
@@ -21,11 +21,12 @@ const (
 )
 
 type Preconfirmation struct {
-	signer   preconf.Signer
-	topo     Topology
-	streamer p2p.Streamer
-	us       UserStore
-	logger   *slog.Logger
+	signer    preconf.Signer
+	topo      Topology
+	streamer  p2p.Streamer
+	us        UserStore
+	processer BidProcesser
+	logger    *slog.Logger
 }
 
 type Topology interface {
@@ -36,19 +37,25 @@ type UserStore interface {
 	CheckUserRegistred(*common.Address) bool
 }
 
+type BidProcesser interface {
+	ProcessBid(context.Context, *preconf.Bid) (chan builderapiv1.BidResponse_Status, error)
+}
+
 func New(
 	topo Topology,
 	streamer p2p.Streamer,
-	key *ecdsa.PrivateKey,
+	signer preconf.Signer,
 	us UserStore,
+	processor BidProcesser,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
-		topo:     topo,
-		streamer: streamer,
-		signer:   preconf.PrivateKeySigner{PrivKey: key},
-		us:       us,
-		logger:   logger,
+		topo:      topo,
+		streamer:  streamer,
+		signer:    signer,
+		us:        us,
+		processer: processor,
+		logger:    logger,
 	}
 }
 
@@ -74,8 +81,8 @@ func (p *Preconfirmation) SendBid(
 	txnHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-) (chan *preconf.PreconfCommitment, error) {
-	signedBid, err := preconf.ConstructSignedBid(bidAmt, txnHash, blockNumber, p.signer)
+) (chan *preconf.Commitment, error) {
+	signedBid, err := p.signer.ConstructSignedBid(txnHash, bidAmt, blockNumber)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "err", err, "txnHash", txnHash)
 		return nil, err
@@ -88,7 +95,7 @@ func (p *Preconfirmation) SendBid(
 	}
 
 	// Create a new channel to receive commitments
-	commitments := make(chan *preconf.PreconfCommitment, len(builders))
+	commitments := make(chan *preconf.Commitment, len(builders))
 
 	wg := sync.WaitGroup{}
 	for idx := range builders {
@@ -110,7 +117,7 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			r, w := msgpack.NewReaderWriter[preconf.PreconfCommitment, preconf.PreConfBid](builderStream)
+			r, w := msgpack.NewReaderWriter[preconf.Commitment, preconf.Bid](builderStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				logger.Error("writing message", "err", err)
@@ -124,15 +131,9 @@ func (p *Preconfirmation) SendBid(
 			}
 
 			// Process commitment as a searcher
-			_, err = commitment.VerifyBuilderSignature()
+			_, err = p.signer.VerifyCommitment(commitment)
 			if err != nil {
 				logger.Error("verifying builder signature", "err", err)
-				return
-			}
-
-			_, err = commitment.VerifySearcherSignature()
-			if err != nil {
-				logger.Error("verifying searcher signature", "err", err)
 				return
 			}
 
@@ -167,25 +168,37 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	// TODO(@ckartik): Change to reader only once availble
-	r, w := msgpack.NewReaderWriter[preconf.PreConfBid, preconf.PreconfCommitment](stream)
+	r, w := msgpack.NewReaderWriter[preconf.Bid, preconf.Commitment](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
 	}
 
-	ethAddress, err := bid.VerifySearcherSignature()
+	ethAddress, err := p.signer.VerifyBid(bid)
 	if err != nil {
 		return err
 	}
 
 	if p.us.CheckUserRegistred(ethAddress) {
-		// More conditional Logic to determine signing of bid
-		commitment, err := preconf.ConstructCommitment(*bid, p.signer)
+		statusC, err := p.processer.ProcessBid(ctx, bid)
 		if err != nil {
 			return err
 		}
-
-		return w.WriteMsg(ctx, commitment)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case status := <-statusC:
+			switch status {
+			case builderapiv1.BidResponse_STATUS_REJECTED:
+				return errors.New("bid rejected")
+			case builderapiv1.BidResponse_STATUS_ACCEPTED:
+				commitment, err := p.signer.ConstructCommitment(bid)
+				if err != nil {
+					return err
+				}
+				return w.WriteMsg(ctx, commitment)
+			}
+		}
 	}
 
 	return nil
