@@ -69,13 +69,11 @@ func (t *topology) Connected(p p2p.Peer) {
 			})
 		}
 
-		if len(underlays) == 0 {
-			t.logger.Warn("no underlays to broadcast", "peer", p)
-			return
-		}
-		err := t.announcer.BroadcastPeers(context.Background(), p, underlays)
-		if err != nil {
-			t.logger.Error("failed to broadcast peers", "err", err, "peer", p)
+		if len(underlays) > 0 {
+			err := t.announcer.BroadcastPeers(context.Background(), p, underlays)
+			if err != nil {
+				t.logger.Error("failed to broadcast peers", "err", err, "peer", p)
+			}
 		}
 
 		if p.Type == p2p.PeerTypeBuilder {
