@@ -5,17 +5,24 @@ echo "Node Type: $NODE_TYPE"
 # Define paths
 KEY_PATH="/keys"
 CONFIG_PATH="/config"
+IP=$(ifconfig eth0|grep inet|awk -F" " '{print $2}'|cut -d":" -f2)
 
 # Check whether the private key file based on node type already exists
 if [ "$NODE_TYPE" = "bootnode" ]; then
     PRIV_KEY_FILE="${KEY_PATH}/bootnode"
     CONFIG_FILE="${CONFIG_PATH}/bootnode.yml"
 elif [ "$NODE_TYPE" = "builder" ]; then
-    PRIV_KEY_FILE="${KEY_PATH}/builder"
-    CONFIG_FILE="${CONFIG_PATH}/builder.yml"
+    PRIV_KEY_FILE="${KEY_PATH}/builder${IP}"
+    cd $CONFIG_PATH
+    cp builder.yml builder${IP}.yml
+    CONFIG_FILE="${CONFIG_PATH}/builder${IP}.yml"
+    cd -
 else
-    PRIV_KEY_FILE="${KEY_PATH}/searcher"
-    CONFIG_FILE="${CONFIG_PATH}/searcher.yml"
+    PRIV_KEY_FILE="${KEY_PATH}/searcher${IP}"
+    cd $CONFIG_PATH
+    cp searcher.yml searcher${IP}.yml
+    CONFIG_FILE="${CONFIG_PATH}/searcher${IP}.yml"
+    cd -
 fi
 
 # Generate the private key based on node type only if it doesn't exist yet
