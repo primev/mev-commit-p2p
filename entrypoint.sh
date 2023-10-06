@@ -13,25 +13,36 @@ if [ "$NODE_TYPE" = "bootnode" ]; then
     CONFIG_FILE="${CONFIG_PATH}/bootnode.yml"
 elif [ "$NODE_TYPE" = "builder" ]; then
     PRIV_KEY_FILE="${KEY_PATH}/builder${IP}"
-    cd $CONFIG_PATH
-    cp builder.yml builder${IP}.yml
     CONFIG_FILE="${CONFIG_PATH}/builder${IP}.yml"
-    cd -
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+	cd $CONFIG_PATH
+	cp builder.yml builder${IP}.yml
+	cd -
+    fi
 else
     PRIV_KEY_FILE="${KEY_PATH}/searcher${IP}"
-    cd $CONFIG_PATH
-    cp searcher.yml searcher${IP}.yml
     CONFIG_FILE="${CONFIG_PATH}/searcher${IP}.yml"
-    cd -
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+	cd $CONFIG_PATH
+	cp searcher.yml searcher${IP}.yml
+	cd -
+    fi
+
 fi
 
-# Generate the private key based on node type only if it doesn't exist yet
-if [ ! -f "$PRIV_KEY_FILE" ]; then
+
+if [ "$NODE_TYPE" != "bootnode" ]; then
     /app/mev-commit create-key ${PRIV_KEY_FILE}
     # Update the private key path in the configuration
     sed -i "s|priv_key_file:.*|priv_key_file: ${PRIV_KEY_FILE}|" ${CONFIG_FILE}
-else
-    echo "Key file ${PRIV_KEY_FILE} already exists. Skipping key creation."
+fi
+
+if [ "$NODE_TYPE" == "bootnode" ] && [ ! -f "$PRIV_KEY_FILE" ];then 
+   /app/mev-commit create-key ${PRIV_KEY_FILE}
+    # Update the private key path in the configuration
+    sed -i "s|priv_key_file:.*|priv_key_file: ${PRIV_KEY_FILE}|" ${CONFIG_FILE}
 fi
 
 # If this is not the bootnode, update the bootnodes entry with P2P ID
