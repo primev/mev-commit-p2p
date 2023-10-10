@@ -1,7 +1,7 @@
 # mev-commit
 mev-commit is a P2P software that creates a network of builders and searchers. Searchers can use it to broadcast bids to multiple builders and get pre-confirmations from them.
 
-![](overview.png)
+![](node-architecture.png)
 
 ## Quickstart
 - The software needs an ECDSA private key. This key creates the ethereum address for the node as well as used for the P2P network. Users can use an existing key or create a new key using the `create-key` command.
@@ -71,4 +71,16 @@ OPTIONS:
       ]
    }
 }
+```
+
+## Commitments from Builders
+To recieve commitments from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
+```protobuf
+  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
+  // The mev-commit node will stream bids to the builder.
+  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
+  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
+  // The builder will stream processed bids to the mev-commit node.
+  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
+
 ```
