@@ -84,3 +84,6 @@ To recieve commitments from builders, the builder-mev-node needs to have a runni
   rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
 
 ```
+
+We have an example builder-emulator client to showcase the expected inteface that needs to be set on the builder infrastructure side.
+
