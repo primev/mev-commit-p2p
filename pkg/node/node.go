@@ -111,6 +111,14 @@ func NewNode(opts *Options) (*Node, error) {
 		builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
 		builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
 
+		// @iowar: fake builder client
+		builderClient, err := builderapi.NewBuilderClient(fmt.Sprintf(":%d", opts.RPCPort))
+		if err != nil {
+			return nil, err
+		}
+
+		go builderClient.ReceiveBids()
+
 		preconfProto := preconfirmation.New(
 			topo,
 			p2pSvc,
