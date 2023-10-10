@@ -1,6 +1,8 @@
 # mev-commit
 mev-commit is a P2P software that creates a network of builders and searchers. Searchers can use it to broadcast bids to multiple builders and get pre-confirmations from them.
 
+![](overview.png)
+
 ## Quickstart
 - The software needs an ECDSA private key. This key creates the ethereum address for the node as well as used for the P2P network. Users can use an existing key or create a new key using the `create-key` command.
 ```
