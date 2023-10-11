@@ -25,9 +25,6 @@ services:
       - builder-keys:/keys
     networks:
       - mev-net
-    ports:
-      - "13523:13523"
-      - "13524:13524"
 
   searcher:
     build:

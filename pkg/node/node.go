@@ -116,7 +116,7 @@ func NewNode(opts *Options) (*Node, error) {
 			p2pSvc,
 			preconfSigner,
 			noOpUserStore{},
-			builderAPI,
+			noOpBidProcessor{},
 			opts.Logger.With("component", "preconfirmation_protocol"),
 		)
 		// Only register handler for builder
@@ -171,8 +171,8 @@ func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
 	_ *preconf.Bid,
 ) (chan builderapiv1.BidResponse_Status, error) {
-	statusC := make(chan builderapiv1.BidResponse_Status)
-	statusC <- builderapiv1.BidResponse_STATUS_REJECTED
+	statusC := make(chan builderapiv1.BidResponse_Status, 5)
+	statusC <- builderapiv1.BidResponse_STATUS_ACCEPTED
 	close(statusC)
 
 	return statusC, nil
