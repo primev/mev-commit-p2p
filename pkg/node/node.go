@@ -111,6 +111,7 @@ func NewNode(opts *Options) (*Node, error) {
 		builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
 		builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
 
+		// TODO(@ckartik): Update noOpBidProcessor to be selected as default in a flag paramater.
 		preconfProto := preconfirmation.New(
 			topo,
 			p2pSvc,
@@ -167,6 +168,7 @@ func (noOpUserStore) CheckUserRegistred(_ *common.Address) bool {
 
 type noOpBidProcessor struct{}
 
+// The noOpBidProcesor auto accepts all bids sent
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
 	_ *preconf.Bid,
