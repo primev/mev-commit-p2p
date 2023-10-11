@@ -15,7 +15,7 @@ COPY --from=builder /app/config /config
 COPY --from=builder /app/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 13522 13523
+EXPOSE 13522 13523 13524
 
 ENTRYPOINT ["/entrypoint.sh"]
 
