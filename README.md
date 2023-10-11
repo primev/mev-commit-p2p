@@ -70,3 +70,28 @@ OPTIONS:
    }
 }
 ```
+
+## Building Docker Image
+
+To simplify the deployment process, you may utilize Docker to create an isolated environment to run mev-commit.
+
+- Build the Docker Image:
+  Navigate to the project root directory (where your Dockerfile is located) and run:
+  
+  ```
+  docker build -t mev-commit:latest .
+  ```
+- Running with Docker Compose:
+ 
+  ```
+    docker-compose up --build
+  ```
+
+- Stopping the Service:
+
+  ```
+    docker-compose down
+  ```
+
+
+
