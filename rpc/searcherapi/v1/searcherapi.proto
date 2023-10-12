@@ -16,8 +16,8 @@ message Bid {
 
 message Commitment {
   Bid bid = 1;
-  bytes bid_hash = 4;
-  bytes signature = 5;
-  bytes data_hash = 6;
-  bytes commitment_signature = 7;
+  string bid_hash = 4;
+  string signature = 5;
+  string data_hash = 6;
+  string commitment_signature = 7;
 };

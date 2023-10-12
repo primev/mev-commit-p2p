@@ -2,6 +2,7 @@ package searcherapi
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"math/big"
 
@@ -50,10 +51,10 @@ func (s *Service) SendBid(
 				BidAmt:      resp.BidAmt.Int64(),
 				BlockNumber: resp.BlockNumber.Int64(),
 			},
-			BidHash:             resp.BidHash,
-			Signature:           resp.Signature,
-			DataHash:            resp.DataHash,
-			CommitmentSignature: resp.CommitmentSignature,
+			BidHash:             hex.EncodeToString(resp.BidHash),
+			Signature:           hex.EncodeToString(resp.Signature),
+			DataHash:            hex.EncodeToString(resp.DataHash),
+			CommitmentSignature: hex.EncodeToString(resp.CommitmentSignature),
 		})
 		if err != nil {
 			s.logger.Error("error sending commitment", "err", err)
