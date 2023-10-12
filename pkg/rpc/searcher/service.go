@@ -32,7 +32,6 @@ func (s *Service) SendBid(
 	bid *searcherapiv1.Bid,
 	srv searcherapiv1.Searcher_SendBidServer,
 ) error {
-
 	respC, err := s.sender.SendBid(
 		srv.Context(),
 		bid.TxnHash,
@@ -60,7 +59,6 @@ func (s *Service) SendBid(
 			s.logger.Error("error sending commitment", "err", err)
 			return err
 		}
-		s.logger.Debug("sent commitment", "bid", resp.TxnHash)
 	}
 
 	return nil

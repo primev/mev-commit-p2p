@@ -38,6 +38,9 @@ services:
       - searcher-keys:/keys
     networks:
       - mev-net
+    ports:
+      - "13523:13523"
+      - "13524:13524"
 
 volumes:
   bootnode-keys:
