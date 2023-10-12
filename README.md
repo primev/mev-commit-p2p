@@ -73,6 +73,32 @@ OPTIONS:
 }
 ```
 
+## Sending bids as a Searcher
+To send bids, you can use an gRPC api that is availible to searcher nodes. 
+Upon running this service, searcher nodes will have access to the following:
+```protobuf
+service Searcher {
+  rpc SendBid(Bid) returns (stream Commitment) {}
+}
+
+message Bid {
+  string txn_hash = 1;
+  int64 bid_amt = 2;
+  int64 block_number = 3;
+};
+
+```
+
+By default, the docker setup exposes port `13524`, which is the standard port on which the searcher api is running. By hitting SendBid with the bid structure in the following format:
+```json
+{
+  "txn_hash": "<txn-hash>",
+  "bid_amt": <number>,
+  "block_number": <block-number>
+}
+```
+
+
 ## Commitments from Builders
 To recieve commitments from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
 ```protobuf
