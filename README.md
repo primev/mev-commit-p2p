@@ -72,19 +72,6 @@ OPTIONS:
    }
 }
 ```
-
-## PreConfirmations from Builders
-To recieve preConfirmations from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
-```protobuf
-  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
-  // The mev-commit node will stream bids to the builder.
-  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
-  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
-  // The builder will stream processed bids to the mev-commit node.
-  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
-
-```
-
 ## Sending bids as a Searcher
 To send bids, you can use an gRPC api that is availible to searcher nodes. 
 Upon running this service, searcher nodes will have access to the following:
@@ -113,6 +100,17 @@ By default, the docker setup exposes port `13524`, which is the standard port on
 
 ## Commitments from Builders
 To recieve commitments from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
+
+```protobuf
+  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
+  // The mev-commit node will stream bids to the builder.
+  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
+  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
+  // The builder will stream processed bids to the mev-commit node.
+  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
+
+```
+
 
 ## Building Docker Image
 
