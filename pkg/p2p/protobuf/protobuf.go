@@ -3,15 +3,13 @@ package protobuf
 import (
 	"context"
 	"fmt"
-
-	"github.com/libp2p/go-libp2p/p2p/host/autonat/pb"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"google.golang.org/protobuf/proto"
 )
 
 type Encoder interface {
-	ReadMsg(context.Context, *pb.Message) error
-	WriteMsg(context.Context, *pb.Message) error
+	ReadMsg(context.Context, proto.Message) error
+	WriteMsg(context.Context, proto.Message) error
 }
 
 type protobuf struct {
@@ -22,7 +20,7 @@ func NewReaderWriter(s p2p.Stream) Encoder {
 	return &protobuf{s}
 }
 
-func (p *protobuf) ReadMsg(ctx context.Context, msg *pb.Message) error {
+func (p *protobuf) ReadMsg(ctx context.Context, msg proto.Message) error {
 	type result struct {
 		msgBuf []byte
 		err    error
@@ -50,7 +48,7 @@ func (p *protobuf) ReadMsg(ctx context.Context, msg *pb.Message) error {
 	}
 }
 
-func (p *protobuf) WriteMsg(ctx context.Context, msg *pb.Message) error {
+func (p *protobuf) WriteMsg(ctx context.Context, msg proto.Message) error {
 	msgBuf, err := proto.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed marshaling message: %w", err)
