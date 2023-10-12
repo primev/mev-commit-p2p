@@ -11,7 +11,7 @@ import (
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -21,7 +21,7 @@ const (
 )
 
 type Preconfirmation struct {
-	signer    primevcrypto.Signer
+	signer    preconfsigner.Signer
 	topo      Topology
 	streamer  p2p.Streamer
 	us        UserStore
@@ -38,13 +38,13 @@ type UserStore interface {
 }
 
 type BidProcesser interface {
-	ProcessBid(context.Context, *primevcrypto.Bid) (chan builderapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error)
 }
 
 func New(
 	topo Topology,
 	streamer p2p.Streamer,
-	signer primevcrypto.Signer,
+	signer preconfsigner.Signer,
 	us UserStore,
 	processor BidProcesser,
 	logger *slog.Logger,
@@ -81,7 +81,7 @@ func (p *Preconfirmation) SendBid(
 	txnHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-) (chan *primevcrypto.PreConfirmation, error) {
+) (chan *preconfsigner.PreConfirmation, error) {
 	signedBid, err := p.signer.ConstructSignedBid(txnHash, bidAmt, blockNumber)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "err", err, "txnHash", txnHash)
@@ -95,7 +95,7 @@ func (p *Preconfirmation) SendBid(
 	}
 
 	// Create a new channel to receive preConfirmations
-	preConfirmations := make(chan *primevcrypto.PreConfirmation, len(builders))
+	preConfirmations := make(chan *preconfsigner.PreConfirmation, len(builders))
 
 	wg := sync.WaitGroup{}
 	for idx := range builders {
@@ -117,7 +117,7 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			r, w := msgpack.NewReaderWriter[primevcrypto.PreConfirmation, primevcrypto.Bid](builderStream)
+			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](builderStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				logger.Error("writing message", "err", err)
@@ -168,7 +168,7 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	// TODO(@ckartik): Change to reader only once availble
-	r, w := msgpack.NewReaderWriter[primevcrypto.Bid, primevcrypto.PreConfirmation](stream)
+	r, w := msgpack.NewReaderWriter[preconfsigner.Bid, preconfsigner.PreConfirmation](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err

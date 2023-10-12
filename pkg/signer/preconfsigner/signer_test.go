@@ -1,11 +1,11 @@
-package primevcrypto_test
+package preconfsigner_test
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		signer := primevcrypto.NewSigner(key)
+		signer := preconfsigner.NewSigner(key)
 
 		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
@@ -46,14 +46,14 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		userSigner := primevcrypto.NewSigner(userKey)
+		userSigner := preconfsigner.NewSigner(userKey)
 
 		builderKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		builderSigner := primevcrypto.NewSigner(builderKey)
+		builderSigner := preconfsigner.NewSigner(builderKey)
 
 		bid, err := userSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {

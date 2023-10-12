@@ -1,4 +1,4 @@
-package primevcrypto
+package preconfsigner
 
 import (
 	"bytes"

@@ -6,7 +6,7 @@ import (
 	"math/big"
 
 	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -25,7 +25,7 @@ func NewService(sender PreconfSender, logger *slog.Logger) *Service {
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *primevcrypto.PreConfirmation, error)
+	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(

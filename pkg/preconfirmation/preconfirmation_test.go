@@ -13,7 +13,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
-	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -32,25 +32,25 @@ func (t *testUserStore) CheckUserRegistred(_ *common.Address) bool {
 }
 
 type testSigner struct {
-	bid                   *primevcrypto.Bid
-	preConfirmation       *primevcrypto.PreConfirmation
+	bid                   *preconfsigner.Bid
+	preConfirmation       *preconfsigner.PreConfirmation
 	bidSigner             common.Address
 	preConfirmationSigner common.Address
 }
 
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*primevcrypto.Bid, error) {
+func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
 	return t.bid, nil
 }
 
-func (t *testSigner) ConstructPreConfirmation(_ *primevcrypto.Bid) (*primevcrypto.PreConfirmation, error) {
+func (t *testSigner) ConstructPreConfirmation(_ *preconfsigner.Bid) (*preconfsigner.PreConfirmation, error) {
 	return t.preConfirmation, nil
 }
 
-func (t *testSigner) VerifyBid(_ *primevcrypto.Bid) (*common.Address, error) {
+func (t *testSigner) VerifyBid(_ *preconfsigner.Bid) (*common.Address, error) {
 	return &t.bidSigner, nil
 }
 
-func (t *testSigner) VerifyPreConfirmation(_ *primevcrypto.PreConfirmation) (*common.Address, error) {
+func (t *testSigner) VerifyPreConfirmation(_ *preconfsigner.PreConfirmation) (*common.Address, error) {
 	return &t.preConfirmationSigner, nil
 }
 
@@ -60,7 +60,7 @@ type testProcessor struct {
 
 func (t *testProcessor) ProcessBid(
 	_ context.Context,
-	_ *primevcrypto.Bid) (chan builderapiv1.BidResponse_Status, error) {
+	_ *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error) {
 	statusC := make(chan builderapiv1.BidResponse_Status, 1)
 	statusC <- t.status
 	return statusC, nil
@@ -88,7 +88,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			Type:       p2p.PeerTypeBuilder,
 		}
 
-		bid := &primevcrypto.Bid{
+		bid := &preconfsigner.Bid{
 			TxnHash:     "test",
 			BidAmt:      big.NewInt(10),
 			BlockNumber: big.NewInt(10),
@@ -96,7 +96,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			Signature:   []byte("test"),
 		}
 
-		preConfirmation := &primevcrypto.PreConfirmation{
+		preConfirmation := &preconfsigner.PreConfirmation{
 			Bid:                      *bid,
 			PreconfirmationDigest:    []byte("test"),
 			PreConfirmationSignature: []byte("test"),
