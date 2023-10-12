@@ -1,4 +1,4 @@
-package preconf
+package primevcrypto
 
 import (
 	"crypto/ecdsa"
@@ -23,15 +23,15 @@ func (p *privateKeySigner) BidOriginator(bid *Bid) (*common.Address, *ecdsa.Publ
 	return &address, pubkey, nil
 }
 
-func (p *privateKeySigner) CommitmentOriginator(
-	c *Commitment,
+func (p *privateKeySigner) PreConfirmationOriginator(
+	c *PreConfirmation,
 ) (*common.Address, *ecdsa.PublicKey, error) {
-	_, err := p.VerifyCommitment(c)
+	_, err := p.VerifyPreConfirmation(c)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pubkey, err := crypto.SigToPub(c.DataHash, c.CommitmentSignature)
+	pubkey, err := crypto.SigToPub(c.PreconfirmationDigest, c.PreConfirmationSignature)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -18,8 +18,8 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
+	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
 	"github.com/primevprotocol/mev-commit/pkg/register"
 	builderapi "github.com/primevprotocol/mev-commit/pkg/rpc/builder"
 	searcherapi "github.com/primevprotocol/mev-commit/pkg/rpc/searcher"
@@ -104,7 +104,7 @@ func NewNode(opts *Options) (*Node, error) {
 	}
 	grpcServer := grpc.NewServer()
 
-	preconfSigner := preconf.NewSigner(opts.PrivKey)
+	preconfSigner := primevcrypto.NewSigner(opts.PrivKey)
 
 	switch opts.PeerType {
 	case p2p.PeerTypeBuilder.String():
@@ -171,7 +171,7 @@ type noOpBidProcessor struct{}
 // The noOpBidProcesor auto accepts all bids sent
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconf.Bid,
+	_ *primevcrypto.Bid,
 ) (chan builderapiv1.BidResponse_Status, error) {
 	statusC := make(chan builderapiv1.BidResponse_Status, 5)
 	statusC <- builderapiv1.BidResponse_STATUS_ACCEPTED

@@ -5,7 +5,7 @@ package rpc.seacherapi.v1;
 option go_package = "github.com/primevprotocol/mev-commit/rpc/seacherapi/v1;searcherapiv1";
 
 service Searcher {
-  rpc SendBid(Bid) returns (stream Commitment) {}
+  rpc SendBid(Bid) returns (stream PreConfirmation) {}
 }
 
 message Bid {
@@ -14,10 +14,10 @@ message Bid {
   int64 block_number = 3;
 };
 
-message Commitment {
+message PreConfirmation {
   Bid bid = 1;
   bytes bid_hash = 4;
   bytes signature = 5;
-  bytes data_hash = 6;
-  bytes commitment_signature = 7;
+  bytes preconfirmation_digest = 6;
+  bytes preConfirmation_signature = 7;
 };

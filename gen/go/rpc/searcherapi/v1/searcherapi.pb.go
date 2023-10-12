@@ -83,7 +83,7 @@ func (x *Bid) GetBlockNumber() int64 {
 	return 0
 }
 
-type Commitment struct {
+type PreConfirmation struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -91,12 +91,12 @@ type Commitment struct {
 	Bid                 *Bid   `protobuf:"bytes,1,opt,name=bid,proto3" json:"bid,omitempty"`
 	BidHash             []byte `protobuf:"bytes,4,opt,name=bid_hash,json=bidHash,proto3" json:"bid_hash,omitempty"`
 	Signature           []byte `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
-	DataHash            []byte `protobuf:"bytes,6,opt,name=data_hash,json=dataHash,proto3" json:"data_hash,omitempty"`
-	CommitmentSignature []byte `protobuf:"bytes,7,opt,name=commitment_signature,json=commitmentSignature,proto3" json:"commitment_signature,omitempty"`
+	PreconfirmationDigest            []byte `protobuf:"bytes,6,opt,name=preconfirmation_digest,json=preconfirmationDigest,proto3" json:"preconfirmation_digest,omitempty"`
+	PreConfirmationSignature []byte `protobuf:"bytes,7,opt,name=preConfirmation_signature,json=preConfirmationSignature,proto3" json:"preConfirmation_signature,omitempty"`
 }
 
-func (x *Commitment) Reset() {
-	*x = Commitment{}
+func (x *PreConfirmation) Reset() {
+	*x = PreConfirmation{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rpc_searcherapi_v1_searcherapi_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -104,13 +104,13 @@ func (x *Commitment) Reset() {
 	}
 }
 
-func (x *Commitment) String() string {
+func (x *PreConfirmation) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Commitment) ProtoMessage() {}
+func (*PreConfirmation) ProtoMessage() {}
 
-func (x *Commitment) ProtoReflect() protoreflect.Message {
+func (x *PreConfirmation) ProtoReflect() protoreflect.Message {
 	mi := &file_rpc_searcherapi_v1_searcherapi_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -122,42 +122,42 @@ func (x *Commitment) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Commitment.ProtoReflect.Descriptor instead.
-func (*Commitment) Descriptor() ([]byte, []int) {
+// Deprecated: Use PreConfirmation.ProtoReflect.Descriptor instead.
+func (*PreConfirmation) Descriptor() ([]byte, []int) {
 	return file_rpc_searcherapi_v1_searcherapi_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Commitment) GetBid() *Bid {
+func (x *PreConfirmation) GetBid() *Bid {
 	if x != nil {
 		return x.Bid
 	}
 	return nil
 }
 
-func (x *Commitment) GetBidHash() []byte {
+func (x *PreConfirmation) GetBidHash() []byte {
 	if x != nil {
 		return x.BidHash
 	}
 	return nil
 }
 
-func (x *Commitment) GetSignature() []byte {
+func (x *PreConfirmation) GetSignature() []byte {
 	if x != nil {
 		return x.Signature
 	}
 	return nil
 }
 
-func (x *Commitment) GetDataHash() []byte {
+func (x *PreConfirmation) GetPreconfirmationDigest() []byte {
 	if x != nil {
-		return x.DataHash
+		return x.PreconfirmationDigest
 	}
 	return nil
 }
 
-func (x *Commitment) GetCommitmentSignature() []byte {
+func (x *PreConfirmation) GetPreConfirmationSignature() []byte {
 	if x != nil {
-		return x.CommitmentSignature
+		return x.PreConfirmationSignature
 	}
 	return nil
 }
@@ -214,12 +214,12 @@ func file_rpc_searcherapi_v1_searcherapi_proto_rawDescGZIP() []byte {
 var file_rpc_searcherapi_v1_searcherapi_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_rpc_searcherapi_v1_searcherapi_proto_goTypes = []interface{}{
 	(*Bid)(nil),        // 0: rpc.seacherapi.v1.Bid
-	(*Commitment)(nil), // 1: rpc.seacherapi.v1.Commitment
+	(*PreConfirmation)(nil), // 1: rpc.seacherapi.v1.PreConfirmation
 }
 var file_rpc_searcherapi_v1_searcherapi_proto_depIdxs = []int32{
-	0, // 0: rpc.seacherapi.v1.Commitment.bid:type_name -> rpc.seacherapi.v1.Bid
+	0, // 0: rpc.seacherapi.v1.PreConfirmation.bid:type_name -> rpc.seacherapi.v1.Bid
 	0, // 1: rpc.seacherapi.v1.Searcher.SendBid:input_type -> rpc.seacherapi.v1.Bid
-	1, // 2: rpc.seacherapi.v1.Searcher.SendBid:output_type -> rpc.seacherapi.v1.Commitment
+	1, // 2: rpc.seacherapi.v1.Searcher.SendBid:output_type -> rpc.seacherapi.v1.PreConfirmation
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -246,7 +246,7 @@ func file_rpc_searcherapi_v1_searcherapi_proto_init() {
 			}
 		}
 		file_rpc_searcherapi_v1_searcherapi_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Commitment); i {
+			switch v := v.(*PreConfirmation); i {
 			case 0:
 				return &v.state
 			case 1:

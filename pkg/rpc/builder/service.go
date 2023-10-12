@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
 )
 
 type Service struct {
@@ -27,7 +27,7 @@ func NewService(logger *slog.Logger) *Service {
 
 func (s *Service) ProcessBid(
 	ctx context.Context,
-	bid *preconf.Bid,
+	bid *primevcrypto.Bid,
 ) (chan builderapiv1.BidResponse_Status, error) {
 	respC := make(chan builderapiv1.BidResponse_Status, 1)
 	s.bidsMu.Lock()

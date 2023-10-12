@@ -53,7 +53,7 @@ func (c *searcherClient) SendBid(ctx context.Context, in *Bid, opts ...grpc.Call
 }
 
 type Searcher_SendBidClient interface {
-	Recv() (*Commitment, error)
+	Recv() (*PreConfirmation, error)
 	grpc.ClientStream
 }
 
@@ -61,8 +61,8 @@ type searcherSendBidClient struct {
 	grpc.ClientStream
 }
 
-func (x *searcherSendBidClient) Recv() (*Commitment, error) {
-	m := new(Commitment)
+func (x *searcherSendBidClient) Recv() (*PreConfirmation, error) {
+	m := new(PreConfirmation)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func _Searcher_SendBid_Handler(srv interface{}, stream grpc.ServerStream) error 
 }
 
 type Searcher_SendBidServer interface {
-	Send(*Commitment) error
+	Send(*PreConfirmation) error
 	grpc.ServerStream
 }
 
@@ -114,7 +114,7 @@ type searcherSendBidServer struct {
 	grpc.ServerStream
 }
 
-func (x *searcherSendBidServer) Send(m *Commitment) error {
+func (x *searcherSendBidServer) Send(m *PreConfirmation) error {
 	return x.ServerStream.SendMsg(m)
 }
 

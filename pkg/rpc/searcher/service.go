@@ -6,7 +6,7 @@ import (
 	"math/big"
 
 	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/primevcrypto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -25,7 +25,7 @@ func NewService(sender PreconfSender, logger *slog.Logger) *Service {
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconf.Commitment, error)
+	SendBid(context.Context, string, *big.Int, *big.Int) (chan *primevcrypto.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
@@ -44,19 +44,19 @@ func (s *Service) SendBid(
 	}
 
 	for resp := range respC {
-		err := srv.Send(&searcherapiv1.Commitment{
+		err := srv.Send(&searcherapiv1.PreConfirmation{
 			Bid: &searcherapiv1.Bid{
 				TxnHash:     resp.TxnHash,
 				BidAmt:      resp.BidAmt.Int64(),
 				BlockNumber: resp.BlockNumber.Int64(),
 			},
-			BidHash:             resp.BidHash,
-			Signature:           resp.Signature,
-			DataHash:            resp.DataHash,
-			CommitmentSignature: resp.CommitmentSignature,
+			BidHash:                  resp.BidHash,
+			Signature:                resp.Signature,
+			PreconfirmationDigest:    resp.PreconfirmationDigest,
+			PreConfirmationSignature: resp.PreConfirmationSignature,
 		})
 		if err != nil {
-			s.logger.Error("error sending commitment", "err", err)
+			s.logger.Error("error sending preConfirmation", "err", err)
 			return err
 		}
 	}

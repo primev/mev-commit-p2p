@@ -73,8 +73,8 @@ OPTIONS:
 }
 ```
 
-## Commitments from Builders
-To recieve commitments from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
+## PreConfirmations from Builders
+To recieve preConfirmations from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
 ```protobuf
   // ReceiveBids is called by the builder to receive bids from the mev-commit node.
   // The mev-commit node will stream bids to the builder.

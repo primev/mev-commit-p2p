@@ -1,4 +1,4 @@
-package preconf
+package primevcrypto
 
 import (
 	"bytes"
@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	ErrAlreadySignedBid        = errors.New("already contains hash or signature")
-	ErrMissingHashSignature    = errors.New("missing hash or signature")
-	ErrInvalidSignature        = errors.New("signature is not valid")
-	ErrInvalidHash             = errors.New("bidhash doesn't match bid payload")
-	ErrAlreadySignedCommitment = errors.New("commitment is already hashed or signed")
+	ErrAlreadySignedBid             = errors.New("already contains hash or signature")
+	ErrMissingHashSignature         = errors.New("missing hash or signature")
+	ErrInvalidSignature             = errors.New("signature is not valid")
+	ErrInvalidHash                  = errors.New("bidhash doesn't match bid payload")
+	ErrAlreadySignedPreConfirmation = errors.New("preConfirmation is already hashed or signed")
 )
 
 // PreConfBid represents the bid data.
@@ -32,18 +32,18 @@ type Bid struct {
 	Signature []byte `json:"signature"`
 }
 
-type Commitment struct {
+type PreConfirmation struct {
 	Bid
 
-	DataHash            []byte `json:"data_hash"` // TODO(@ckaritk): name better
-	CommitmentSignature []byte `json:"commitment_signature"`
+	PreconfirmationDigest    []byte `json:"preconfirmation_digest"` // TODO(@ckaritk): name better
+	PreConfirmationSignature []byte `json:"preConfirmation_signature"`
 }
 
 type Signer interface {
 	ConstructSignedBid(string, *big.Int, *big.Int) (*Bid, error)
-	ConstructCommitment(*Bid) (*Commitment, error)
+	ConstructPreConfirmation(*Bid) (*PreConfirmation, error)
 	VerifyBid(*Bid) (*common.Address, error)
-	VerifyCommitment(*Commitment) (*common.Address, error)
+	VerifyPreConfirmation(*PreConfirmation) (*common.Address, error)
 }
 
 type privateKeySigner struct {
@@ -89,17 +89,17 @@ func (p *privateKeySigner) ConstructSignedBid(
 	return bid, nil
 }
 
-func (p *privateKeySigner) ConstructCommitment(bid *Bid) (*Commitment, error) {
+func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation, error) {
 	_, err := p.VerifyBid(bid)
 	if err != nil {
 		return nil, err
 	}
 
-	commitment := &Commitment{
+	preConfirmation := &PreConfirmation{
 		Bid: *bid,
 	}
 
-	eip712Payload := constructCommitmentPayload(
+	eip712Payload := constructPreConfirmationPayload(
 		bid.TxnHash,
 		bid.BidAmt,
 		bid.BlockNumber,
@@ -107,20 +107,20 @@ func (p *privateKeySigner) ConstructCommitment(bid *Bid) (*Commitment, error) {
 		bid.Signature,
 	)
 
-	dataHash, _, err := apitypes.TypedDataAndHash(eip712Payload)
+	preconfirmationDigest, _, err := apitypes.TypedDataAndHash(eip712Payload)
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := crypto.Sign(dataHash, p.privKey)
+	sig, err := crypto.Sign(preconfirmationDigest, p.privKey)
 	if err != nil {
 		return nil, err
 	}
 
-	commitment.DataHash = dataHash
-	commitment.CommitmentSignature = sig
+	preConfirmation.PreconfirmationDigest = preconfirmationDigest
+	preConfirmation.PreConfirmationSignature = sig
 
-	return commitment, nil
+	return preConfirmation, nil
 }
 
 func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
@@ -135,8 +135,8 @@ func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
 	)
 }
 
-func (p *privateKeySigner) VerifyCommitment(c *Commitment) (*common.Address, error) {
-	if c.DataHash == nil || c.CommitmentSignature == nil {
+func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Address, error) {
+	if c.PreconfirmationDigest == nil || c.PreConfirmationSignature == nil {
 		return nil, ErrMissingHashSignature
 	}
 
@@ -145,7 +145,7 @@ func (p *privateKeySigner) VerifyCommitment(c *Commitment) (*common.Address, err
 		return nil, err
 	}
 
-	internalPayload := constructCommitmentPayload(
+	internalPayload := constructPreConfirmationPayload(
 		c.TxnHash,
 		c.BidAmt,
 		c.BlockNumber,
@@ -153,7 +153,7 @@ func (p *privateKeySigner) VerifyCommitment(c *Commitment) (*common.Address, err
 		c.Signature,
 	)
 
-	return eipVerify(internalPayload, c.DataHash, c.CommitmentSignature)
+	return eipVerify(internalPayload, c.PreconfirmationDigest, c.PreConfirmationSignature)
 }
 
 func eipVerify(
@@ -189,7 +189,7 @@ func eipVerify(
 }
 
 // Constructs the EIP712 formatted bid
-func constructCommitmentPayload(
+func constructPreConfirmationPayload(
 	txnHash string,
 	bid *big.Int,
 	blockNumber *big.Int,
@@ -198,7 +198,7 @@ func constructCommitmentPayload(
 ) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
-			"PreConfCommitment": []apitypes.Type{
+			"PreConfPreConfirmation": []apitypes.Type{
 				{Name: "txnHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
 				{Name: "blockNumber", Type: "uint64"},
@@ -210,9 +210,9 @@ func constructCommitmentPayload(
 				{Name: "version", Type: "string"},
 			},
 		},
-		PrimaryType: "PreConfCommitment",
+		PrimaryType: "PreConfPreConfirmation",
 		Domain: apitypes.TypedDataDomain{
-			Name:    "PreConfCommitment",
+			Name:    "PreConfPreConfirmation",
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
