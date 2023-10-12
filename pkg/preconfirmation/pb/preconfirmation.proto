@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package preconfirmation.v1;
+
+option go_package = "github.com/primevprotocol/mev-commit/pkg/preconfirmation/pb;preconfirmationv1";
+
+message Bid {
+  string txn_hash = 1;
+  int64 bid_amt = 2;
+  int64 block_number = 3;
+
+  string bid_hash = 4;
+  string signature = 5;
+};
+
+message PreConfirmation {
+  Bid bid = 1;
+
+  string preconfirmation_digest = 6;
+  string commitment_signature = 7;
+};
