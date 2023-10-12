@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/primevprotocol/mev-commit/pkg/util"
 	"log/slog"
 	"math/big"
 	"time"
@@ -51,7 +52,8 @@ type Options struct {
 }
 
 func New(opts *Options) (*Service, error) {
-	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(opts.PrivKey.D.Bytes())
+	padded32BytePrivKey := util.PadKeyTo32Bytes(opts.PrivKey.D)
+	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)
 	if err != nil {
 		return nil, err
 	}
