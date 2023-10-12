@@ -2,6 +2,7 @@ package builderapi
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"sync"
 
@@ -49,7 +50,7 @@ func (s *Service) ProcessBid(
 		TxnHash:     bid.TxnHash,
 		BidAmt:      bid.BidAmt.Int64(),
 		BlockNumber: bid.BlockNumber.Int64(),
-		BidHash:     bid.BidHash,
+		BidHash:     hex.EncodeToString(bid.BidHash),
 	}:
 	}
 	s.logger.Info("sent bid to builder node", "bid", bid)

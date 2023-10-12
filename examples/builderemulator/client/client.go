@@ -46,7 +46,7 @@ func (b *BuilderClient) ReceiveBids() ([]*builderapiv1.Bid, error) {
 
 		var bidResponses []*builderapiv1.BidResponse
 		bidResponse := &builderapiv1.BidResponse{
-			BidHash: []byte(bid.GetBidHash()),
+			BidHash: bid.GetBidHash(),
 			Status:  builderapiv1.BidResponse_STATUS_ACCEPTED,
 		}
 		bidResponses = append(bidResponses, bidResponse)

@@ -19,11 +19,11 @@ message Bid {
   string txn_hash = 1;
   int64 bid_amt = 2;
   int64 block_number = 3;
-  bytes bid_hash = 4;
+  string bid_hash = 4;
 };
 
 message BidResponse {
-  bytes bid_hash = 1;
+  string bid_hash = 1;
   enum Status {
     STATUS_UNSPECIFIED = 0;
     STATUS_ACCEPTED = 1;
