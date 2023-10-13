@@ -19,7 +19,7 @@ type BuilderClient struct {
 	conn         *grpc.ClientConn
 	client       builderapiv1.BuilderClient
 	logger       *slog.Logger
-	senderC      chan builderapiv1.BidResponse
+	senderC      chan *builderapiv1.BidResponse
 	senderClosed chan struct{}
 }
 
@@ -38,7 +38,7 @@ func NewBuilderClient(
 		conn:         conn,
 		client:       client,
 		logger:       logger,
-		senderC:      make(chan builderapiv1.BidResponse),
+		senderC:      make(chan *builderapiv1.BidResponse),
 		senderClosed: make(chan struct{}),
 	}, nil
 }
@@ -66,7 +66,7 @@ func (b *BuilderClient) startSender() error {
 					b.logger.Warn("closed sender chan")
 					return
 				}
-				err := stream.Send(&resp)
+				err := stream.Send(resp)
 				if err != nil {
 					b.logger.Error("failed sending response", "error", err)
 				}
@@ -114,7 +114,7 @@ func (b *BuilderClient) ReceiveBids() (chan *builderapiv1.Bid, error) {
 // the messages on grpc.
 func (b *BuilderClient) SendBidResponse(
 	ctx context.Context,
-	bidResponse builderapiv1.BidResponse,
+	bidResponse *builderapiv1.BidResponse,
 ) error {
 
 	select {

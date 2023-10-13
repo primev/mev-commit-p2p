@@ -50,7 +50,7 @@ func main() {
 				return
 			}
 			logger.Info("received new bid", "bid", bid)
-			err := builderClient.SendBidResponse(context.Background(), builderapiv1.BidResponse{
+			err := builderClient.SendBidResponse(context.Background(), &builderapiv1.BidResponse{
 				BidHash: bid.BidHash,
 				Status:  builderapiv1.BidResponse_STATUS_ACCEPTED,
 			})
