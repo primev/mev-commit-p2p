@@ -89,7 +89,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 		}
 
 		bid := &preconfsigner.Bid{
-			TxnHash:     "test",
+			TxHash:      "test",
 			BidAmt:      big.NewInt(10),
 			BlockNumber: big.NewInt(10),
 			Digest:      []byte("test"),
@@ -122,7 +122,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		svc.SetPeerHandler(server, p.Protocol())
 
-		respC, err := p.SendBid(context.Background(), bid.TxnHash, bid.BidAmt, bid.BlockNumber)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber)
 		if err != nil {
 			t.Fatal(err)
 		}

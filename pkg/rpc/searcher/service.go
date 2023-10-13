@@ -35,7 +35,7 @@ func (s *Service) SendBid(
 ) error {
 	respC, err := s.sender.SendBid(
 		srv.Context(),
-		bid.TxnHash,
+		bid.TxHash,
 		big.NewInt(bid.Amount),
 		big.NewInt(bid.BlockNumber),
 	)
@@ -46,15 +46,13 @@ func (s *Service) SendBid(
 
 	for resp := range respC {
 		err := srv.Send(&searcherapiv1.PreConfirmation{
-			Bid: &searcherapiv1.Bid{
-				TxnHash:     resp.Bid.TxnHash,
-				Amount:      resp.Bid.BidAmt.Int64(),
-				BlockNumber: resp.Bid.BlockNumber.Int64(),
-			},
-			BidHash:      hex.EncodeToString(resp.Bid.Digest),
-			BidSignature: hex.EncodeToString(resp.Bid.Signature),
-			Digest:       hex.EncodeToString(resp.Digest),
-			Signature:    hex.EncodeToString(resp.Signature),
+			TxHash:                   resp.Bid.TxHash,
+			Amount:                   resp.Bid.BidAmt.Int64(),
+			BlockNumber:              resp.Bid.BlockNumber.Int64(),
+			BidDigest:                hex.EncodeToString(resp.Bid.Digest),
+			BidSignature:             hex.EncodeToString(resp.Bid.Signature),
+			PreConfirmationDigest:    hex.EncodeToString(resp.Digest),
+			PreConfirmationSignature: hex.EncodeToString(resp.Signature),
 		})
 		if err != nil {
 			s.logger.Error("error sending preConfirmation", "err", err)

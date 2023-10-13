@@ -73,24 +73,24 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 }
 
 // SendBid is meant to be called by the searcher to construct and send bids to the builder.
-// It takes the txnHash, the bid amount in wei and the maximum valid block number.
+// It takes the txHash, the bid amount in wei and the maximum valid block number.
 // It waits for preConfirmations from all builders and then returns.
 // It returns an error if the bid is not valid.
 func (p *Preconfirmation) SendBid(
 	ctx context.Context,
-	txnHash string,
+	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
 ) (chan *preconfsigner.PreConfirmation, error) {
-	signedBid, err := p.signer.ConstructSignedBid(txnHash, bidAmt, blockNumber)
+	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
-		p.logger.Error("constructing signed bid", "err", err, "txnHash", txnHash)
+		p.logger.Error("constructing signed bid", "err", err, "txHash", txHash)
 		return nil, err
 	}
 
 	builders := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
 	if len(builders) == 0 {
-		p.logger.Error("no builders available", "txnHash", txnHash)
+		p.logger.Error("no builders available", "txHash", txHash)
 		return nil, errors.New("no builders available")
 	}
 
@@ -103,7 +103,7 @@ func (p *Preconfirmation) SendBid(
 		go func(builder p2p.Peer) {
 			defer wg.Done()
 
-			logger := p.logger.With("builder", builder, "bid", txnHash)
+			logger := p.logger.With("builder", builder, "bid", txHash)
 
 			builderStream, err := p.streamer.NewStream(
 				ctx,

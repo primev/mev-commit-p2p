@@ -16,14 +16,14 @@ service Builder {
 message EmptyMessage {};
 
 message Bid {
-  string txn_hash = 1;
-  int64 bid_amt = 2;
+  string tx_hash = 1;
+  int64 bid_amount = 2;
   int64 block_number = 3;
-  bytes bid_hash = 4;
+  bytes bid_digest = 4;
 };
 
 message BidResponse {
-  bytes bid_hash = 1;
+  bytes bid_digest = 1;
   enum Status {
     STATUS_UNSPECIFIED = 0;
     STATUS_ACCEPTED = 1;

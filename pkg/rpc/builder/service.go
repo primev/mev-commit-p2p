@@ -46,10 +46,10 @@ func (s *Service) ProcessBid(
 		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
 		return nil, ctx.Err()
 	case s.receiver <- &builderapiv1.Bid{
-		TxnHash:     bid.TxnHash,
-		BidAmt:      bid.BidAmt.Int64(),
+		TxHash:      bid.TxHash,
+		BidAmount:   bid.BidAmt.Int64(),
 		BlockNumber: bid.BlockNumber.Int64(),
-		BidHash:     bid.Digest,
+		BidDigest:   bid.Digest,
 	}:
 	}
 	s.logger.Info("sent bid to builder node", "bid", bid)
@@ -85,8 +85,8 @@ func (s *Service) SendProcessedBids(srv builderapiv1.Builder_SendProcessedBidsSe
 		}
 
 		s.bidsMu.Lock()
-		callback, ok := s.bidsInProcess[string(status.BidHash)]
-		delete(s.bidsInProcess, string(status.BidHash))
+		callback, ok := s.bidsInProcess[string(status.BidDigest)]
+		delete(s.bidsInProcess, string(status.BidDigest))
 		s.bidsMu.Unlock()
 
 		if ok {
