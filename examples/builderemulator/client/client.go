@@ -1,3 +1,9 @@
+// package client implements a simple gRPC client which is to be run by the builder
+// in their environment to get a stream of bids that are being gossip'd in the
+// mev-commit network. The builders can then decide to accept or reject the bid.
+// This status is sent back to the mev-commit node to further take action on the
+// network. The client can be improved by handling connection failures or using
+// pool of connections etc.
 package client
 
 import (
@@ -71,6 +77,10 @@ func (b *BuilderClient) startSender() error {
 	return nil
 }
 
+// ReceiveBids opens a new RPC connection with the mev-commit node to receive bids.
+// Each call to this function opens a new connection and the bids are randomly
+// assigned to one of the existing connections from mev-commit node. So if you run
+// multiple listeners, they will get unique bids in a non-deterministic fashion.
 func (b *BuilderClient) ReceiveBids() (chan *builderapiv1.Bid, error) {
 	emptyMessage := &builderapiv1.EmptyMessage{}
 	bidStream, err := b.client.ReceiveBids(context.Background(), emptyMessage)
@@ -97,6 +107,11 @@ func (b *BuilderClient) ReceiveBids() (chan *builderapiv1.Bid, error) {
 	return bidC, nil
 }
 
+// SendBidResponse can be used to send the status of the bid back to the mev-commit
+// node. The builder can use his own logic to decide upon the bid and once he is
+// ready to make a decision, this status has to be sent back to mev-commit to decide
+// what to do with this bid. The sender is a single global worker which sends back
+// the messages on grpc.
 func (b *BuilderClient) SendBidResponse(
 	ctx context.Context,
 	bidResponse builderapiv1.BidResponse,
