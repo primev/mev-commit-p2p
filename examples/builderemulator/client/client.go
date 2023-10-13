@@ -74,16 +74,7 @@ func (b *BuilderClient) startSender() error {
 		}
 	}()
 
-		var bidResponses []*builderapiv1.BidResponse
-		bidResponse := &builderapiv1.BidResponse{
-			BidDigest: []byte(bid.GetBidDigest()),
-			Status:    builderapiv1.BidResponse_STATUS_ACCEPTED,
-		}
-		bidResponses = append(bidResponses, bidResponse)
-		b.SendProcessedBids(bidResponses)
-	}
-
- return nil
+	return nil
 }
 
 // ReceiveBids opens a new RPC connection with the mev-commit node to receive bids.
