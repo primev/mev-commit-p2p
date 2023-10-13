@@ -1,11 +1,11 @@
-package preconf_test
+package preconfsigner_test
 
 import (
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		signer := preconf.NewSigner(key)
+		signer := preconfsigner.NewSigner(key)
 
 		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
@@ -40,32 +40,32 @@ func TestBids(t *testing.T) {
 		assert.Equal(t, expectedAddress, *address)
 		assert.Equal(t, key.PublicKey, *pubkey)
 	})
-	t.Run("commitment", func(t *testing.T) {
+	t.Run("preConfirmation", func(t *testing.T) {
 		userKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		userSigner := preconf.NewSigner(userKey)
+		userSigner := preconfsigner.NewSigner(userKey)
 
 		builderKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		builderSigner := preconf.NewSigner(builderKey)
+		builderSigner := preconfsigner.NewSigner(builderKey)
 
 		bid, err := userSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		commitment, err := builderSigner.ConstructCommitment(bid)
+		preConfirmation, err := builderSigner.ConstructPreConfirmation(bid)
 		if err != nil {
 			t.Fail()
 		}
 
-		address, err := userSigner.VerifyCommitment(commitment)
+		address, err := userSigner.VerifyPreConfirmation(preConfirmation)
 		if err != nil {
 			t.Fail()
 		}

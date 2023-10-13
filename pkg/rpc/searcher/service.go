@@ -2,11 +2,12 @@ package searcherapi
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"math/big"
 
 	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -25,7 +26,7 @@ func NewService(sender PreconfSender, logger *slog.Logger) *Service {
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconf.Commitment, error)
+	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
@@ -34,8 +35,8 @@ func (s *Service) SendBid(
 ) error {
 	respC, err := s.sender.SendBid(
 		srv.Context(),
-		bid.TxnHash,
-		big.NewInt(bid.BidAmt),
+		bid.TxHash,
+		big.NewInt(bid.Amount),
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
@@ -44,19 +45,17 @@ func (s *Service) SendBid(
 	}
 
 	for resp := range respC {
-		err := srv.Send(&searcherapiv1.Commitment{
-			Bid: &searcherapiv1.Bid{
-				TxnHash:     resp.TxnHash,
-				BidAmt:      resp.BidAmt.Int64(),
-				BlockNumber: resp.BlockNumber.Int64(),
-			},
-			BidHash:             resp.BidHash,
-			Signature:           resp.Signature,
-			DataHash:            resp.DataHash,
-			CommitmentSignature: resp.CommitmentSignature,
+		err := srv.Send(&searcherapiv1.PreConfirmation{
+			TxHash:                   resp.Bid.TxHash,
+			Amount:                   resp.Bid.BidAmt.Int64(),
+			BlockNumber:              resp.Bid.BlockNumber.Int64(),
+			BidDigest:                hex.EncodeToString(resp.Bid.Digest),
+			BidSignature:             hex.EncodeToString(resp.Bid.Signature),
+			PreConfirmationDigest:    hex.EncodeToString(resp.Digest),
+			PreConfirmationSignature: hex.EncodeToString(resp.Signature),
 		})
 		if err != nil {
-			s.logger.Error("error sending commitment", "err", err)
+			s.logger.Error("error sending preConfirmation", "err", err)
 			return err
 		}
 	}

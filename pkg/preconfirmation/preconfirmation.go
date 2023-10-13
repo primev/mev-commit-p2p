@@ -11,7 +11,7 @@ import (
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -21,7 +21,7 @@ const (
 )
 
 type Preconfirmation struct {
-	signer    preconf.Signer
+	signer    preconfsigner.Signer
 	topo      Topology
 	streamer  p2p.Streamer
 	us        UserStore
@@ -38,13 +38,13 @@ type UserStore interface {
 }
 
 type BidProcesser interface {
-	ProcessBid(context.Context, *preconf.Bid) (chan builderapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error)
 }
 
 func New(
 	topo Topology,
 	streamer p2p.Streamer,
-	signer preconf.Signer,
+	signer preconfsigner.Signer,
 	us UserStore,
 	processor BidProcesser,
 	logger *slog.Logger,
@@ -73,29 +73,29 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 }
 
 // SendBid is meant to be called by the searcher to construct and send bids to the builder.
-// It takes the txnHash, the bid amount in wei and the maximum valid block number.
-// It waits for commitments from all builders and then returns.
+// It takes the txHash, the bid amount in wei and the maximum valid block number.
+// It waits for preConfirmations from all builders and then returns.
 // It returns an error if the bid is not valid.
 func (p *Preconfirmation) SendBid(
 	ctx context.Context,
-	txnHash string,
+	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-) (chan *preconf.Commitment, error) {
-	signedBid, err := p.signer.ConstructSignedBid(txnHash, bidAmt, blockNumber)
+) (chan *preconfsigner.PreConfirmation, error) {
+	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
-		p.logger.Error("constructing signed bid", "err", err, "txnHash", txnHash)
+		p.logger.Error("constructing signed bid", "err", err, "txHash", txHash)
 		return nil, err
 	}
 
 	builders := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
 	if len(builders) == 0 {
-		p.logger.Error("no builders available", "txnHash", txnHash)
+		p.logger.Error("no builders available", "txHash", txHash)
 		return nil, errors.New("no builders available")
 	}
 
-	// Create a new channel to receive commitments
-	commitments := make(chan *preconf.Commitment, len(builders))
+	// Create a new channel to receive preConfirmations
+	preConfirmations := make(chan *preconfsigner.PreConfirmation, len(builders))
 
 	wg := sync.WaitGroup{}
 	for idx := range builders {
@@ -103,7 +103,7 @@ func (p *Preconfirmation) SendBid(
 		go func(builder p2p.Peer) {
 			defer wg.Done()
 
-			logger := p.logger.With("builder", builder, "bid", txnHash)
+			logger := p.logger.With("builder", builder, "bid", txHash)
 
 			builderStream, err := p.streamer.NewStream(
 				ctx,
@@ -117,28 +117,28 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			r, w := msgpack.NewReaderWriter[preconf.Commitment, preconf.Bid](builderStream)
+			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](builderStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				logger.Error("writing message", "err", err)
 				return
 			}
 
-			commitment, err := r.ReadMsg(ctx)
+			preConfirmation, err := r.ReadMsg(ctx)
 			if err != nil {
 				logger.Error("reading message", "err", err)
 				return
 			}
 
-			// Process commitment as a searcher
-			_, err = p.signer.VerifyCommitment(commitment)
+			// Process preConfirmation as a searcher
+			_, err = p.signer.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
 				logger.Error("verifying builder signature", "err", err)
 				return
 			}
 
 			select {
-			case commitments <- commitment:
+			case preConfirmations <- preConfirmation:
 			case <-ctx.Done():
 				logger.Error("context cancelled", "err", ctx.Err())
 				return
@@ -148,10 +148,10 @@ func (p *Preconfirmation) SendBid(
 
 	go func() {
 		wg.Wait()
-		close(commitments)
+		close(preConfirmations)
 	}()
 
-	return commitments, nil
+	return preConfirmations, nil
 }
 
 var ErrInvalidSearcherTypeForBid = errors.New("invalid searcher type for bid")
@@ -168,7 +168,7 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	// TODO(@ckartik): Change to reader only once availble
-	r, w := msgpack.NewReaderWriter[preconf.Bid, preconf.Commitment](stream)
+	r, w := msgpack.NewReaderWriter[preconfsigner.Bid, preconfsigner.PreConfirmation](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
@@ -192,11 +192,11 @@ func (p *Preconfirmation) handleBid(
 			case builderapiv1.BidResponse_STATUS_REJECTED:
 				return errors.New("bid rejected")
 			case builderapiv1.BidResponse_STATUS_ACCEPTED:
-				commitment, err := p.signer.ConstructCommitment(bid)
+				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
 				if err != nil {
 					return err
 				}
-				return w.WriteMsg(ctx, commitment)
+				return w.WriteMsg(ctx, preConfirmation)
 			}
 		}
 	}

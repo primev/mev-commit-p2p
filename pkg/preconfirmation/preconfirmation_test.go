@@ -12,8 +12,8 @@ import (
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -32,26 +32,26 @@ func (t *testUserStore) CheckUserRegistred(_ *common.Address) bool {
 }
 
 type testSigner struct {
-	bid              *preconf.Bid
-	commitment       *preconf.Commitment
-	bidSigner        common.Address
-	commitmentSigner common.Address
+	bid                   *preconfsigner.Bid
+	preConfirmation       *preconfsigner.PreConfirmation
+	bidSigner             common.Address
+	preConfirmationSigner common.Address
 }
 
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*preconf.Bid, error) {
+func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
 	return t.bid, nil
 }
 
-func (t *testSigner) ConstructCommitment(_ *preconf.Bid) (*preconf.Commitment, error) {
-	return t.commitment, nil
+func (t *testSigner) ConstructPreConfirmation(_ *preconfsigner.Bid) (*preconfsigner.PreConfirmation, error) {
+	return t.preConfirmation, nil
 }
 
-func (t *testSigner) VerifyBid(_ *preconf.Bid) (*common.Address, error) {
+func (t *testSigner) VerifyBid(_ *preconfsigner.Bid) (*common.Address, error) {
 	return &t.bidSigner, nil
 }
 
-func (t *testSigner) VerifyCommitment(_ *preconf.Commitment) (*common.Address, error) {
-	return &t.commitmentSigner, nil
+func (t *testSigner) VerifyPreConfirmation(_ *preconfsigner.PreConfirmation) (*common.Address, error) {
+	return &t.preConfirmationSigner, nil
 }
 
 type testProcessor struct {
@@ -60,7 +60,7 @@ type testProcessor struct {
 
 func (t *testProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconf.Bid) (chan builderapiv1.BidResponse_Status, error) {
+	_ *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error) {
 	statusC := make(chan builderapiv1.BidResponse_Status, 1)
 	statusC <- t.status
 	return statusC, nil
@@ -88,18 +88,18 @@ func TestPreconfBidSubmission(t *testing.T) {
 			Type:       p2p.PeerTypeBuilder,
 		}
 
-		bid := &preconf.Bid{
-			TxnHash:     "test",
+		bid := &preconfsigner.Bid{
+			TxHash:      "test",
 			BidAmt:      big.NewInt(10),
 			BlockNumber: big.NewInt(10),
-			BidHash:     []byte("test"),
+			Digest:      []byte("test"),
 			Signature:   []byte("test"),
 		}
 
-		commitment := &preconf.Commitment{
-			Bid:                 *bid,
-			DataHash:            []byte("test"),
-			CommitmentSignature: []byte("test"),
+		preConfirmation := &preconfsigner.PreConfirmation{
+			Bid:       *bid,
+			Digest:    []byte("test"),
+			Signature: []byte("test"),
 		}
 
 		svc := p2ptest.New(
@@ -112,29 +112,29 @@ func TestPreconfBidSubmission(t *testing.T) {
 			status: builderapiv1.BidResponse_STATUS_ACCEPTED,
 		}
 		signer := &testSigner{
-			bid:              bid,
-			commitment:       commitment,
-			bidSigner:        common.HexToAddress("0x1"),
-			commitmentSigner: common.HexToAddress("0x2"),
+			bid:                   bid,
+			preConfirmation:       preConfirmation,
+			bidSigner:             common.HexToAddress("0x1"),
+			preConfirmationSigner: common.HexToAddress("0x2"),
 		}
 
 		p := preconfirmation.New(topo, svc, signer, us, proc, newTestLogger(t, os.Stdout))
 
 		svc.SetPeerHandler(server, p.Protocol())
 
-		respC, err := p.SendBid(context.Background(), bid.TxnHash, bid.BidAmt, bid.BlockNumber)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		resp := <-respC
+		commitment := <-respC
 
-		if string(resp.DataHash) != "test" {
+		if string(commitment.Digest) != "test" {
 			t.Fatalf("data hash is not equal to test")
 		}
 
-		if string(resp.CommitmentSignature) != "test" {
-			t.Fatalf("commitment signature is not equal to test")
+		if string(commitment.Signature) != "test" {
+			t.Fatalf("preConfirmation signature is not equal to test")
 		}
 	})
 }

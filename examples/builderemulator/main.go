@@ -51,8 +51,8 @@ func main() {
 			}
 			logger.Info("received new bid", "bid", bid)
 			err := builderClient.SendBidResponse(context.Background(), &builderapiv1.BidResponse{
-				BidHash: bid.BidHash,
-				Status:  builderapiv1.BidResponse_STATUS_ACCEPTED,
+				BidDigest: bid.BidDigest,
+				Status:    builderapiv1.BidResponse_STATUS_ACCEPTED,
 			})
 			if err != nil {
 				logger.Error("failed to send bid response", "error", err)

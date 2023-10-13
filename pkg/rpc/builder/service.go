@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 )
 
 type Service struct {
@@ -27,11 +27,11 @@ func NewService(logger *slog.Logger) *Service {
 
 func (s *Service) ProcessBid(
 	ctx context.Context,
-	bid *preconf.Bid,
+	bid *preconfsigner.Bid,
 ) (chan builderapiv1.BidResponse_Status, error) {
 	respC := make(chan builderapiv1.BidResponse_Status, 1)
 	s.bidsMu.Lock()
-	s.bidsInProcess[string(bid.BidHash)] = func(status builderapiv1.BidResponse_Status) {
+	s.bidsInProcess[string(bid.Digest)] = func(status builderapiv1.BidResponse_Status) {
 		respC <- status
 		close(respC)
 	}
@@ -40,16 +40,16 @@ func (s *Service) ProcessBid(
 	select {
 	case <-ctx.Done():
 		s.bidsMu.Lock()
-		delete(s.bidsInProcess, string(bid.BidHash))
+		delete(s.bidsInProcess, string(bid.Digest))
 		s.bidsMu.Unlock()
 
 		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
 		return nil, ctx.Err()
 	case s.receiver <- &builderapiv1.Bid{
-		TxnHash:     bid.TxnHash,
-		BidAmt:      bid.BidAmt.Int64(),
+		TxHash:      bid.TxHash,
+		BidAmount:   bid.BidAmt.Int64(),
 		BlockNumber: bid.BlockNumber.Int64(),
-		BidHash:     bid.BidHash,
+		BidDigest:   bid.Digest,
 	}:
 	}
 	s.logger.Info("sent bid to builder node", "bid", bid)
@@ -85,8 +85,8 @@ func (s *Service) SendProcessedBids(srv builderapiv1.Builder_SendProcessedBidsSe
 		}
 
 		s.bidsMu.Lock()
-		callback, ok := s.bidsInProcess[string(status.BidHash)]
-		delete(s.bidsInProcess, string(status.BidHash))
+		callback, ok := s.bidsInProcess[string(status.BidDigest)]
+		delete(s.bidsInProcess, string(status.BidDigest))
 		s.bidsMu.Unlock()
 
 		if ok {
