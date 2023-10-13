@@ -64,9 +64,3 @@ func (s *Service) SendBid(
 
 	return nil
 }
-
-func HexEncode(src []byte) string {
-	dst := make([]byte, hex.EncodedLen(len(src)))
-	hex.Encode(dst, src)
-	return string(dst)
-}
