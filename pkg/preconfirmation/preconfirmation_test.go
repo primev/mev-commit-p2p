@@ -92,14 +92,14 @@ func TestPreconfBidSubmission(t *testing.T) {
 			TxnHash:     "test",
 			BidAmt:      big.NewInt(10),
 			BlockNumber: big.NewInt(10),
-			BidHash:     []byte("test"),
+			Digest:      []byte("test"),
 			Signature:   []byte("test"),
 		}
 
 		preConfirmation := &preconfsigner.PreConfirmation{
-			Bid:                      *bid,
-			PreconfirmationDigest:    []byte("test"),
-			PreConfirmationSignature: []byte("test"),
+			Bid:       *bid,
+			Digest:    []byte("test"),
+			Signature: []byte("test"),
 		}
 
 		svc := p2ptest.New(
@@ -127,13 +127,13 @@ func TestPreconfBidSubmission(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		resp := <-respC
+		commitment := <-respC
 
-		if string(resp.PreconfirmationDigest) != "test" {
+		if string(commitment.Digest) != "test" {
 			t.Fatalf("data hash is not equal to test")
 		}
 
-		if string(resp.PreConfirmationSignature) != "test" {
+		if string(commitment.Signature) != "test" {
 			t.Fatalf("preConfirmation signature is not equal to test")
 		}
 	})

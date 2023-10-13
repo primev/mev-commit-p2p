@@ -10,14 +10,14 @@ service Searcher {
 
 message Bid {
   string txn_hash = 1;
-  int64 bid_amt = 2;
+  int64 amount = 2;
   int64 block_number = 3;
 };
 
 message PreConfirmation {
   Bid bid = 1;
-  bytes bid_hash = 4;
-  bytes signature = 5;
-  bytes preconfirmation_digest = 6;
-  bytes preConfirmation_signature = 7;
+  string bid_hash = 2;
+  string bid_signature = 3;
+  string digest = 4;
+  string signature = 5;
 };

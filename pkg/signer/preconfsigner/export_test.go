@@ -13,7 +13,7 @@ func (p *privateKeySigner) BidOriginator(bid *Bid) (*common.Address, *ecdsa.Publ
 		return nil, nil, err
 	}
 
-	pubkey, err := crypto.SigToPub(bid.BidHash, bid.Signature)
+	pubkey, err := crypto.SigToPub(bid.Digest, bid.Signature)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -31,7 +31,7 @@ func (p *privateKeySigner) PreConfirmationOriginator(
 		return nil, nil, err
 	}
 
-	pubkey, err := crypto.SigToPub(c.PreconfirmationDigest, c.PreConfirmationSignature)
+	pubkey, err := crypto.SigToPub(c.Digest, c.Signature)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -24,19 +24,19 @@ var (
 // Adds blocknumber for pre-conf bid - Will need to manage
 // how to reciever acts on a bid / TTL is the blocknumber
 type Bid struct {
-	TxnHash     string   `json:"txnHash"`
-	BidAmt      *big.Int `json:"bid"`
-	BlockNumber *big.Int `json:"blocknumber"`
+	TxnHash     string   `json:"txn_hash"`
+	BidAmt      *big.Int `json:"bid_amt"`
+	BlockNumber *big.Int `json:"block_number"`
 
-	BidHash   []byte `json:"bidhash"` // TODO(@ckaritk): name better
-	Signature []byte `json:"signature"`
+	Digest    []byte `json:"bid_digest"` // TODO(@ckaritk): name better
+	Signature []byte `json:"bid_signature"`
 }
 
 type PreConfirmation struct {
-	Bid
+	Bid Bid `json:"bid"`
 
-	PreconfirmationDigest    []byte `json:"preconfirmation_digest"` // TODO(@ckaritk): name better
-	PreConfirmationSignature []byte `json:"preConfirmation_signature"`
+	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
+	Signature []byte `json:"signature"`
 }
 
 type Signer interface {
@@ -83,7 +83,7 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, err
 	}
 
-	bid.BidHash = bidHash
+	bid.Digest = bidHash
 	bid.Signature = sig
 
 	return bid, nil
@@ -103,7 +103,7 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		bid.TxnHash,
 		bid.BidAmt,
 		bid.BlockNumber,
-		bid.BidHash,
+		bid.Digest,
 		bid.Signature,
 	)
 
@@ -117,26 +117,26 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		return nil, err
 	}
 
-	preConfirmation.PreconfirmationDigest = preconfirmationDigest
-	preConfirmation.PreConfirmationSignature = sig
+	preConfirmation.Digest = preconfirmationDigest
+	preConfirmation.Signature = sig
 
 	return preConfirmation, nil
 }
 
 func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
-	if bid.BidHash == nil || bid.Signature == nil {
+	if bid.Digest == nil || bid.Signature == nil {
 		return nil, ErrMissingHashSignature
 	}
 
 	return eipVerify(
 		constructBidPayload(bid.TxnHash, bid.BidAmt, bid.BlockNumber),
-		bid.BidHash,
+		bid.Digest,
 		bid.Signature,
 	)
 }
 
 func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Address, error) {
-	if c.PreconfirmationDigest == nil || c.PreConfirmationSignature == nil {
+	if c.Digest == nil || c.Signature == nil {
 		return nil, ErrMissingHashSignature
 	}
 
@@ -146,14 +146,14 @@ func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Ad
 	}
 
 	internalPayload := constructPreConfirmationPayload(
-		c.TxnHash,
-		c.BidAmt,
-		c.BlockNumber,
-		c.BidHash,
-		c.Signature,
+		c.Bid.TxnHash,
+		c.Bid.BidAmt,
+		c.Bid.BlockNumber,
+		c.Bid.Digest,
+		c.Bid.Signature,
 	)
 
-	return eipVerify(internalPayload, c.PreconfirmationDigest, c.PreConfirmationSignature)
+	return eipVerify(internalPayload, c.Digest, c.Signature)
 }
 
 func eipVerify(

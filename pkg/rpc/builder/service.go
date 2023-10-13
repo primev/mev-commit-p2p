@@ -31,7 +31,7 @@ func (s *Service) ProcessBid(
 ) (chan builderapiv1.BidResponse_Status, error) {
 	respC := make(chan builderapiv1.BidResponse_Status, 1)
 	s.bidsMu.Lock()
-	s.bidsInProcess[string(bid.BidHash)] = func(status builderapiv1.BidResponse_Status) {
+	s.bidsInProcess[string(bid.Digest)] = func(status builderapiv1.BidResponse_Status) {
 		respC <- status
 		close(respC)
 	}
@@ -40,7 +40,7 @@ func (s *Service) ProcessBid(
 	select {
 	case <-ctx.Done():
 		s.bidsMu.Lock()
-		delete(s.bidsInProcess, string(bid.BidHash))
+		delete(s.bidsInProcess, string(bid.Digest))
 		s.bidsMu.Unlock()
 
 		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
@@ -49,7 +49,7 @@ func (s *Service) ProcessBid(
 		TxnHash:     bid.TxnHash,
 		BidAmt:      bid.BidAmt.Int64(),
 		BlockNumber: bid.BlockNumber.Int64(),
-		BidHash:     bid.BidHash,
+		BidHash:     bid.Digest,
 	}:
 	}
 	s.logger.Info("sent bid to builder node", "bid", bid)

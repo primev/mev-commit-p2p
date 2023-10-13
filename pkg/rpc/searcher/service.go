@@ -2,6 +2,7 @@ package searcherapi
 
 import (
 	"context"
+	"encoding/hex"
 	"log/slog"
 	"math/big"
 
@@ -35,7 +36,7 @@ func (s *Service) SendBid(
 	respC, err := s.sender.SendBid(
 		srv.Context(),
 		bid.TxnHash,
-		big.NewInt(bid.BidAmt),
+		big.NewInt(bid.Amount),
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
@@ -46,14 +47,14 @@ func (s *Service) SendBid(
 	for resp := range respC {
 		err := srv.Send(&searcherapiv1.PreConfirmation{
 			Bid: &searcherapiv1.Bid{
-				TxnHash:     resp.TxnHash,
-				BidAmt:      resp.BidAmt.Int64(),
-				BlockNumber: resp.BlockNumber.Int64(),
+				TxnHash:     resp.Bid.TxnHash,
+				Amount:      resp.Bid.BidAmt.Int64(),
+				BlockNumber: resp.Bid.BlockNumber.Int64(),
 			},
-			BidHash:                  resp.BidHash,
-			Signature:                resp.Signature,
-			PreconfirmationDigest:    resp.PreconfirmationDigest,
-			PreConfirmationSignature: resp.PreConfirmationSignature,
+			BidHash:      hex.EncodeToString(resp.Bid.Digest),
+			BidSignature: hex.EncodeToString(resp.Bid.Signature),
+			Digest:       hex.EncodeToString(resp.Digest),
+			Signature:    hex.EncodeToString(resp.Signature),
 		})
 		if err != nil {
 			s.logger.Error("error sending preConfirmation", "err", err)
@@ -62,4 +63,10 @@ func (s *Service) SendBid(
 	}
 
 	return nil
+}
+
+func HexEncode(src []byte) string {
+	dst := make([]byte, hex.EncodedLen(len(src)))
+	hex.Encode(dst, src)
+	return string(dst)
 }
