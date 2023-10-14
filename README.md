@@ -20,18 +20,25 @@ OPTIONS:
 ```
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
+
 # Type of peer. Options are builder and searcher.
 peer_type: builder
+
 # Port used for P2P traffic. If not configured, 13522 is the default.
 p2p_port: 13522
+
 # Port used for HTTP traffic. If not configured, 13523 is the default.
 http_port: 13523
+
 # Secret for the node. This is used to authorize the nodes. The value doesnt matter as long as it is sufficiently unique. It is signed using the private key.
 secret: hello
+
 # Format used for the logs. Options are "text" or "json".
 log_fmt: text
+
 # Log level. Options are "debug", "info", "warn" or "error".
 log_level: debug
+
 # Bootnodes used for bootstrapping the network.
 bootnodes:
   - /ip4/35.91.118.20/tcp/13522/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
