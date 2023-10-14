@@ -130,11 +130,11 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 - Running with Docker Compose:
  
   ```
-    docker-compose up --build
+  docker-compose up --build
   ```
 
 - Stopping the Service:
 
   ```
-    docker-compose down
+  docker-compose down
   ```
