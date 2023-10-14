@@ -82,7 +82,7 @@ service Searcher {
 
 message Bid {
   string tx_hash = 1;
-  int64 bid_amount = 2;
+  int64 amount = 2;
   int64 block_number = 3;
 };
 
@@ -92,7 +92,7 @@ By default, the docker setup exposes port `13524`, which is the standard port on
 ```
 {
   "tx_hash": "<tx-hash>",
-  "bid_amount": <number>,
+  "amount": <number>,
   "block_number": <block-number>
 }
 ```
