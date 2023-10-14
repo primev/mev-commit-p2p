@@ -17,7 +17,7 @@ OPTIONS:
 ```
 
 - Once the key is available the users need to create a yaml config file. Example config files are available in the [config](https://github.com/primevprotocol/mev-commit/tree/main/config) folder. The important options are defined below:
-```
+```yaml
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
 
