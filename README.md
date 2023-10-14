@@ -34,7 +34,7 @@ log_fmt: text
 log_level: debug
 # Bootnodes used for bootstrapping the network.
 bootnodes:
-  - /ip4/35.91.118.20/tcp/13524/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
+  - /ip4/35.91.118.20/tcp/13522/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
 ```
 
 - After the config file is ready, run `mev-commit start` with the config option.
