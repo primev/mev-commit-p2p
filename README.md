@@ -73,7 +73,7 @@ OPTIONS:
 }
 ```
 ## Sending bids as a Searcher
-To send bids, you can use an gRPC api that is availible to searcher nodes. 
+To send bids, you can use an [gRPC api](https://github.com/primevprotocol/mev-commit/blob/main/rpc/searcherapi/v1/searcherapi.proto) that is availible to searcher nodes. 
 Upon running this service, searcher nodes will have access to the following:
 ```protobuf
 service Searcher {
@@ -99,7 +99,7 @@ By default, the docker setup exposes port `13524`, which is the standard port on
 
 
 ## Commitments from Builders
-To recieve commitments from builders, the builder-mev-node needs to have a running service that connects to the RPC endpoints and connects to the following functions:
+To gather commitments from builders, the builder mev-node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
 
 ```protobuf
   // ReceiveBids is called by the builder to receive bids from the mev-commit node.
