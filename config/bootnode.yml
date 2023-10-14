@@ -2,6 +2,7 @@ priv_key_file: /keys/bootnode
 peer_type: bootnode
 p2p_port: 13522
 http_port: 13523
+rpc_port: 13524
 secret: hello
 log_fmt: text
 log_level: debug
