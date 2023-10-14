@@ -81,18 +81,18 @@ service Searcher {
 }
 
 message Bid {
-  string txn_hash = 1;
-  int64 bid_amt = 2;
+  string tx_hash = 1;
+  int64 bid_amount = 2;
   int64 block_number = 3;
 };
 
 ```
 
-By default, the docker setup exposes port `13524`, which is the standard port on which the searcher api is running. By hitting SendBid with the bid structure in the following format:
-```json
+By default, the docker setup exposes port `13524`, which is the standard port on which the searcher api is running. By hitting `SendBid` with the bid structure in the following format:
+```
 {
-  "txn_hash": "<txn-hash>",
-  "bid_amt": <number>,
+  "tx_hash": "<tx-hash>",
+  "bid_amount": <number>,
   "block_number": <block-number>
 }
 ```
