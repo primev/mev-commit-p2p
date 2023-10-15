@@ -37,7 +37,7 @@ type Options struct {
 	HTTPPort         int
 	RPCPort          int
 	Bootnodes        []string
-	BuilderExposeAPI bool
+	ExposeBuilderAPI bool
 }
 
 type Node struct {
@@ -110,7 +110,7 @@ func NewNode(opts *Options) (*Node, error) {
 	switch opts.PeerType {
 	case p2p.PeerTypeBuilder.String():
 		var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
-		if opts.BuilderExposeAPI {
+		if opts.ExposeBuilderAPI {
 			builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
 			builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
 			bidProcessor = builderAPI

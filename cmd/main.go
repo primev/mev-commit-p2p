@@ -99,7 +99,7 @@ type config struct {
 	LogFmt           string   `yaml:"log_fmt" json:"log_fmt"`
 	LogLevel         string   `yaml:"log_level" json:"log_level"`
 	Bootnodes        []string `yaml:"bootnodes" json:"bootnodes"`
-	BuilderExposeAPI bool     `yaml:"builder_expose_api" json:"builder_expose_api"`
+	ExposeBuilderAPI bool     `yaml:"expose_builder_api" json:"expose_builder_api"`
 }
 
 func checkConfig(cfg *config) error {
@@ -185,7 +185,7 @@ func start(c *cli.Context) error {
 		RPCPort:          cfg.RPCPort,
 		Logger:           logger,
 		Bootnodes:        cfg.Bootnodes,
-		BuilderExposeAPI: cfg.BuilderExposeAPI,
+		ExposeBuilderAPI: cfg.ExposeBuilderAPI,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)
