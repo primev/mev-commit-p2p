@@ -28,15 +28,16 @@ import (
 )
 
 type Options struct {
-	Version   string
-	PrivKey   *ecdsa.PrivateKey
-	Secret    string
-	PeerType  string
-	Logger    *slog.Logger
-	P2PPort   int
-	HTTPPort  int
-	RPCPort   int
-	Bootnodes []string
+	Version          string
+	PrivKey          *ecdsa.PrivateKey
+	Secret           string
+	PeerType         string
+	Logger           *slog.Logger
+	P2PPort          int
+	HTTPPort         int
+	RPCPort          int
+	Bootnodes        []string
+	BuilderExposeAPI bool
 }
 
 type Node struct {
@@ -108,16 +109,19 @@ func NewNode(opts *Options) (*Node, error) {
 
 	switch opts.PeerType {
 	case p2p.PeerTypeBuilder.String():
-		builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
-		builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
-
+		var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
+		if opts.BuilderExposeAPI {
+			builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
+			builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
+			bidProcessor = builderAPI
+		}
 		// TODO(@ckartik): Update noOpBidProcessor to be selected as default in a flag paramater.
 		preconfProto := preconfirmation.New(
 			topo,
 			p2pSvc,
 			preconfSigner,
 			noOpUserStore{},
-			noOpBidProcessor{},
+			bidProcessor,
 			opts.Logger.With("component", "preconfirmation_protocol"),
 		)
 		// Only register handler for builder

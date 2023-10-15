@@ -25,7 +25,7 @@ type Preconfirmation struct {
 	topo      Topology
 	streamer  p2p.Streamer
 	us        UserStore
-	processer BidProcesser
+	processer BidProcessor
 	logger    *slog.Logger
 }
 
@@ -37,7 +37,7 @@ type UserStore interface {
 	CheckUserRegistred(*common.Address) bool
 }
 
-type BidProcesser interface {
+type BidProcessor interface {
 	ProcessBid(context.Context, *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error)
 }
 
@@ -46,7 +46,7 @@ func New(
 	streamer p2p.Streamer,
 	signer preconfsigner.Signer,
 	us UserStore,
-	processor BidProcesser,
+	processor BidProcessor,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{

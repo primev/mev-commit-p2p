@@ -6,5 +6,6 @@ rpc_port: 13524
 secret: hello
 log_fmt: text
 log_level: debug
+builder_expose_api: false
 bootnodes:
   - /ip4/<localhost>/tcp/13522/p2p/<p2p_ID>

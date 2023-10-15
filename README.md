@@ -116,6 +116,9 @@ To gather commitments from builders, the builder mev-node must maintain an activ
 
 ```
 
+By Default this service is disabled, and must be enabled by setting the BuilderAPIEmabled flag in the config file to true.
+
+The file is located at [./config/builder.yaml](./config/builder.yml) and the variable is set to `builder_expose_api: false` by default.
 
 ## Building Docker Image
 
@@ -141,3 +144,4 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 
 ## APIs for Searcher & Builder
 [Link to Documentation on Searcher and Builder API](./pkg/rpc/README.md)
+
