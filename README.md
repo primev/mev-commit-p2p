@@ -138,3 +138,6 @@ To simplify the deployment process, you may utilize Docker to create an isolated
   ```
   docker-compose down
   ```
+
+## APIs for Searcher & Builder
+[Link to Documentation on Searcher and Builder API](./pkg/rpc/README.md)
