@@ -41,3 +41,22 @@ The response to the searcher API is a stream of commitments, an example response
     "pre_confirmation_signature": "4838b53968be8a4cd4bceee9a8299885546b7d184cfe6390dcb8afd37fec3c1b08f0ce03935afce5b11b9f425434a4b22d01cb4d4dd5f4e5894c699302dbb3ad01"
 }
 ```
+
+
+## Commitments from Builders | Builder API
+To gather commitments from builders, the builder mev-node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
+
+```protobuf
+  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
+  // The mev-commit node will stream bids to the builder.
+  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
+  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
+  // The builder will stream processed bids to the mev-commit node.
+  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
+
+```
+
+**By default this service is disabled**, and must be enabled by setting the BuilderAPIEmabled flag in the config file to true.
+
+The file is located at [./config/builder.yaml](../../config/builder.yml) form the top level of the project and the variable is set to `expose_builder_api: false` by default.
+

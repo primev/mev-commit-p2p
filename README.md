@@ -102,24 +102,6 @@ By default, the docker setup exposes port `13524`, which is the standard port on
 }
 ```
 
-
-## Commitments from Builders
-To gather commitments from builders, the builder mev-node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
-
-```protobuf
-  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
-  // The mev-commit node will stream bids to the builder.
-  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
-  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
-  // The builder will stream processed bids to the mev-commit node.
-  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
-
-```
-
-By Default this service is disabled, and must be enabled by setting the BuilderAPIEmabled flag in the config file to true.
-
-The file is located at [./config/builder.yaml](./config/builder.yml) and the variable is set to `expose_builder_api: false` by default.
-
 ## Building Docker Image
 
 To simplify the deployment process, you may utilize Docker to create an isolated environment to run mev-commit.
@@ -144,4 +126,6 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 
 ## APIs for Searcher & Builder
 [Link to Documentation on Searcher and Builder API](./pkg/rpc/README.md)
-
+- This includes: 
+   - the payload for the searcher API
+   - The required setup for builders to process bids into commitments in their personal infra.
