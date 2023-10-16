@@ -42,6 +42,9 @@ log_level: debug
 # Bootnodes used for bootstrapping the network.
 bootnodes:
   - /ip4/35.91.118.20/tcp/13522/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
+
+# The default is set to false for development reasons. Change it to true if you wish to accept bids on your builder instance
+expose_builder_api: false
 ```
 
 - After the config file is ready, run `mev-commit start` with the config option.
@@ -58,66 +61,25 @@ OPTIONS:
 ```
 
 - After the node is started, users can check the status of the peers connected to the node using the `/topology` endpoint on the HTTP port.
-```
+```json
 {
-   self: {
-      Addresses: [
+   "self": {
+      "Addresses": [
          "/ip4/127.0.0.1/tcp/13526",
          "/ip4/192.168.1.103/tcp/13526",
          "/ip4/192.168.100.5/tcp/18625"
       ],
-      Ethereum Address: "0x55B3B672DEB14178615F648911e76b7FE1B23e5D",
-      Peer Type: "builder",
-      Underlay: "16Uiu2HAmBykfyf9A5DnRguHNS1mvSaprzYEkjRf6uafLU4javG4L"
+      "Ethereum Address": "0x55B3B672DEB14178615F648911e76b7FE1B23e5D",
+      "Peer Type": "builder",
+      "Underlay": "16Uiu2HAmBykfyf9A5DnRguHNS1mvSaprzYEkjRf6uafLU4javG4L"
    },
-   connected_peers: {
-      builders: [
-         {
-            "0xca61596ccef983eb7cae42340ec553dd89881403"
-         }
+   "connected_peers": {
+      "builders": [
+         "0xca61596ccef983eb7cae42340ec553dd89881403"
       ]
    }
 }
 ```
-## Sending bids as a Searcher
-To send bids, you can use an [gRPC api](https://github.com/primevprotocol/mev-commit/blob/main/rpc/searcherapi/v1/searcherapi.proto) that is availible to searcher nodes. 
-Upon running this service, searcher nodes will have access to the following:
-```protobuf
-service Searcher {
-  rpc SendBid(Bid) returns (stream Commitment) {}
-}
-
-message Bid {
-  string tx_hash = 1;
-  int64 amount = 2;
-  int64 block_number = 3;
-};
-
-```
-
-By default, the docker setup exposes port `13524`, which is the standard port on which the searcher api is running. By hitting `SendBid` with the bid structure in the following format:
-```
-{
-  "tx_hash": "<tx-hash>",
-  "amount": <number>,
-  "block_number": <block-number>
-}
-```
-
-
-## Commitments from Builders
-To gather commitments from builders, the builder mev-node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
-
-```protobuf
-  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
-  // The mev-commit node will stream bids to the builder.
-  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
-  // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
-  // The builder will stream processed bids to the mev-commit node.
-  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
-
-```
-
 
 ## Building Docker Image
 
@@ -132,11 +94,17 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 - Running with Docker Compose:
  
   ```
-    docker-compose up --build
+  docker-compose up --build
   ```
 
 - Stopping the Service:
 
   ```
-    docker-compose down
+  docker-compose down
   ```
+
+## APIs for Searcher & Builder
+[Link to Documentation on Searcher and Builder API](./pkg/rpc/README.md)
+- This includes: 
+   - the payload for the searcher API
+   - The required setup for builders to process bids into commitments in their personal infra.
