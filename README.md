@@ -42,6 +42,9 @@ log_level: debug
 # Bootnodes used for bootstrapping the network.
 bootnodes:
   - /ip4/35.91.118.20/tcp/13522/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
+
+# The default is set to false for development reasons. Change it to true if you wish to accept bids on your builder instance
+expose_builder_api: false
 ```
 
 - After the config file is ready, run `mev-commit start` with the config option.
@@ -76,31 +79,6 @@ OPTIONS:
       ]
    }
 }
-```
-## Sending bids as a Searcher
-To send bids, you can use an [gRPC api](https://github.com/primevprotocol/mev-commit/blob/main/rpc/searcherapi/v1/searcherapi.proto) that is availible to searcher nodes. 
-Upon running this service, searcher nodes will have access to the following:
-```protobuf
-service Searcher {
-  rpc SendBid(Bid) returns (stream Commitment) {}
-}
-
-message Bid {
-  string tx_hash = 1;
-  int64 amount = 2;
-  int64 block_number = 3;
-};
-
-```
-
-By default, the docker setup exposes port `13524`, which is the standard port on which the searcher api is running. By hitting `SendBid` with the bid structure in the following format:
-```
-{
-  "tx_hash": "<tx-hash>",
-  "amount": <number>,
-  "block_number": <block-number>
-}
-```
 
 ## Building Docker Image
 
