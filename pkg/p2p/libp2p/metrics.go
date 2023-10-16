@@ -4,6 +4,7 @@ import "github.com/prometheus/client_golang/prometheus"
 
 type metrics struct {
 	BlockedPeerCount             prometheus.Counter
+	RejectedConnectionCount      prometheus.Counter
 	FailedIncomingHandshakeCount prometheus.Counter
 	FailedOutgoingHandshakeCount prometheus.Counter
 }
@@ -17,6 +18,12 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 			Subsystem: subsystem,
 			Name:      "blocked_peer_count",
 			Help:      "Number of blocked peers.",
+		}),
+		RejectedConnectionCount: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "rejected_connection_count",
+			Help:      "Number of rejected connection count.",
 		}),
 		FailedIncomingHandshakeCount: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
@@ -34,6 +41,7 @@ func newMetrics(registry prometheus.Registerer, namespace string) *metrics {
 
 	registry.MustRegister(
 		m.BlockedPeerCount,
+		m.RejectedConnectionCount,
 		m.FailedIncomingHandshakeCount,
 		m.FailedOutgoingHandshakeCount,
 	)
