@@ -79,6 +79,7 @@ OPTIONS:
       ]
    }
 }
+```
 
 ## Building Docker Image
 
