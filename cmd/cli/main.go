@@ -44,6 +44,7 @@ func main() {
 		logLevel = viper.GetString("logLevel")
 		logOutput = viper.GetString("logOutput")
 
+		logger.Infof("Using config file: %s", configFile)
 	} else {
 		logLevel = "debug"
 		logOutput = "stdout"
