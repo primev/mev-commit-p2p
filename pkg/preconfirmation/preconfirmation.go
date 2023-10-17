@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
@@ -180,6 +181,10 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	if p.us.CheckUserRegistred(ethAddress) {
+		// try to enqueue for 5 seconds
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
 		statusC, err := p.processer.ProcessBid(ctx, bid)
 		if err != nil {
 			return err
