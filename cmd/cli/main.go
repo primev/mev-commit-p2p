@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -19,15 +22,32 @@ var (
 	blockNumber   int64
 	logLevel      string
 	logOutput     string
+
+	configFile string
 )
 
 func main() {
-	var rootCmd = &cobra.Command{Use: "searcher-cli"}
-	rootCmd.PersistentFlags().StringVarP(&serverAddress, "server", "s", "localhost:13524", "gRPC searcher server address")
-	rootCmd.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "debug", "Log level (debug, info, warn, error)")
-	rootCmd.PersistentFlags().StringVarP(&logOutput, "log-output", "o", "stdout", "Log output (stdout, file)")
-
 	logger := logrus.New()
+	var rootCmd = &cobra.Command{Use: "searcher-cli"}
+
+	rootCmd.PersistentFlags().StringVarP(&configFile, "config-file", "c", "config.yaml", "Configuration file path")
+
+	if len(os.Args) > 1 && os.Args[1] != "create-config" {
+		viper.SetConfigFile(configFile)
+		viper.AutomaticEnv()
+		if err := viper.ReadInConfig(); err != nil {
+			logger.Error(err)
+			return
+		}
+
+		serverAddress = viper.GetString("serverAddress")
+		logLevel = viper.GetString("logLevel")
+		logOutput = viper.GetString("logOutput")
+
+	} else {
+		logLevel = "debug"
+		logOutput = "stdout"
+	}
 
 	switch strings.ToLower(logLevel) {
 	case "debug":
@@ -45,7 +65,7 @@ func main() {
 	if logOutput == "stdout" {
 		logger.SetOutput(os.Stdout)
 	} else {
-		logFile, err := os.Create("mev-commit.log")
+		logFile, err := os.OpenFile("searcher-cli.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			logger.Fatal("Error opening log file", err)
 		}
@@ -110,11 +130,80 @@ func main() {
 	sendBidCmd.Flags().Int64VarP(&amount, "amount", "a", 0, "Bid amount")
 	sendBidCmd.Flags().Int64VarP(&blockNumber, "block", "b", 0, "Block number")
 
+	// NOTE: (@iowar) By sending an empty Bid request, the status of the RPC
+	// server is being checked. Instead, a ping request can be defined within
+	// the searcher proto or a better solution can be found. Seeking the team's
+	// opinion on this
+	statusServerCmd := &cobra.Command{
+		Use:   "status",
+		Short: "Check the status of the gRPC searcher server",
+		Run: func(cmd *cobra.Command, args []string) {
+			creds := insecure.NewCredentials()
+			conn, err := grpc.Dial(serverAddress, grpc.WithTransportCredentials(creds))
+			if err != nil {
+				logger.WithFields(logrus.Fields{
+					"error": err,
+				}).Error("Connection error")
+				return
+			}
+			defer conn.Close()
+
+			client := pb.NewSearcherClient(conn)
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*7)
+			defer cancel()
+
+			_, err = client.SendBid(ctx, &pb.Bid{})
+			if err != nil {
+				logger.Warnf("gRPC searcher server is not reachable at %s", serverAddress)
+				return
+			}
+
+			logger.Infof("gRPC searcher server is up and running at %s", serverAddress)
+		},
+	}
+
+	createConfigCmd := &cobra.Command{
+		Use:   "create-config",
+		Short: "Create an example config.yaml file",
+		Run: func(cmd *cobra.Command, args []string) {
+			_, err := os.Stat("config.yaml")
+			if err == nil {
+				logger.Warn("config.yaml file already exists in the current directory.")
+				return
+			}
+
+			configData := `serverAddress: "localhost:13524"
+logLevel: "debug"
+logOutput: "stdout"`
+			err = createConfigFile("config.yaml", []byte(configData))
+			if err != nil {
+				logger.Error(err)
+			} else {
+				logger.Info("config.yaml file created in the current directory")
+			}
+		},
+	}
+
 	rootCmd.AddCommand(sendBidCmd)
+	rootCmd.AddCommand(statusServerCmd)
+	rootCmd.AddCommand(createConfigCmd)
 
 	if err := rootCmd.Execute(); err != nil {
-		logger.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("CLI error")
+		return
 	}
+}
+
+func createConfigFile(filename string, data []byte) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
