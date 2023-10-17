@@ -9,6 +9,7 @@ LDFLAGS ?= -s -w \
 build: export CGO_ENABLED=0
 build: bin
 	go build -ldflags '$(LDFLAGS)' -o bin/mev-commit ./cmd
+	go build -ldflags '$(LDFLAGS)' -o bin/searcher-cli ./cmd/cli
 
 bin:
 	mkdir $@
