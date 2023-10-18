@@ -10,15 +10,34 @@ There's two key RPC APIs this software provides:
 - This is the api that takes bids into the mev-commit node that is emulating a searcher. 
 - The SendBid RPC endpoint will subseqently propegate the Bid after it is signed, to the primev P2P network.
 
-The format for the request payload is as follows:
+The format for the request payload and API is as follows:
 
 ```protobuf
+
+service Searcher {
+  rpc SendBid(Bid) returns (stream PreConfirmation) {}
+}
+
+// This is the bid structure that is passed into the RPC endpoint.
 message Bid {
   string tx_hash = 1;
   int64 amount = 2;
   int64 block_number = 3;
 };
+
+// This is the format for the confirmation that is recieved back by the network.
+message PreConfirmation {
+  string tx_hash = 1;
+  int64 amount = 2;
+  int64 block_number = 3;
+  string bid_digest = 4;
+  string bid_signature = 5;
+  string pre_confirmation_digest = 6;
+  string pre_confirmation_signature = 7;
+};
 ```
+
+Right now, the network topology is setup as a request/response mechanism for these bids and pre-confirmations.
 
 Which is the following in JSON Format:
 ```javascript
