@@ -167,11 +167,12 @@ func main() {
 			Name:  "send-rand-bid",
 			Usage: "Send a random bid to the gRPC searcher server",
 			Action: func(c *cli.Context) error {
-				rand.Seed(time.Now().UnixNano())
+				randSource := rand.NewSource(time.Now().UnixNano())
+				randGenerator := rand.New(randSource)
 
-				txHash = generateTxHash()
-				amount = rand.Int63n(1000) + 1
-				blockNumber = rand.Int63n(100000) + 1
+				txHash = generateTxHash(randGenerator)
+				amount = randGenerator.Int63n(1000) + 1
+				blockNumber = randGenerator.Int63n(100000) + 1
 
 				creds := insecure.NewCredentials()
 				conn, err := grpc.Dial(cfg.ServerAddress, grpc.WithTransportCredentials(creds))
@@ -260,11 +261,11 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-func generateTxHash() string {
+func generateTxHash(r *rand.Rand) string {
 	const charset = "0123456789abcdef"
 	result := make([]byte, 66)
 	for i := range result {
-		result[i] = charset[rand.Intn(len(charset))]
+		result[i] = charset[r.Intn(len(charset))]
 	}
 	result = append([]byte("0x"), result...)
 	return string(result)
