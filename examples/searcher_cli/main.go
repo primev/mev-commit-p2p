@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"os"
 	"time"
 
@@ -79,7 +80,7 @@ func main() {
 	app.Commands = []*cli.Command{
 		{
 			Name:  "send-bid",
-			Usage: "Send a bid to the gRPC server",
+			Usage: "Send a bid to the gRPC searcher server",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:        "txhash",
@@ -162,6 +163,46 @@ func main() {
 				return nil
 			},
 		},
+		{
+			Name:  "send-rand-bid",
+			Usage: "Send a random bid to the gRPC searcher server",
+			Action: func(c *cli.Context) error {
+				rand.Seed(time.Now().UnixNano())
+
+				txHash = generateTxHash()
+				amount = rand.Int63n(1000) + 1
+				blockNumber = rand.Int63n(100000) + 1
+
+				creds := insecure.NewCredentials()
+				conn, err := grpc.Dial(cfg.ServerAddress, grpc.WithTransportCredentials(creds))
+				if err != nil {
+					return err
+				}
+				defer conn.Close()
+
+				client := pb.NewSearcherClient(conn)
+
+				bid := &pb.Bid{
+					TxHash:      txHash,
+					Amount:      amount,
+					BlockNumber: blockNumber,
+				}
+
+				ctx := context.Background()
+				stream, err := client.SendBid(ctx, bid)
+				if err != nil {
+					return err
+				}
+
+				preConfirmation, err := stream.Recv()
+				if err != nil {
+					return err
+				}
+
+				logger.Info("received preconfirmation", "preconfirmation", preConfirmation)
+				return nil
+			},
+		},
 	}
 
 	err := app.Run(os.Args)
@@ -217,4 +258,14 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 	}
 
 	return slog.New(handler), nil
+}
+
+func generateTxHash() string {
+	const charset = "0123456789abcdef"
+	result := make([]byte, 66)
+	for i := range result {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+	result = append([]byte("0x"), result...)
+	return string(result)
 }
