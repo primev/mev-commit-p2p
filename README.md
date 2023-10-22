@@ -1,5 +1,5 @@
 # mev-commit
-mev-commit is a P2P software that creates a network of builders and searchers. Searchers can use it to broadcast bids to multiple builders and get pre-confirmations from them.
+mev-commit is P2P software that creates a network of execution providers and users. Users can broadcast bids to providers and receive commitments from them.
 
 ![](node-architecture.png)
 
