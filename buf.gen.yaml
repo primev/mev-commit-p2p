@@ -6,3 +6,14 @@ plugins:
   - plugin: buf.build/grpc/go
     out: gen/go
     opt: paths=source_relative
+  - plugin: buf.build/grpc-ecosystem/gateway
+    out: gen/go
+    opt:
+      - paths=source_relative
+      - allow_repeated_fields_in_body=true
+  - plugin: buf.build/grpc-ecosystem/openapiv2
+    out: gen/openapi
+    opt:
+      - disable_service_tags=true
+      - allow_repeated_fields_in_body=true
+      - output_format=yaml

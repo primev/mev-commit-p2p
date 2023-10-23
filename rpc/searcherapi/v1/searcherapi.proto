@@ -4,22 +4,74 @@ package rpc.seacherapi.v1;
 
 option go_package = "github.com/primevprotocol/mev-commit/rpc/seacherapi/v1;searcherapiv1";
 
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/api/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Searcher API";
+    version: "1.0";
+    license: {
+      name: "Business Source License 1.1";
+      url: "https://github.com/primevprotocol/mev-commit/blob/main/LICENSE";
+    };
+  };
+};
+
 service Searcher {
-  rpc SendBid(Bid) returns (stream PreConfirmation) {}
+  // SendBid
+  //
+  // Send a bid to the searcher mev-commit node.
+  rpc SendBid(Bid) returns (stream PreConfirmation) {
+    option (google.api.http) = {
+      post: "/v1/searcher/bid"
+      body: "*"
+    };
+  }
 }
 
 message Bid {
-  string tx_hash = 1;
-  int64 amount = 2;
-  int64 block_number = 3;
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Bid message"
+      description: "Unsigned bid message from users to the searcher mev-commit node."
+      required: ["tx_hash", "amount", "block_number"]
+    }
+    example: "{\"tx_hash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bid_amount\": 1000000000000000000, \"block_number\": 123456}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH that the user is willing to pay to the builder for including the transaction in the block."
+  }];
+  int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max block number that the user wants to include the transaction in."
+  }];
 };
 
 message PreConfirmation {
-  string tx_hash = 1;
-  int64 amount = 2;
-  int64 block_number = 3;
-  string bid_digest = 4;
-  string bid_signature = 5;
-  string pre_confirmation_digest = 6;
-  string pre_confirmation_signature = 7;
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH that the user has agreed to pay to the builder for including the transaction in the block."
+  }];
+  int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max block number that the user wants to include the transaction in."
+  }];
+  string bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of digest of the bid message signed by the user."
+  }];
+  string bid_signature = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of signature of the user that sent this bid."
+  }];
+  string pre_confirmation_digest = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of digest of the pre-confirmation."
+  }];
+  string pre_confirmation_signature = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of signature of the pre-confirmation signed by the builder confirming this transaction."
+  }];
 };
