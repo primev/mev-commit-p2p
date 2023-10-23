@@ -13,7 +13,7 @@ import (
 
 var (
 	serverAddr = flag.String(
-		"serverAddr",
+		"server-addr",
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
@@ -41,6 +41,8 @@ func main() {
 		logger.Error("failed to create bid receiver", "error", err)
 		return
 	}
+
+	fmt.Printf("connected to builder %s, receiving bids...\n", *serverAddr)
 
 	for {
 		select {

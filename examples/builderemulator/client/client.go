@@ -9,6 +9,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
@@ -34,13 +35,17 @@ func NewBuilderClient(
 
 	client := builderapiv1.NewBuilderClient(conn)
 
-	return &BuilderClient{
+	b := &BuilderClient{
 		conn:         conn,
 		client:       client,
 		logger:       logger,
 		senderC:      make(chan *builderapiv1.BidResponse),
 		senderClosed: make(chan struct{}),
-	}, nil
+	}
+
+	b.startSender()
+
+	return b, nil
 }
 
 func (b *BuilderClient) Close() error {
@@ -49,6 +54,8 @@ func (b *BuilderClient) Close() error {
 }
 
 func (b *BuilderClient) startSender() error {
+	fmt.Println("starting sender")
+
 	stream, err := b.client.SendProcessedBids(context.Background())
 	if err != nil {
 		return err

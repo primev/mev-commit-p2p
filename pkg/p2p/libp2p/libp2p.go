@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/primevprotocol/mev-commit/pkg/util"
 	"log/slog"
 	"math/big"
 	"time"
+
+	"github.com/primevprotocol/mev-commit/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
@@ -37,6 +38,7 @@ type Service struct {
 	logger        *slog.Logger
 	notifier      p2p.Notifier
 	hsSvc         *handshake.Service
+	metrics       *metrics
 }
 
 type Options struct {
@@ -72,8 +74,10 @@ func New(opts *Options) (*Service, error) {
 		return nil, err
 	}
 
+	var metrics = new(metrics)
 	if opts.MetricsReg != nil {
 		rcmgr.MustRegisterWith(opts.MetricsReg)
+		metrics = newMetrics(opts.MetricsReg, "primev")
 	}
 
 	str, err := rcmgr.NewStatsTraceReporter()
@@ -88,7 +92,12 @@ func New(opts *Options) (*Service, error) {
 		return nil, err
 	}
 
-	conngtr := newConnectionGater(opts.Register, opts.PeerType, opts.MinimumStake)
+	conngtr := newConnectionGater(
+		opts.Register,
+		opts.PeerType,
+		opts.MinimumStake,
+		metrics,
+	)
 
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
@@ -140,6 +149,7 @@ func New(opts *Options) (*Service, error) {
 		peers:         newPeerRegistry(),
 		hsSvc:         hsSvc,
 		logger:        opts.Logger,
+		metrics:       metrics,
 	}
 	s.peers.setDisconnector(s)
 
@@ -170,6 +180,7 @@ func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 	if err != nil {
 		s.logger.Error("error handling handshake", "err", err)
 		_ = streamlibp2p.Reset()
+		s.metrics.FailedIncomingHandshakeCount.Inc()
 		return
 	}
 
@@ -280,6 +291,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 	p, err := s.hsSvc.Handshake(ctx, addrInfo.ID, stream)
 	if err != nil {
 		_ = s.host.Network().ClosePeer(addrInfo.ID)
+		s.metrics.FailedOutgoingHandshakeCount.Inc()
 		return p2p.Peer{}, err
 	}
 

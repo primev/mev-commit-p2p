@@ -106,10 +106,10 @@ func NewNode(opts *Options) (*Node, error) {
 	grpcServer := grpc.NewServer()
 
 	preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
+	var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
 
 	switch opts.PeerType {
 	case p2p.PeerTypeBuilder.String():
-		var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
 		if opts.ExposeBuilderAPI {
 			builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
 			builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
@@ -133,7 +133,7 @@ func NewNode(opts *Options) (*Node, error) {
 			p2pSvc,
 			preconfSigner,
 			noOpUserStore{},
-			noOpBidProcessor{},
+			bidProcessor,
 			opts.Logger.With("component", "preconfirmation_protocol"),
 		)
 
