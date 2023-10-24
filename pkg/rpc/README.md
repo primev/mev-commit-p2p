@@ -3,11 +3,11 @@
 ## Overview
 
 There's two key RPC APIs this software provides:
-- Searcher API
-- Builder Internal Operations API
+- User API
+- Execution Provider API
 
 ## Searcher API
-- This is the api that takes bids into the mev-commit node that is emulating a searcher. 
+- This is the api that takes bids into the mev-commit node that is emulating a user. 
 - The SendBid RPC endpoint will subseqently propegate the Bid after it is signed, to the mev-commit P2P network.
 
 The format for the request payload is as follows:
@@ -43,20 +43,20 @@ The response to the searcher API is a stream of commitments, an example response
 ```
 
 
-## Commitments from Builders | Builder API
-To gather commitments from builders, the builder mev-commit node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
+## Commitments from Execution Providers | Execution Provider API
+To gather commitments from execution providers, the execution provider mev-commit node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
 
 ```protobuf
-  // ReceiveBids is called by the builder to receive bids from the mev-commit node.
-  // The mev-commit node will stream bids to the builder.
+  // ReceiveBids is called by the execution provider to receive bids from the mev-commit node.
+  // The mev-commit node will stream bids to the execution provider.
   rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
   // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
-  // The builder will stream processed bids to the mev-commit node.
+  // The execution provider will stream processed bids to the mev-commit node.
   rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
 
 ```
 
-**By default this service is disabled**, and must be enabled by setting the BuilderAPIEmabled flag in the config file to true.
+**By default this service is disabled**, and must be enabled by setting the BuilderAPIEnabled flag in the config file to true.
 
 The file is located at [./config/builder.yaml](../../config/builder.yml) form the top level of the project and the variable is set to `expose_builder_api: false` by default.
 
