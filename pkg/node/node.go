@@ -27,6 +27,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Options struct {
@@ -157,7 +158,11 @@ func NewNode(opts *Options) (*Node, error) {
 	gwMux := runtime.NewServeMux()
 	bgCtx := context.Background()
 
-	grpcConn, err := grpc.DialContext(bgCtx, fmt.Sprintf(":%d", opts.RPCPort), grpc.WithInsecure())
+	grpcConn, err := grpc.DialContext(
+		bgCtx,
+		fmt.Sprintf(":%d", opts.RPCPort),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
 		opts.Logger.Error("failed to dial grpc server", "err", err)
 		_ = nd.Close()
