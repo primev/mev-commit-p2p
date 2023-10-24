@@ -44,7 +44,7 @@ The response to the searcher API is a stream of commitments, an example response
 
 
 ## Commitments from Builders | Builder API
-To gather commitments from builders, the builder mev-node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
+To gather commitments from builders, the builder mev-commit node must maintain an active service that interfaces with the [GRPC API](https://github.com/primevprotocol/mev-commit/blob/main/rpc/builderapi/v1/builderapi.proto) and interacts with the following functions:
 
 ```protobuf
   // ReceiveBids is called by the builder to receive bids from the mev-commit node.
