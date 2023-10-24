@@ -103,8 +103,8 @@ To simplify the deployment process, you may utilize Docker to create an isolated
   docker-compose down
   ```
 
-## APIs for Searcher & Builder
-[Link to Documentation on Searcher and Builder API](./pkg/rpc/README.md)
+## APIs for Users & Execution Providers
+[Link to Documentation on User and Execution provider API](./pkg/rpc/README.md)
 - This includes: 
-   - the payload for the searcher API
-   - The required setup for builders to process bids into commitments in their personal infra.
+   - the payload for the User API
+   - The required setup for execution providers to process bids into commitments in their personal infra.
