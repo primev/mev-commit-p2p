@@ -8,7 +8,7 @@ There's two key RPC APIs this software provides:
 
 ## Searcher API
 - This is the api that takes bids into the mev-commit node that is emulating a searcher. 
-- The SendBid RPC endpoint will subseqently propegate the Bid after it is signed, to the primev P2P network.
+- The SendBid RPC endpoint will subseqently propegate the Bid after it is signed, to the mev-commit P2P network.
 
 The format for the request payload is as follows:
 
