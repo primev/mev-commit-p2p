@@ -27,8 +27,8 @@ type Announcer interface {
 
 type topology struct {
 	mu          sync.RWMutex
-	builders    map[common.Address]p2p.Peer
-	searchers   map[common.Address]p2p.Peer
+	providers   map[common.Address]p2p.Peer
+	users       map[common.Address]p2p.Peer
 	logger      *slog.Logger
 	addressbook p2p.Addressbook
 	announcer   Announcer
@@ -36,8 +36,8 @@ type topology struct {
 
 func New(a p2p.Addressbook, logger *slog.Logger) *topology {
 	return &topology{
-		builders:    make(map[common.Address]p2p.Peer),
-		searchers:   make(map[common.Address]p2p.Peer),
+		providers:   make(map[common.Address]p2p.Peer),
+		users:       make(map[common.Address]p2p.Peer),
 		addressbook: a,
 		logger:      logger,
 	}
@@ -51,8 +51,8 @@ func (t *topology) Connected(p p2p.Peer) {
 	t.add(p)
 
 	if t.announcer != nil {
-		// Whether its a builder or searcher, we want to broadcast the builder peers
-		peersToBroadcast := t.GetPeers(Query{Type: p2p.PeerTypeBuilder})
+		// Whether its a provider or user, we want to broadcast the provider peers
+		peersToBroadcast := t.GetPeers(Query{Type: p2p.PeerTypeProvider})
 		var underlays []p2p.PeerInfo
 		for _, peer := range peersToBroadcast {
 			if peer.EthAddress == p.EthAddress {
@@ -76,11 +76,11 @@ func (t *topology) Connected(p p2p.Peer) {
 			}
 		}
 
-		if p.Type == p2p.PeerTypeBuilder {
-			t.logger.Info("builder connected broadcasting to previous searchers", "peer", p)
-			// If the peer is a builder, we want to broadcast to the searcher peers
-			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeSearcher})
-			builderUnderlay, err := t.addressbook.GetPeerInfo(p)
+		if p.Type == p2p.PeerTypeProvider {
+			t.logger.Info("provider connected broadcasting to previous users", "peer", p)
+			// If the peer is a provider, we want to broadcast to the user peers
+			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeUser})
+			providerUnderlay, err := t.addressbook.GetPeerInfo(p)
 			if err != nil {
 				t.logger.Error("failed to get peer info", "err", err, "peer", p)
 				return
@@ -89,7 +89,7 @@ func (t *topology) Connected(p p2p.Peer) {
 				err := t.announcer.BroadcastPeers(context.Background(), peer, []p2p.PeerInfo{
 					{
 						EthAddress: p.EthAddress,
-						Underlay:   builderUnderlay,
+						Underlay:   providerUnderlay,
 					},
 				})
 				if err != nil {
@@ -105,10 +105,10 @@ func (t *topology) add(p p2p.Peer) {
 	defer t.mu.Unlock()
 
 	switch p.Type {
-	case p2p.PeerTypeBuilder:
-		t.builders[p.EthAddress] = p
-	case p2p.PeerTypeSearcher:
-		t.searchers[p.EthAddress] = p
+	case p2p.PeerTypeProvider:
+		t.providers[p.EthAddress] = p
+	case p2p.PeerTypeUser:
+		t.users[p.EthAddress] = p
 	}
 }
 
@@ -119,10 +119,10 @@ func (t *topology) Disconnected(p p2p.Peer) {
 	t.logger.Info("disconnected", "peer", p)
 
 	switch p.Type {
-	case p2p.PeerTypeBuilder:
-		delete(t.builders, p.EthAddress)
-	case p2p.PeerTypeSearcher:
-		delete(t.searchers, p.EthAddress)
+	case p2p.PeerTypeProvider:
+		delete(t.providers, p.EthAddress)
+	case p2p.PeerTypeUser:
+		delete(t.users, p.EthAddress)
 	}
 }
 
@@ -139,12 +139,12 @@ func (t *topology) GetPeers(q Query) []p2p.Peer {
 	var peers []p2p.Peer
 
 	switch q.Type {
-	case p2p.PeerTypeBuilder:
-		for _, p := range t.builders {
+	case p2p.PeerTypeProvider:
+		for _, p := range t.providers {
 			peers = append(peers, p)
 		}
-	case p2p.PeerTypeSearcher:
-		for _, p := range t.searchers {
+	case p2p.PeerTypeUser:
+		for _, p := range t.users {
 			peers = append(peers, p)
 		}
 	}
@@ -156,11 +156,11 @@ func (t *topology) IsConnected(addr common.Address) bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if _, ok := t.builders[addr]; ok {
+	if _, ok := t.providers[addr]; ok {
 		return true
 	}
 
-	if _, ok := t.searchers[addr]; ok {
+	if _, ok := t.users[addr]; ok {
 		return true
 	}
 

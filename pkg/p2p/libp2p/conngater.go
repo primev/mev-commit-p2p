@@ -19,7 +19,7 @@ const (
 	DenyBadRegisterCall
 	DenyBlockedPeer
 	DenyNotEnoughStake
-	DenySearcherToSearcher
+	DenyUserToUser
 	Accept
 )
 
@@ -29,7 +29,7 @@ const (
 //	DenyBadRegisterCall:    "DenyBadRegisterCall",
 //	DenyBlockedPeer:        "DenyBlockedPeer",
 //	DenyNotEnoughStake:     "DenyNotEnoughStake",
-//	DenySearcherToSearcher: "DenySearcherToSearcher",
+//	DenyUserToUser: "DenyUserToUser",
 //	Accept:                 "Allow",
 //}
 
@@ -37,7 +37,7 @@ func (c connectionAllowance) isDeny() bool {
 	return !(c == Accept || c == Undecided)
 }
 
-// make sure the connections are between builder<>builder, builder<>searcher!
+// make sure the connections are between provider<>provider, provider<>user!
 type ConnectionGater interface {
 	// InterceptPeerDial intercepts peer dialing
 	InterceptPeerDial(p peer.ID) (allow bool)
@@ -107,8 +107,8 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	// possible s<>s connection
 	// ! s<>s connection
-	if (cg.selfType == p2p.PeerTypeSearcher) && !enoughStake {
-		return DenySearcherToSearcher
+	if (cg.selfType == p2p.PeerTypeUser) && !enoughStake {
+		return DenyUserToUser
 	}
 
 	// Reject potential s<>s connections and accept the remaining requests,

@@ -48,19 +48,19 @@ func TestBids(t *testing.T) {
 
 		userSigner := preconfsigner.NewSigner(userKey)
 
-		builderKey, err := crypto.GenerateKey()
+		providerKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		builderSigner := preconfsigner.NewSigner(builderKey)
+		providerSigner := preconfsigner.NewSigner(providerKey)
 
 		bid, err := userSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		preConfirmation, err := builderSigner.ConstructPreConfirmation(bid)
+		preConfirmation, err := providerSigner.ConstructPreConfirmation(bid)
 		if err != nil {
 			t.Fail()
 		}
@@ -70,6 +70,6 @@ func TestBids(t *testing.T) {
 			t.Fail()
 		}
 
-		assert.Equal(t, crypto.PubkeyToAddress(builderKey.PublicKey), *address)
+		assert.Equal(t, crypto.PubkeyToAddress(providerKey.PublicKey), *address)
 	})
 }

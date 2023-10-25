@@ -12,8 +12,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
-	searcherapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/searcherapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
@@ -21,8 +21,8 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	"github.com/primevprotocol/mev-commit/pkg/register"
-	builderapi "github.com/primevprotocol/mev-commit/pkg/rpc/builder"
-	searcherapi "github.com/primevprotocol/mev-commit/pkg/rpc/searcher"
+	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
+	userapi "github.com/primevprotocol/mev-commit/pkg/rpc/user"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
@@ -31,16 +31,16 @@ import (
 )
 
 type Options struct {
-	Version          string
-	PrivKey          *ecdsa.PrivateKey
-	Secret           string
-	PeerType         string
-	Logger           *slog.Logger
-	P2PPort          int
-	HTTPPort         int
-	RPCPort          int
-	Bootnodes        []string
-	ExposeBuilderAPI bool
+	Version           string
+	PrivKey           *ecdsa.PrivateKey
+	Secret            string
+	PeerType          string
+	Logger            *slog.Logger
+	P2PPort           int
+	HTTPPort          int
+	RPCPort           int
+	Bootnodes         []string
+	ExposeProviderAPI bool
 }
 
 type Node struct {
@@ -106,11 +106,11 @@ func NewNode(opts *Options) (*Node, error) {
 		var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
 
 		switch opts.PeerType {
-		case p2p.PeerTypeBuilder.String():
-			if opts.ExposeBuilderAPI {
-				builderAPI := builderapi.NewService(opts.Logger.With("component", "builderapi"))
-				builderapiv1.RegisterBuilderServer(grpcServer, builderAPI)
-				bidProcessor = builderAPI
+		case p2p.PeerTypeProvider.String():
+			if opts.ExposeProviderAPI {
+				providerAPI := providerapi.NewService(opts.Logger.With("component", "providerapi"))
+				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
+				bidProcessor = providerAPI
 			}
 			// TODO(@ckartik): Update noOpBidProcessor to be selected as default in a flag paramater.
 			preconfProto := preconfirmation.New(
@@ -121,10 +121,10 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			// Only register handler for builder
+			// Only register handler for provider
 			p2pSvc.AddProtocol(preconfProto.Protocol())
 
-		case p2p.PeerTypeSearcher.String():
+		case p2p.PeerTypeUser.String():
 			preconfProto := preconfirmation.New(
 				topo,
 				p2pSvc,
@@ -134,11 +134,11 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 
-			searcherAPI := searcherapi.NewService(
+			userAPI := userapi.NewService(
 				preconfProto,
-				opts.Logger.With("component", "searcherapi"),
+				opts.Logger.With("component", "userapi"),
 			)
-			searcherapiv1.RegisterSearcherServer(grpcServer, searcherAPI)
+			userapiv1.RegisterUserServer(grpcServer, userAPI)
 		}
 
 		started := make(chan struct{})
@@ -171,16 +171,16 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		switch opts.PeerType {
-		case p2p.PeerTypeBuilder.String():
-			err := builderapiv1.RegisterBuilderHandler(bgCtx, gwMux, grpcConn)
+		case p2p.PeerTypeProvider.String():
+			err := providerapiv1.RegisterProviderHandler(bgCtx, gwMux, grpcConn)
 			if err != nil {
-				opts.Logger.Error("failed to register builder handler", "err", err)
+				opts.Logger.Error("failed to register provider handler", "err", err)
 				return nil, err
 			}
-		case p2p.PeerTypeSearcher.String():
-			err := searcherapiv1.RegisterSearcherHandler(bgCtx, gwMux, grpcConn)
+		case p2p.PeerTypeUser.String():
+			err := userapiv1.RegisterUserHandler(bgCtx, gwMux, grpcConn)
 			if err != nil {
-				opts.Logger.Error("failed to register searcher handler", "err", err)
+				opts.Logger.Error("failed to register user handler", "err", err)
 				return nil, err
 			}
 		}
@@ -237,9 +237,9 @@ type noOpBidProcessor struct{}
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
 	_ *preconfsigner.Bid,
-) (chan builderapiv1.BidResponse_Status, error) {
-	statusC := make(chan builderapiv1.BidResponse_Status, 5)
-	statusC <- builderapiv1.BidResponse_STATUS_ACCEPTED
+) (chan providerapiv1.BidResponse_Status, error) {
+	statusC := make(chan providerapiv1.BidResponse_Status, 5)
+	statusC <- providerapiv1.BidResponse_STATUS_ACCEPTED
 	close(statusC)
 
 	return statusC, nil
