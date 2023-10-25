@@ -17,3 +17,4 @@ plugins:
       - disable_service_tags=true
       - allow_repeated_fields_in_body=true
       - output_format=yaml
+      - omit_enum_default_value=true

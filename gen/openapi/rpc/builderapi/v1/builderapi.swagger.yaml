@@ -1,7 +1,7 @@
 swagger: "2.0"
 info:
   title: Builder API
-  version: "1.0"
+  version: 1.0.0-alpha
   license:
     name: Business Source License 1.1
     url: https://github.com/primevprotocol/mev-commit/blob/main/LICENSE
@@ -127,9 +127,7 @@ definitions:
   v1BidResponseStatus:
     type: string
     enum:
-      - STATUS_UNSPECIFIED
       - STATUS_ACCEPTED
       - STATUS_REJECTED
-    default: STATUS_UNSPECIFIED
   v1EmptyMessage:
     type: object
