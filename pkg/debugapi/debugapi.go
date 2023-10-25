@@ -46,27 +46,27 @@ type topologyResponse struct {
 
 func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 	logger := d.logger.With("method", "handleTopology")
-	builders := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
-	searchers := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeSearcher})
+	providers := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
+	users := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeUser})
 
 	topoResp := topologyResponse{
 		Self:           d.p2p.Self(),
 		ConnectedPeers: make(map[string][]common.Address),
 	}
 
-	if len(builders) > 0 {
-		connectedBuilders := make([]common.Address, len(builders))
-		for idx, builder := range builders {
-			connectedBuilders[idx] = builder.EthAddress
+	if len(providers) > 0 {
+		connectedProviders := make([]common.Address, len(providers))
+		for idx, provider := range providers {
+			connectedProviders[idx] = provider.EthAddress
 		}
-		topoResp.ConnectedPeers["builders"] = connectedBuilders
+		topoResp.ConnectedPeers["providers"] = connectedProviders
 	}
-	if len(searchers) > 0 {
-		connectedSearchers := make([]common.Address, len(searchers))
-		for idx, searcher := range searchers {
-			connectedSearchers[idx] = searcher.EthAddress
+	if len(users) > 0 {
+		connectedUsers := make([]common.Address, len(users))
+		for idx, user := range users {
+			connectedUsers[idx] = user.EthAddress
 		}
-		topoResp.ConnectedPeers["searchers"] = connectedSearchers
+		topoResp.ConnectedPeers["users"] = connectedUsers
 	}
 
 	err := apiserver.WriteResponse(w, http.StatusOK, topoResp)

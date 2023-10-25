@@ -21,8 +21,8 @@ OPTIONS:
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
 
-# Type of peer. Options are builder and searcher.
-peer_type: builder
+# Type of peer. Options are provider and user.
+peer_type: provider
 
 # Port used for P2P traffic. If not configured, 13522 is the default.
 p2p_port: 13522
@@ -43,8 +43,8 @@ log_level: debug
 bootnodes:
   - /ip4/35.91.118.20/tcp/13522/p2p/16Uiu2HAmAG5z3E8p7o19tEcLdGvYrJYdD1NabRDc6jmizDva5BL3
 
-# The default is set to false for development reasons. Change it to true if you wish to accept bids on your builder instance
-expose_builder_api: false
+# The default is set to false for development reasons. Change it to true if you wish to accept bids on your provider instance
+expose_provider_api: false
 ```
 
 - After the config file is ready, run `mev-commit start` with the config option.
@@ -70,11 +70,11 @@ OPTIONS:
          "/ip4/192.168.100.5/tcp/18625"
       ],
       "Ethereum Address": "0x55B3B672DEB14178615F648911e76b7FE1B23e5D",
-      "Peer Type": "builder",
+      "Peer Type": "provider",
       "Underlay": "16Uiu2HAmBykfyf9A5DnRguHNS1mvSaprzYEkjRf6uafLU4javG4L"
    },
    "connected_peers": {
-      "builders": [
+      "providers": [
          "0xca61596ccef983eb7cae42340ec553dd89881403"
       ]
    }

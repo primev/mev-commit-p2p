@@ -39,7 +39,7 @@ func newTestService(t *testing.T) *libp2p.Service {
 		PrivKey:      privKey,
 		Secret:       "test",
 		ListenPort:   0,
-		PeerType:     p2p.PeerTypeBuilder,
+		PeerType:     p2p.PeerTypeProvider,
 		Register:     registermock.New(10),
 		MinimumStake: big.NewInt(5),
 		Logger:       newTestLogger(t, os.Stdout),
@@ -214,7 +214,7 @@ func TestBootstrap(t *testing.T) {
 	testDefaultOptions := libp2p.Options{
 		Secret:       "test",
 		ListenPort:   0,
-		PeerType:     p2p.PeerTypeBuilder,
+		PeerType:     p2p.PeerTypeProvider,
 		Register:     registermock.New(10),
 		MinimumStake: big.NewInt(5),
 		Logger:       newTestLogger(t, os.Stdout),
@@ -261,10 +261,10 @@ func TestBootstrap(t *testing.T) {
 			if len(notifier.peers) != 1 {
 				t.Fatalf("expected 1 peer, got %d", len(notifier.peers))
 			}
-			if notifier.peers[0].Type != p2p.PeerTypeBuilder {
+			if notifier.peers[0].Type != p2p.PeerTypeProvider {
 				t.Fatalf(
 					"expected peer type %s, got %s",
-					p2p.PeerTypeBuilder, notifier.peers[0].Type,
+					p2p.PeerTypeProvider, notifier.peers[0].Type,
 				)
 			}
 			break

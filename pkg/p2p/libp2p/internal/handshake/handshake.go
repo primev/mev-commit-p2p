@@ -107,7 +107,7 @@ func (h *Service) verifyReq(
 		return common.Address{}, errors.New("observed address mismatch")
 	}
 
-	if req.PeerType == "builder" {
+	if req.PeerType == p2p.PeerTypeProvider.String() {
 		stake, err := h.register.GetStake(ethAddress)
 		if err != nil {
 			return common.Address{}, err

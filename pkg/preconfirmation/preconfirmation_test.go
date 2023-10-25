@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -55,13 +55,13 @@ func (t *testSigner) VerifyPreConfirmation(_ *preconfsigner.PreConfirmation) (*c
 }
 
 type testProcessor struct {
-	status builderapiv1.BidResponse_Status
+	status providerapiv1.BidResponse_Status
 }
 
 func (t *testProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error) {
-	statusC := make(chan builderapiv1.BidResponse_Status, 1)
+	_ *preconfsigner.Bid) (chan providerapiv1.BidResponse_Status, error) {
+	statusC := make(chan providerapiv1.BidResponse_Status, 1)
 	statusC <- t.status
 	return statusC, nil
 }
@@ -81,11 +81,11 @@ func TestPreconfBidSubmission(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		client := p2p.Peer{
 			EthAddress: common.HexToAddress("0x1"),
-			Type:       p2p.PeerTypeSearcher,
+			Type:       p2p.PeerTypeUser,
 		}
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
-			Type:       p2p.PeerTypeBuilder,
+			Type:       p2p.PeerTypeProvider,
 		}
 
 		bid := &preconfsigner.Bid{
@@ -109,7 +109,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 		topo := &testTopo{server}
 		us := &testUserStore{}
 		proc := &testProcessor{
-			status: builderapiv1.BidResponse_STATUS_ACCEPTED,
+			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}
 		signer := &testSigner{
 			bid:                   bid,

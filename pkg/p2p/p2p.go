@@ -14,20 +14,20 @@ type PeerType int
 const (
 	// PeerTypeBootnode is a boot node
 	PeerTypeBootnode PeerType = iota
-	// PeerTypeBuilder is a builder node
-	PeerTypeBuilder
-	// PeerTypeSearcher is a searcher node
-	PeerTypeSearcher
+	// PeerTypeProvider is a provider node
+	PeerTypeProvider
+	// PeerTypeUser is a user node
+	PeerTypeUser
 )
 
 func (pt PeerType) String() string {
 	switch pt {
 	case PeerTypeBootnode:
 		return "bootnode"
-	case PeerTypeBuilder:
-		return "builder"
-	case PeerTypeSearcher:
-		return "searcher"
+	case PeerTypeProvider:
+		return "provider"
+	case PeerTypeUser:
+		return "user"
 	default:
 		return "unknown"
 	}
@@ -37,10 +37,10 @@ func FromString(str string) PeerType {
 	switch str {
 	case "bootnode":
 		return PeerTypeBootnode
-	case "builder":
-		return PeerTypeBuilder
-	case "searcher":
-		return PeerTypeSearcher
+	case "provider":
+		return PeerTypeProvider
+	case "user":
+		return PeerTypeUser
 	default:
 		return -1
 	}

@@ -13,29 +13,29 @@ services:
       mev-net:
         ipv4_address: 172.28.0.2
 
-  builder:
+  provider:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - bootnode
     environment:
-      - NODE_TYPE=builder
+      - NODE_TYPE=provider
     volumes:
-      - builder-keys:/keys
+      - provider-keys:/keys
     networks:
       - mev-net
 
-  searcher:
+  user:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - bootnode
     environment:
-      - NODE_TYPE=searcher
+      - NODE_TYPE=user
     volumes:
-      - searcher-keys:/keys
+      - user-keys:/keys
     networks:
       - mev-net
     ports:
@@ -44,8 +44,8 @@ services:
 
 volumes:
   bootnode-keys:
-  builder-keys:
-  searcher-keys:
+  provider-keys:
+  user-keys:
 
 networks:
   mev-net:
