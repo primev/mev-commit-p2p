@@ -26,6 +26,9 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SearcherClient interface {
+	// SendBid
+	//
+	// Send a bid to the searcher mev-commit node.
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (Searcher_SendBidClient, error)
 }
 
@@ -73,6 +76,9 @@ func (x *searcherSendBidClient) Recv() (*PreConfirmation, error) {
 // All implementations must embed UnimplementedSearcherServer
 // for forward compatibility
 type SearcherServer interface {
+	// SendBid
+	//
+	// Send a bid to the searcher mev-commit node.
 	SendBid(*Bid, Searcher_SendBidServer) error
 	mustEmbedUnimplementedSearcherServer()
 }

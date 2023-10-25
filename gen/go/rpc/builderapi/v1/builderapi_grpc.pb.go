@@ -27,9 +27,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type BuilderClient interface {
+	// ReceiveBids
+	//
 	// ReceiveBids is called by the builder to receive bids from the mev-commit node.
-	// The mev-commit node will stream bids to the builder.
+	// The mev-commit node will stream bids to the builder as the response.
 	ReceiveBids(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (Builder_ReceiveBidsClient, error)
+	// SendProcessedBids
+	//
 	// SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
 	// The builder will stream processed bids to the mev-commit node.
 	SendProcessedBids(ctx context.Context, opts ...grpc.CallOption) (Builder_SendProcessedBidsClient, error)
@@ -113,9 +117,13 @@ func (x *builderSendProcessedBidsClient) CloseAndRecv() (*EmptyMessage, error) {
 // All implementations must embed UnimplementedBuilderServer
 // for forward compatibility
 type BuilderServer interface {
+	// ReceiveBids
+	//
 	// ReceiveBids is called by the builder to receive bids from the mev-commit node.
-	// The mev-commit node will stream bids to the builder.
+	// The mev-commit node will stream bids to the builder as the response.
 	ReceiveBids(*EmptyMessage, Builder_ReceiveBidsServer) error
+	// SendProcessedBids
+	//
 	// SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
 	// The builder will stream processed bids to the mev-commit node.
 	SendProcessedBids(Builder_SendProcessedBidsServer) error

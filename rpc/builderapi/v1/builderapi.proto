@@ -4,31 +4,85 @@ package rpc.builderapi.v1;
 
 option go_package = "github.com/primevprotocol/mev-commit/rpc/builderapi/v1;builderapiv1";
 
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/api/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Builder API";
+    version: "1.0.0-alpha";
+    license: {
+      name: "Business Source License 1.1";
+      url: "https://github.com/primevprotocol/mev-commit/blob/main/LICENSE";
+    };
+  };
+};
+
 service Builder {
+  // ReceiveBids
+  //
   // ReceiveBids is called by the builder to receive bids from the mev-commit node.
-  // The mev-commit node will stream bids to the builder.
-  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {}
+  // The mev-commit node will stream bids to the builder as the response.
+  rpc ReceiveBids(EmptyMessage) returns (stream Bid) {
+    option (google.api.http) = {get: "/v1/builder/receive_bids"};
+  }
+  // SendProcessedBids
+  //
   // SendProcessedBids is called by the builder to send processed bids to the mev-commit node.
   // The builder will stream processed bids to the mev-commit node.
-  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {}
+  rpc SendProcessedBids(stream BidResponse) returns (EmptyMessage) {
+    option (google.api.http) = {
+      post: "/v1/builder/send_processed_bids"
+      body: "*"
+    };
+  }
 }
 
 message EmptyMessage {};
 
 message Bid {
-  string tx_hash = 1;
-  int64 bid_amount = 2;
-  int64 block_number = 3;
-  bytes bid_digest = 4;
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Bid message"
+      description: "Signed bid message from users to the builder."
+      required: ["tx_hash", "bid_amount", "block_number", "bid_digest"]
+    }
+    example: "{\"tx_hash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bid_amount\": 1000000000000000000, \"block_number\": 123456, \"bid_digest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH that the user is willing to pay to the builder for including the transaction in the block."
+  }];
+  int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max block number that the user wants to include the transaction in."
+  }];
+  bytes bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Digest of the bid message signed by the user."
+  }];
 };
 
 message BidResponse {
-  bytes bid_digest = 1;
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Bid response"
+      description: "Response sent by the builder with the decision on the bid received."
+      required: ["bid_digest", "status"]
+    }
+    example: "{\"bid_digest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\", \"status\": \"STATUS_ACCEPTED\"}"
+  };
+  bytes bid_digest = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Digest of the bid message signed by the user."
+  }];
   enum Status {
     STATUS_UNSPECIFIED = 0;
     STATUS_ACCEPTED = 1;
     STATUS_REJECTED = 2;
   }
-  Status status = 2;
+  Status status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Status of the bid."
+  }];
 };
 
