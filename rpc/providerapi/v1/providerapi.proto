@@ -45,9 +45,9 @@ message Bid {
     json_schema: {
       title: "Bid message"
       description: "Signed bid message from users to the provider."
-      required: ["tx_hash", "bid_amount", "block_number", "bid_digest"]
+      required: ["txHash", "bidAmount", "blockNumber", "bidDigest"]
     }
-    example: "{\"tx_hash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bid_amount\": 1000000000000000000, \"block_number\": 123456, \"bid_digest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bidAmount\": 1000000000000000000, \"blockNumber\": 123456, \"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
@@ -69,9 +69,9 @@ message BidResponse {
     json_schema: {
       title: "Bid response"
       description: "Response sent by the provider with the decision on the bid received."
-      required: ["bid_digest", "status"]
+      required: ["bidDigest", "status"]
     }
-    example: "{\"bid_digest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\", \"status\": \"STATUS_ACCEPTED\"}"
+    example: "{\"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\", \"status\": \"STATUS_ACCEPTED\"}"
   };
   bytes bid_digest = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Digest of the bid message signed by the user."

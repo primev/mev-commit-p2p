@@ -35,9 +35,9 @@ message Bid {
     json_schema: {
       title: "Bid message"
       description: "Unsigned bid message from users to the user mev-commit node."
-      required: ["tx_hash", "amount", "block_number"]
+      required: ["txHash", "amount", "blockNumber"]
     }
-    example: "{\"tx_hash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bid_amount\": 1000000000000000000, \"block_number\": 123456}"
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"amount\": 1000000000000000000, \"blockNumber\": 123456}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
