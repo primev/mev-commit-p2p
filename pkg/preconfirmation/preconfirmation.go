@@ -6,9 +6,10 @@ import (
 	"log/slog"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	builderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/builderapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -38,7 +39,7 @@ type UserStore interface {
 }
 
 type BidProcessor interface {
-	ProcessBid(context.Context, *preconfsigner.Bid) (chan builderapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *preconfsigner.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
 
 func New(
@@ -72,9 +73,9 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 	}
 }
 
-// SendBid is meant to be called by the searcher to construct and send bids to the builder.
+// SendBid is meant to be called by the user to construct and send bids to the provider.
 // It takes the txHash, the bid amount in wei and the maximum valid block number.
-// It waits for preConfirmations from all builders and then returns.
+// It waits for preConfirmations from all providers and then returns.
 // It returns an error if the bid is not valid.
 func (p *Preconfirmation) SendBid(
 	ctx context.Context,
@@ -88,26 +89,26 @@ func (p *Preconfirmation) SendBid(
 		return nil, err
 	}
 
-	builders := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
-	if len(builders) == 0 {
-		p.logger.Error("no builders available", "txHash", txHash)
-		return nil, errors.New("no builders available")
+	providers := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
+	if len(providers) == 0 {
+		p.logger.Error("no providers available", "txHash", txHash)
+		return nil, errors.New("no providers available")
 	}
 
 	// Create a new channel to receive preConfirmations
-	preConfirmations := make(chan *preconfsigner.PreConfirmation, len(builders))
+	preConfirmations := make(chan *preconfsigner.PreConfirmation, len(providers))
 
 	wg := sync.WaitGroup{}
-	for idx := range builders {
+	for idx := range providers {
 		wg.Add(1)
-		go func(builder p2p.Peer) {
+		go func(provider p2p.Peer) {
 			defer wg.Done()
 
-			logger := p.logger.With("builder", builder, "bid", txHash)
+			logger := p.logger.With("provider", provider, "bid", txHash)
 
-			builderStream, err := p.streamer.NewStream(
+			providerStream, err := p.streamer.NewStream(
 				ctx,
-				builder,
+				provider,
 				ProtocolName,
 				ProtocolVersion,
 				"bid",
@@ -117,7 +118,7 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](builderStream)
+			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](providerStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				logger.Error("writing message", "err", err)
@@ -130,10 +131,10 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			// Process preConfirmation as a searcher
+			// Process preConfirmation as a user
 			_, err = p.signer.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
-				logger.Error("verifying builder signature", "err", err)
+				logger.Error("verifying provider signature", "err", err)
 				return
 			}
 
@@ -143,7 +144,7 @@ func (p *Preconfirmation) SendBid(
 				logger.Error("context cancelled", "err", ctx.Err())
 				return
 			}
-		}(builders[idx])
+		}(providers[idx])
 	}
 
 	go func() {
@@ -154,17 +155,17 @@ func (p *Preconfirmation) SendBid(
 	return preConfirmations, nil
 }
 
-var ErrInvalidSearcherTypeForBid = errors.New("invalid searcher type for bid")
+var ErrInvalidUserTypeForBid = errors.New("invalid user type for bid")
 
 // handlebid is the function that is called when a bid is received
-// It is meant to be used by the builder exclusively to read the bid value from the searcher.
+// It is meant to be used by the provider exclusively to read the bid value from the user.
 func (p *Preconfirmation) handleBid(
 	ctx context.Context,
 	peer p2p.Peer,
 	stream p2p.Stream,
 ) error {
-	if peer.Type != p2p.PeerTypeSearcher {
-		return ErrInvalidSearcherTypeForBid
+	if peer.Type != p2p.PeerTypeUser {
+		return ErrInvalidUserTypeForBid
 	}
 
 	// TODO(@ckartik): Change to reader only once availble
@@ -180,6 +181,10 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	if p.us.CheckUserRegistred(ethAddress) {
+		// try to enqueue for 5 seconds
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
 		statusC, err := p.processer.ProcessBid(ctx, bid)
 		if err != nil {
 			return err
@@ -189,9 +194,9 @@ func (p *Preconfirmation) handleBid(
 			return ctx.Err()
 		case status := <-statusC:
 			switch status {
-			case builderapiv1.BidResponse_STATUS_REJECTED:
+			case providerapiv1.BidResponse_STATUS_REJECTED:
 				return errors.New("bid rejected")
-			case builderapiv1.BidResponse_STATUS_ACCEPTED:
+			case providerapiv1.BidResponse_STATUS_ACCEPTED:
 				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
 				if err != nil {
 					return err

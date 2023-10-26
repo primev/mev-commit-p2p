@@ -55,7 +55,7 @@ func TestHandshake(t *testing.T) {
 		hs1, err := handshake.New(
 			privKey1,
 			common.HexToAddress("0x1"),
-			p2p.PeerTypeBuilder,
+			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: common.HexToAddress("0x2")},
 			&testRegister{},
@@ -71,7 +71,7 @@ func TestHandshake(t *testing.T) {
 		hs2, err := handshake.New(
 			privKey2,
 			common.HexToAddress("0x2"),
-			p2p.PeerTypeBuilder,
+			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: common.HexToAddress("0x1")},
 			&testRegister{},
@@ -102,8 +102,8 @@ func TestHandshake(t *testing.T) {
 				)
 				return
 			}
-			if p.Type != p2p.PeerTypeBuilder {
-				t.Errorf("expected peer type %s, got %s", p2p.PeerTypeBuilder, p.Type)
+			if p.Type != p2p.PeerTypeProvider {
+				t.Errorf("expected peer type %s, got %s", p2p.PeerTypeProvider, p.Type)
 				return
 			}
 		}()
@@ -115,8 +115,8 @@ func TestHandshake(t *testing.T) {
 		if p.EthAddress != common.HexToAddress("0x1") {
 			t.Fatalf("expected eth address %s, got %s", common.HexToAddress("0x1"), p.EthAddress)
 		}
-		if p.Type != p2p.PeerTypeBuilder {
-			t.Fatalf("expected peer type %s, got %s", p2p.PeerTypeBuilder, p.Type)
+		if p.Type != p2p.PeerTypeProvider {
+			t.Fatalf("expected peer type %s, got %s", p2p.PeerTypeProvider, p.Type)
 		}
 		<-done
 	})

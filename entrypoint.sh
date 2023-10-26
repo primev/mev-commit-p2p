@@ -10,12 +10,12 @@ CONFIG_PATH="/config"
 if [ "$NODE_TYPE" = "bootnode" ]; then
     PRIV_KEY_FILE="${KEY_PATH}/bootnode"
     CONFIG_FILE="${CONFIG_PATH}/bootnode.yml"
-elif [ "$NODE_TYPE" = "builder" ]; then
-    PRIV_KEY_FILE="${KEY_PATH}/builder"
-    CONFIG_FILE="${CONFIG_PATH}/builder.yml"
+elif [ "$NODE_TYPE" = "provider" ]; then
+    PRIV_KEY_FILE="${KEY_PATH}/provider"
+    CONFIG_FILE="${CONFIG_PATH}/provider.yml"
 else
-    PRIV_KEY_FILE="${KEY_PATH}/searcher"
-    CONFIG_FILE="${CONFIG_PATH}/searcher.yml"
+    PRIV_KEY_FILE="${KEY_PATH}/user"
+    CONFIG_FILE="${CONFIG_PATH}/user.yml"
 fi
 
 # Generate the private key based on node type only if it doesn't exist yet

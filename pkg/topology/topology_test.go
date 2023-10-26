@@ -61,12 +61,12 @@ func TestTopology(t *testing.T) {
 
 		p1 := p2p.Peer{
 			EthAddress: common.HexToAddress("0x1"),
-			Type:       p2p.PeerTypeBuilder,
+			Type:       p2p.PeerTypeProvider,
 		}
 
 		s1 := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
-			Type:       p2p.PeerTypeSearcher,
+			Type:       p2p.PeerTypeUser,
 		}
 
 		topo.Connected(p1)
@@ -83,7 +83,7 @@ func TestTopology(t *testing.T) {
 
 		p2 := p2p.Peer{
 			EthAddress: common.HexToAddress("0x3"),
-			Type:       p2p.PeerTypeBuilder,
+			Type:       p2p.PeerTypeProvider,
 		}
 
 		topo.AddPeers(p2)
@@ -94,13 +94,13 @@ func TestTopology(t *testing.T) {
 			}
 		}
 
-		peers := topo.GetPeers(topology.Query{Type: p2p.PeerTypeBuilder})
+		peers := topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
 		if len(peers) != 2 {
 			t.Fatal("wrong number of peers")
 		}
 
 		for _, p := range peers {
-			if p.Type != p2p.PeerTypeBuilder {
+			if p.Type != p2p.PeerTypeProvider {
 				t.Fatal("wrong peer type")
 			}
 			if p.EthAddress != p1.EthAddress && p.EthAddress != p2.EthAddress {
@@ -108,12 +108,12 @@ func TestTopology(t *testing.T) {
 			}
 		}
 
-		peers = topo.GetPeers(topology.Query{Type: p2p.PeerTypeSearcher})
+		peers = topo.GetPeers(topology.Query{Type: p2p.PeerTypeUser})
 		if len(peers) != 1 {
 			t.Fatal("wrong number of peers")
 		}
 
-		if peers[0].Type != p2p.PeerTypeSearcher {
+		if peers[0].Type != p2p.PeerTypeUser {
 			t.Fatal("wrong peer type")
 		}
 

@@ -53,11 +53,11 @@ func TestDiscovery(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		client := p2p.Peer{
 			EthAddress: common.HexToAddress("0x1"),
-			Type:       p2p.PeerTypeBuilder,
+			Type:       p2p.PeerTypeProvider,
 		}
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
-			Type:       p2p.PeerTypeBuilder,
+			Type:       p2p.PeerTypeProvider,
 		}
 
 		svc := p2ptest.New(

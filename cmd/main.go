@@ -90,16 +90,16 @@ func createKey(c *cli.Context) error {
 }
 
 type config struct {
-	PrivKeyFile      string   `yaml:"priv_key_file" json:"priv_key_file"`
-	Secret           string   `yaml:"secret" json:"secret"`
-	PeerType         string   `yaml:"peer_type" json:"peer_type"`
-	P2PPort          int      `yaml:"p2p_port" json:"p2p_port"`
-	HTTPPort         int      `yaml:"http_port" json:"http_port"`
-	RPCPort          int      `yaml:"rpc_port" json:"rpc_port"`
-	LogFmt           string   `yaml:"log_fmt" json:"log_fmt"`
-	LogLevel         string   `yaml:"log_level" json:"log_level"`
-	Bootnodes        []string `yaml:"bootnodes" json:"bootnodes"`
-	ExposeBuilderAPI bool     `yaml:"expose_builder_api" json:"expose_builder_api"`
+	PrivKeyFile       string   `yaml:"priv_key_file" json:"priv_key_file"`
+	Secret            string   `yaml:"secret" json:"secret"`
+	PeerType          string   `yaml:"peer_type" json:"peer_type"`
+	P2PPort           int      `yaml:"p2p_port" json:"p2p_port"`
+	HTTPPort          int      `yaml:"http_port" json:"http_port"`
+	RPCPort           int      `yaml:"rpc_port" json:"rpc_port"`
+	LogFmt            string   `yaml:"log_fmt" json:"log_fmt"`
+	LogLevel          string   `yaml:"log_level" json:"log_level"`
+	Bootnodes         []string `yaml:"bootnodes" json:"bootnodes"`
+	ExposeProviderAPI bool     `yaml:"expose_provider_api" json:"expose_provider_api"`
 }
 
 func checkConfig(cfg *config) error {
@@ -177,15 +177,15 @@ func start(c *cli.Context) error {
 	}
 
 	nd, err := node.NewNode(&node.Options{
-		PrivKey:          privKey,
-		Secret:           cfg.Secret,
-		PeerType:         cfg.PeerType,
-		P2PPort:          cfg.P2PPort,
-		HTTPPort:         cfg.HTTPPort,
-		RPCPort:          cfg.RPCPort,
-		Logger:           logger,
-		Bootnodes:        cfg.Bootnodes,
-		ExposeBuilderAPI: cfg.ExposeBuilderAPI,
+		PrivKey:           privKey,
+		Secret:            cfg.Secret,
+		PeerType:          cfg.PeerType,
+		P2PPort:           cfg.P2PPort,
+		HTTPPort:          cfg.HTTPPort,
+		RPCPort:           cfg.RPCPort,
+		Logger:            logger,
+		Bootnodes:         cfg.Bootnodes,
+		ExposeProviderAPI: cfg.ExposeProviderAPI,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)

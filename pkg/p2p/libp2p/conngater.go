@@ -19,7 +19,7 @@ const (
 	DenyBadRegisterCall
 	DenyBlockedPeer
 	DenyNotEnoughStake
-	DenySearcherToSearcher
+	DenyUserToUser
 	Accept
 )
 
@@ -29,7 +29,7 @@ const (
 //	DenyBadRegisterCall:    "DenyBadRegisterCall",
 //	DenyBlockedPeer:        "DenyBlockedPeer",
 //	DenyNotEnoughStake:     "DenyNotEnoughStake",
-//	DenySearcherToSearcher: "DenySearcherToSearcher",
+//	DenyUserToUser: "DenyUserToUser",
 //	Accept:                 "Allow",
 //}
 
@@ -37,7 +37,7 @@ func (c connectionAllowance) isDeny() bool {
 	return !(c == Accept || c == Undecided)
 }
 
-// make sure the connections are between builder<>builder, builder<>searcher!
+// make sure the connections are between provider<>provider, provider<>user!
 type ConnectionGater interface {
 	// InterceptPeerDial intercepts peer dialing
 	InterceptPeerDial(p peer.ID) (allow bool)
@@ -55,14 +55,16 @@ type connectionGater struct {
 	register     register.Register
 	selfType     p2p.PeerType
 	minimumStake *big.Int
+	metrics      *metrics
 }
 
 // newConnectionGater creates a new instance of ConnectionGater
-func newConnectionGater(register register.Register, selfType p2p.PeerType, minimumStake *big.Int) ConnectionGater {
+func newConnectionGater(register register.Register, selfType p2p.PeerType, minimumStake *big.Int, metrics *metrics) ConnectionGater {
 	return &connectionGater{
 		register:     register,
 		selfType:     selfType,
 		minimumStake: minimumStake,
+		metrics:      metrics,
 	}
 }
 
@@ -105,8 +107,8 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	// possible s<>s connection
 	// ! s<>s connection
-	if (cg.selfType == p2p.PeerTypeSearcher) && !enoughStake {
-		return DenySearcherToSearcher
+	if (cg.selfType == p2p.PeerTypeUser) && !enoughStake {
+		return DenyUserToUser
 	}
 
 	// Reject potential s<>s connections and accept the remaining requests,
@@ -163,6 +165,7 @@ func (cg *connectionGater) InterceptAccept(connMultiaddrs network.ConnMultiaddrs
 func (cg *connectionGater) InterceptSecured(dir network.Direction, p peer.ID, connMultiaddrs network.ConnMultiaddrs) bool {
 	allowance := cg.checkAllowedPeer(p)
 	if allowance.isDeny() {
+		cg.metrics.RejectedConnectionCount.Inc()
 		return false
 	}
 
@@ -189,9 +192,11 @@ func (cg *connectionGater) InterceptUpgraded(conn network.Conn) (bool, control.D
 // the peer's stake is greater than minimal stake, the connection is allowed
 // otherwise, the connection is rejected
 func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs network.ConnMultiaddrs) bool {
-	//cg.metrics.IncomingConnectionCount.Inc()
-
 	allowance := cg.checkPeerStake(p)
+	if allowance.isDeny() {
+		cg.metrics.RejectedConnectionCount.Inc()
+	}
+
 	return !allowance.isDeny()
 }
 
@@ -200,8 +205,10 @@ func (cg *connectionGater) validateInboundConnection(p peer.ID, connMultiaddrs n
 // and the peer's stake is greater than minimal stake, the connection is
 // allowed otherwise, the connection is rejected
 func (cg *connectionGater) validateOutboundConnection(p peer.ID, connMultiaddrs network.ConnMultiaddrs) bool {
-	//cg.metrics.OutgoingConnectionCount.Inc()
-
 	allowance := cg.checkPeerStake(p)
+	if allowance.isDeny() {
+		cg.metrics.RejectedConnectionCount.Inc()
+	}
+
 	return !allowance.isDeny()
 }

@@ -72,7 +72,7 @@ func newMetrics(version string) (r *prometheus.Registry) {
 		prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: defaultNamespace,
 			Name:      "info",
-			Help:      "builder-boost information.",
+			Help:      "mev-commit information.",
 			ConstLabels: prometheus.Labels{
 				"version": version,
 			},

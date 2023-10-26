@@ -1,0 +1,111 @@
+swagger: "2.0"
+info:
+  title: User API
+  version: 1.0.0-alpha
+  license:
+    name: Business Source License 1.1
+    url: https://github.com/primevprotocol/mev-commit/blob/main/LICENSE
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /v1/user/bid:
+    post:
+      summary: SendBid
+      description: Send a bid to the user mev-commit node.
+      operationId: User_SendBid
+      responses:
+        "200":
+          description: A successful response.(streaming responses)
+          schema:
+            type: object
+            properties:
+              result:
+                $ref: '#/definitions/v1PreConfirmation'
+              error:
+                $ref: '#/definitions/googlerpcStatus'
+            title: Stream result of v1PreConfirmation
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: body
+          description: Unsigned bid message from users to the user mev-commit node.
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/rpcseacherapiv1Bid'
+definitions:
+  googlerpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcseacherapiv1Bid:
+    type: object
+    example:
+      bid_amount: 1e+18
+      block_number: 123456
+      tx_hash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
+    properties:
+      txHash:
+        type: string
+        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        pattern: '[a-fA-F0-9]{40}'
+      amount:
+        type: string
+        format: int64
+        description: Amount of ETH that the user is willing to pay to the provider for including the transaction in the block.
+      blockNumber:
+        type: string
+        format: int64
+        description: Max block number that the user wants to include the transaction in.
+    description: Unsigned bid message from users to the user mev-commit node.
+    title: Bid message
+    required:
+      - txHash
+      - amount
+      - blockNumber
+  v1PreConfirmation:
+    type: object
+    properties:
+      txHash:
+        type: string
+        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        pattern: '[a-fA-F0-9]{40}'
+      amount:
+        type: string
+        format: int64
+        description: Amount of ETH that the user has agreed to pay to the provider for including the transaction in the block.
+      blockNumber:
+        type: string
+        format: int64
+        description: Max block number that the user wants to include the transaction in.
+      bidDigest:
+        type: string
+        description: Hex string encoding of digest of the bid message signed by the user.
+      bidSignature:
+        type: string
+        description: Hex string encoding of signature of the user that sent this bid.
+      preConfirmationDigest:
+        type: string
+        description: Hex string encoding of digest of the pre-confirmation.
+      preConfirmationSignature:
+        type: string
+        description: Hex string encoding of signature of the pre-confirmation signed by the provider confirming this transaction.
