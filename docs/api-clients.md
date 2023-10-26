@@ -45,7 +45,7 @@ message BidResponse {
 
 ### HTTP API
 
-The same API is also available on the HTTP port configured on the node. Please go through the [API docs](api/provider.html) to understand the usage.
+The same API is also available on the HTTP port configured on the node. Please go through the [API docs](https://mev-commit-docs.s3.amazonaws.com/provider.html) to understand the usage.
 
 An [example client](https://github.com/primevprotocol/mev-commit/tree/main/examples/provideremulator) is implemented in the repository. This is mainly to demostrate how to write the client integrated in the provider's environment. The client blindly accepts each bid that it receives, however the provider needs to implement custom logic here to make the decision.
 
@@ -85,7 +85,7 @@ message PreConfirmation {
 
 ### HTTP API
 
-The same API is also available on the HTTP port configured on the node. Please go through the [API docs](api/user.html) to understand the usage.
+The same API is also available on the HTTP port configured on the node. Please go through the [API docs](https://mev-commit-docs.s3.amazonaws.com/user.html) to understand the usage.
 
 An [example CLI application](https://github.com/primevprotocol/mev-commit/tree/main/examples/usercli) is implemented in the repository. This is mainly to demostrate how to integrate with the RPC API.
 
