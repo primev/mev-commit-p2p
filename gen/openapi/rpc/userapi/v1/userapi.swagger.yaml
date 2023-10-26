@@ -60,9 +60,9 @@ definitions:
   rpcseacherapiv1Bid:
     type: object
     example:
-      bid_amount: 1e+18
-      block_number: 123456
-      tx_hash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
+      amount: 1e+18
+      blockNumber: 123456
+      txHash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
     properties:
       txHash:
         type: string
