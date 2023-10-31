@@ -117,6 +117,13 @@ if [ ! -e "$GENESIS_L1_PATH" ]; then
         echo "Syncing L1 contracts"
         forge script scripts/Deploy.s.sol:Deploy --sig 'sync()' --broadcast --rpc-url $EPHEMERAL_GETH_URL
 
+        echo "sending 1.5 ether to account which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
+        cast send --from "$ACCOUNT" \
+            --rpc-url "$EPHEMERAL_GETH_URL" \
+            --unlocked \
+            --value '1.5ether' \
+            0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+
         # Send debug_dumpBlock request to geth, save res to allocs.json
         BODY='{"id":3, "jsonrpc":"2.0", "method": "debug_dumpBlock", "params":["latest"]}'
         curl -s -X POST \
@@ -168,5 +175,47 @@ fi
 
 touch /shared-optimism/start_l2
 echo "signaled L2 to start"
+
+# Address:     0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+# Private key: 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1
+
+echo "Confirming balance of account which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
+cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+
+# Get address of L1StandardBridgeProxy.json 
+BRIDGE_PROXY_ADDRESS=$(cat "$DEPLOYMENT_DIR/L1StandardBridgeProxy.json" | jq -r .address)
+
+echo $BRIDGE_PROXY_ADDRESS
+
+echo "Bridging eth to L2"
+
+# Send 0.1 to random addr to test you're doing shiz right
+cast send --private-key 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1 \
+    --rpc-url "$L1_URL" \
+    --value '0.1ether' \
+    0x4a0360314B3180EC6deD2Facf5C0F650b5Aa0D03
+
+echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C balance after test"
+cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+
+cast send --private-key 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1 \
+    --rpc-url "$L1_URL" \
+    --value '1.0ether' \
+    "$BRIDGE_PROXY_ADDRESS"
+
+sleep 14
+
+echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C balance after bridging"
+cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+
+# TODO: see if any relaying is needed
+
 echo "Coordintor setup complete"
-exit 0
+
+while true; do
+   echo "looping"
+   sleep 10  
+done
+
+# exit 0
+
