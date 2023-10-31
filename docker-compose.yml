@@ -1,6 +1,8 @@
 version: '3'
 
 services:
+
+  # P2p section
   bootnode:
     build:
       context: .
@@ -42,10 +44,65 @@ services:
       - "13523:13523"
       - "13524:13524"
 
+  # Settlement layer section
+  coordinator:
+    build: 
+      context: ./op-docker/coordinator
+    environment:
+      - DEPLOYMENT_CONTEXT=${DEPLOYMENT_CONTEXT}
+      - L1_BLOCK_TIME=${L1_BLOCK_TIME}
+      - L2_BLOCK_TIME=${L2_BLOCK_TIME}
+      - GOVERNANCE_TOKEN_SYMBOL=${GOVERNANCE_TOKEN_SYMBOL}
+      - GOVERNANCE_TOKEN_NAME=${GOVERNANCE_TOKEN_NAME}
+    volumes:
+      - shared-optimism:/shared-optimism
+    networks:
+      - op-net
+  l1-geth:
+    build: 
+      context: ./op-docker/l1-geth
+    volumes:
+      - shared-optimism:/shared-optimism
+    networks:
+      - op-net
+    ports:
+      - "8544:8545"
+  op-geth:
+    build: 
+      context: ./op-docker/op-geth
+    volumes:
+      - shared-optimism:/shared-optimism
+    networks:
+      - op-net
+    ports:
+      - "8545:8545"
+  op-node:
+    build:
+      context: ./op-docker/op-node
+    volumes:
+      - shared-optimism:/shared-optimism
+    networks:
+      - op-net
+    ports:
+      - "8546:8545"
+  op-batcher:
+    build:
+      context: ./op-docker/op-batcher
+    networks:
+      - op-net
+  op-proposer:
+    build:
+      context: ./op-docker/op-proposer
+    volumes:
+      - shared-optimism:/shared-optimism
+    networks:
+      - op-net
+
 volumes:
   bootnode-keys:
   provider-keys:
   user-keys:
+  shared-optimism:
 
 networks:
   mev-net:
@@ -53,3 +110,5 @@ networks:
       driver: default
       config:
         - subnet: 172.28.0.0/16
+  op-net:
+    driver: bridge
