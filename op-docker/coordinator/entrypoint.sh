@@ -179,36 +179,33 @@ echo "signaled L2 to start"
 # Address:     0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
 # Private key: 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1
 
-echo "Confirming balance of account which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
+echo "Confirming L1 balance of account which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
 cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
 
 # Get address of L1StandardBridgeProxy.json 
 BRIDGE_PROXY_ADDRESS=$(cat "$DEPLOYMENT_DIR/L1StandardBridgeProxy.json" | jq -r .address)
 
+echo "Bridge proxy address: "
 echo $BRIDGE_PROXY_ADDRESS
 
 echo "Bridging eth to L2"
 
-# Send 0.1 to random addr to test you're doing shiz right
-cast send --private-key 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1 \
-    --rpc-url "$L1_URL" \
-    --value '0.1ether' \
-    0x4a0360314B3180EC6deD2Facf5C0F650b5Aa0D03
+sleep 60
 
-echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C balance after test"
-cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
-
+# Send ETH directly to bridge proxy, see https://community.optimism.io/docs/developers/bridge/standard-bridge/#depositing-eth
 cast send --private-key 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1 \
     --rpc-url "$L1_URL" \
     --value '1.0ether' \
     "$BRIDGE_PROXY_ADDRESS"
 
 sleep 14
-
-echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C balance after bridging"
+echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C L1 balance after bridging"
 cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
 
-# TODO: see if any relaying is needed
+sleep 60
+
+echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C L2 balance after bridging"
+cast balance --rpc-url http://op-geth:8545 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C 
 
 echo "Coordintor setup complete"
 
