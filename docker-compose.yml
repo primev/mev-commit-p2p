@@ -14,6 +14,8 @@ services:
     networks:
       mev-net:
         ipv4_address: 172.28.0.2
+    profiles:
+      - p2pnode
 
   provider:
     build:
@@ -27,6 +29,8 @@ services:
       - provider-keys:/keys
     networks:
       - mev-net
+    profiles:
+      - p2pnode
 
   user:
     build:
@@ -43,6 +47,9 @@ services:
     ports:
       - "13523:13523"
       - "13524:13524"
+    profiles:
+      - p2pnode
+
 
   # Settlement layer section
   coordinator:
@@ -58,6 +65,8 @@ services:
       - shared-optimism:/shared-optimism
     networks:
       - op-net
+    profiles:
+      - settlement
   l1-geth:
     build: 
       context: ./op-docker/l1-geth
@@ -67,6 +76,8 @@ services:
       - op-net
     ports:
       - "8544:8545"
+    profiles:
+      - settlement
   op-geth:
     build: 
       context: ./op-docker/op-geth
@@ -76,6 +87,8 @@ services:
       - op-net
     ports:
       - "8545:8545"
+    profiles:
+      - settlement
   op-node:
     build:
       context: ./op-docker/op-node
@@ -85,11 +98,15 @@ services:
       - op-net
     ports:
       - "8546:8545"
+    profiles:
+      - settlement
   op-batcher:
     build:
       context: ./op-docker/op-batcher
     networks:
       - op-net
+    profiles:
+      - settlement
   op-proposer:
     build:
       context: ./op-docker/op-proposer
@@ -97,6 +114,8 @@ services:
       - shared-optimism:/shared-optimism
     networks:
       - op-net
+    profiles:
+      - settlement
 
 volumes:
   bootnode-keys:
