@@ -48,6 +48,10 @@ services:
   coordinator:
     build: 
       context: ./op-docker/coordinator
+      args:
+        # Note SSH_PRIVATE_KEY env var must be set to valid path on host
+        # export SSH_PRIVATE_KEY="$(cat path/to/your/id_rsa)"
+        SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEY}
     environment:
       - DEPLOYMENT_CONTEXT=${DEPLOYMENT_CONTEXT}
       - L1_BLOCK_TIME=${L1_BLOCK_TIME}
