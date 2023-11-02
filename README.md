@@ -30,6 +30,9 @@ p2p_port: 13522
 # Port used for HTTP traffic. If not configured, 13523 is the default.
 http_port: 13523
 
+# Port used for RPC traffic. If not configured, 13524 is the default.
+rpc_port: 13524
+
 # Secret for the node. This is used to authorize the nodes. The value doesnt matter as long as it is sufficiently unique. It is signed using the private key.
 secret: hello
 
@@ -92,9 +95,15 @@ To simplify the deployment process, you may utilize Docker to create an isolated
   docker build -t mev-commit:latest .
   ```
 - Running with Docker Compose:
- 
+
+   If you want to just spin up the mev-commit p2p nodes, you may use:
   ```
-  docker-compose up --build
+  docker-compose --profile p2pnode up --build
+  ```
+
+  If you would also like to spin up the settlment layer:
+  ```
+  docker-compose --profile p2pnode --profile settlement up --build
   ```
 
 - Stopping the Service:
