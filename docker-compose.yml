@@ -49,8 +49,8 @@ services:
     build: 
       context: ./op-docker/coordinator
       args:
-        # Note SSH_PRIVATE_KEY env var must be set to valid path on host
-        # export SSH_PRIVATE_KEY="$(cat path/to/your/id_rsa)"
+        # Note SSH_PRIVATE_KEY env var must be set to valid key
+        # export SSH_PRIVATE_KEY="$(cat ~/.ssh/id_rsa)" for example
         SSH_PRIVATE_KEY: ${SSH_PRIVATE_KEY}
     environment:
       - DEPLOYMENT_CONTEXT=${DEPLOYMENT_CONTEXT}

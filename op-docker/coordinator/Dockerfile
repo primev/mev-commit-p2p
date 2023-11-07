@@ -30,17 +30,22 @@ RUN mkdir -p -m 0600 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 ARG SSH_PRIVATE_KEY
 
+RUN if [ -z "$SSH_PRIVATE_KEY" ]; then echo "SSH_PRIVATE_KEY env var must be set to valid key (often at ~/.ssh)" >&2; exit 1; fi
+
 # Write the SSH private key into a file
 RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_rsa && \
     chmod 600 /root/.ssh/id_rsa
 
 # Clone the private repo
 WORKDIR /
-RUN git clone git@github.com:primevprotocol/rollup-preconf.git
+RUN git clone --recurse-submodules git@github.com:primevprotocol/rollup-preconf.git
 WORKDIR /rollup-preconf
-RUN npm install && npx hardhat compile
+# Checkout latest commit from shawn/private-key-env-var as of 11/6/2023 
+RUN git checkout 45582b5cfc73bde9f871e156ccbd2ce8d220b384 
+RUN npm install 
+RUN npx hardhat compile
 
-# For l2 contract deployment, rm prefix?
+# For l2 contract deployment
 ENV PRIVATE_KEY aa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1     
 
 ENV GOPATH /go

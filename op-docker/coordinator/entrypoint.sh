@@ -207,13 +207,13 @@ sleep 60
 echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C L2 balance after bridging"
 cast balance --rpc-url http://op-geth:8545 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C 
 
-
 # TEMP: mutate hardhat url from src
+# See: https://github.com/primevprotocol/rollup-preconf/pull/29
 OLD_URL="http:\/\/127.0.0.1:8545"
 NEW_URL="http:\/\/op-geth:8545"
 sed -i "s/$OLD_URL/$NEW_URL/g" "/rollup-preconf/hardhat.config.js"
 
-# Now deploy L2 contracts, private key set in dockerfile
+# Now deploy L2 contracts, PRIVATE_KEY used by script was set in dockerfile 
 cd /rollup-preconf
 npx hardhat run scripts/deploy.js --network localhost
 
