@@ -213,7 +213,7 @@ OLD_URL="http:\/\/127.0.0.1:8545"
 NEW_URL="http:\/\/op-geth:8545"
 sed -i "s/$OLD_URL/$NEW_URL/g" "/rollup-preconf/hardhat.config.js"
 
-# Now deploy L2 contracts, PRIVATE_KEY used by script was set in dockerfile 
+# Now deploy L2 contracts, SIGNER_PRIVATE_KEY used by script was set in dockerfile 
 cd /rollup-preconf
 npx hardhat run scripts/deploy.js --network localhost
 
