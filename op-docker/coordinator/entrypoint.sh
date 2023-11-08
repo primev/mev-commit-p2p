@@ -122,7 +122,7 @@ if [ ! -e "$GENESIS_L1_PATH" ]; then
             --rpc-url "$EPHEMERAL_GETH_URL" \
             --unlocked \
             --value '1.5ether' \
-            0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+            $SIGNER_ADDRESS
 
         # Send debug_dumpBlock request to geth, save res to allocs.json
         BODY='{"id":3, "jsonrpc":"2.0", "method": "debug_dumpBlock", "params":["latest"]}'
@@ -176,11 +176,8 @@ fi
 touch /shared-optimism/start_l2
 echo "signaled L2 to start"
 
-# Address:     0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
-# Private key: 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1
-
-echo "Confirming L1 balance of account which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
-cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+echo "Confirming L1 balance of address which will bridge to L2, 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C"
+cast balance --rpc-url "$L1_URL" $SIGNER_ADDRESS
 
 # Get address of L1StandardBridgeProxy.json 
 BRIDGE_PROXY_ADDRESS=$(cat "$DEPLOYMENT_DIR/L1StandardBridgeProxy.json" | jq -r .address)
@@ -193,29 +190,23 @@ echo "Bridging eth to L2"
 sleep 60
 
 # Send ETH directly to bridge proxy, see https://community.optimism.io/docs/developers/bridge/standard-bridge/#depositing-eth
-cast send --private-key 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1 \
+cast send --private-key $SIGNER_PRIVATE_KEY \
     --rpc-url "$L1_URL" \
     --value '1.0ether' \
     "$BRIDGE_PROXY_ADDRESS"
 
 sleep 14
 echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C L1 balance after bridging"
-cast balance --rpc-url "$L1_URL" 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+cast balance --rpc-url "$L1_URL" $SIGNER_ADDRESS
 
 sleep 60
 
 echo "Confirming 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C L2 balance after bridging"
-cast balance --rpc-url http://op-geth:8545 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C 
-
-# TEMP: mutate hardhat url from src
-# See: https://github.com/primevprotocol/rollup-preconf/pull/29
-OLD_URL="http:\/\/127.0.0.1:8545"
-NEW_URL="http:\/\/op-geth:8545"
-sed -i "s/$OLD_URL/$NEW_URL/g" "/rollup-preconf/hardhat.config.js"
+cast balance --rpc-url http://op-geth:8545 $SIGNER_ADDRESS
 
 # Now deploy L2 contracts, SIGNER_PRIVATE_KEY used by script was set in dockerfile 
 cd /rollup-preconf
-npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy.js --network op_docker
 
 echo "Coordintor setup complete"
 exit 0

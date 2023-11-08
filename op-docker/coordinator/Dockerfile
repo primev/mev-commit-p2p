@@ -46,7 +46,10 @@ RUN git checkout e20841ee2143d60724e2094d7c847eecc76e97ef && git submodule updat
 RUN npm install 
 RUN npx hardhat compile
 
-# Set env var for l2 contract deployment, note this account will be funded during coordinator setup
+# Set env vars for l2 contract deployment, note this account will be funded during coordinator setup
+# Address:     0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
+# Private key: 0xaa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1
+ENV SIGNER_ADDRESS 0x17b9A666Db52274090236DffD7f7aF589E4d9F8C
 ENV SIGNER_PRIVATE_KEY aa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1     
 
 ENV GOPATH /go
