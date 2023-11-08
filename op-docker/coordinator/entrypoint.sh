@@ -218,10 +218,4 @@ cd /rollup-preconf
 npx hardhat run scripts/deploy.js --network localhost
 
 echo "Coordintor setup complete"
-while true; do
-   echo "looping"
-   sleep 10  
-done
-
-# exit 0
-
+exit 0

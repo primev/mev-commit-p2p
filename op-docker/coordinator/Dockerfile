@@ -17,9 +17,7 @@ RUN foundryup
 COPY --from=base-node /usr/local /usr/local
 
 WORKDIR /shared-optimism
-RUN git clone --recurse-submodules https://github.com/ethereum-optimism/optimism.git .
-# TODO: recuse submodules on checkout?
-RUN git checkout v1.2.0
+RUN git clone --branch v1.2.0 --depth 1 --recurse-submodules https://github.com/ethereum-optimism/optimism.git .
 RUN pnpm install 
 RUN pnpm build
 
@@ -42,13 +40,13 @@ RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_rsa && \
 WORKDIR /
 RUN git clone git@github.com:primevprotocol/rollup-preconf.git
 WORKDIR /rollup-preconf
-# Checkout latest commit from shawn/downgrade-solidity as of 11/7/2023 
-RUN git checkout 92661da54808aff94b7f96e22593c7d912bcc3db --recurse-submodules
-RUN git submodule init && git submodule update
+
+# Checkout latest commit from shawn/downgrade-solidity as of 11/8/2023 
+RUN git checkout e20841ee2143d60724e2094d7c847eecc76e97ef && git submodule update --init --recursive
 RUN npm install 
 RUN npx hardhat compile
 
-# For l2 contract deployment
+# Set env var for l2 contract deployment, note this account will be funded during coordinator setup
 ENV SIGNER_PRIVATE_KEY aa17da7fd48f4b82f6a04efe3f52a065d505fe0b36486cf96eff99637d16c2e1     
 
 ENV GOPATH /go
