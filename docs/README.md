@@ -38,4 +38,4 @@ Bids and commitments will settle on a specialized Ethereum fork based on the OP 
 
 Diagram depicting **the flow of bids, commitments, and funds**
 
-![](flow.png)
+<img src="flow.png" alt="Topology" width="500" height="500"/>
