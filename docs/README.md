@@ -16,7 +16,7 @@ Users of execution services (**MEV searchers, AA bundlers, L2s, and other blocks
 
 The network topology we will be releasing is as follows:
 
-![](topology.png)
+<img src="topology.png" alt="Topology" width="500" height="500"/>
 
 Users will connect to providers, each of these nodes will have access to a bootnode for network startup. Providers will also be able to run gateway nodes to allow users to send bids directly to an RPC endpoint under a provider URL.
 
