@@ -2,3 +2,4 @@ vendor
 **/.idea
 **/.vscode
 *.DS_STORE
+bin/*

@@ -7,14 +7,19 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/big"
 	"net"
 	"net/http"
+	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
+	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -30,17 +35,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var preconfContractABI = ""
+
 type Options struct {
-	Version           string
-	PrivKey           *ecdsa.PrivateKey
-	Secret            string
-	PeerType          string
-	Logger            *slog.Logger
-	P2PPort           int
-	HTTPPort          int
-	RPCPort           int
-	Bootnodes         []string
-	ExposeProviderAPI bool
+	Version            string
+	PrivKey            *ecdsa.PrivateKey
+	Secret             string
+	PeerType           string
+	Logger             *slog.Logger
+	P2PPort            int
+	HTTPPort           int
+	RPCPort            int
+	Bootnodes          []string
+	ExposeProviderAPI  bool
+	PreconfContract    string
+	PreconfContractRPC string
 }
 
 type Node struct {
@@ -103,7 +112,11 @@ func NewNode(opts *Options) (*Node, error) {
 		grpcServer := grpc.NewServer()
 
 		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
-		var bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
+
+		var (
+			bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
+			commitmentDA preconfcontract.Interface    = noOpCommitmentDA{}
+		)
 
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
@@ -112,13 +125,35 @@ func NewNode(opts *Options) (*Node, error) {
 				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 				bidProcessor = providerAPI
 			}
-			// TODO(@ckartik): Update noOpBidProcessor to be selected as default in a flag paramater.
+
+			preconfContractABI, err := abi.JSON(strings.NewReader(preconfContractABI))
+			if err != nil {
+				return nil, err
+			}
+
+			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
+
+			preconfRPC, err := ethclient.Dial(opts.PreconfContractRPC)
+			if err != nil {
+				return nil, err
+			}
+
+			commitmentDA = preconfcontract.New(
+				libp2p.GetEthAddressFromPubKey(&(opts.PrivKey.PublicKey)),
+				preconfContractAddr,
+				preconfContractABI,
+				preconfRPC,
+				opts.PrivKey,
+				opts.Logger.With("component", "preconfcontract"),
+			)
+
 			preconfProto := preconfirmation.New(
 				topo,
 				p2pSvc,
 				preconfSigner,
 				noOpUserStore{},
 				bidProcessor,
+				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			// Only register handler for provider
@@ -131,6 +166,7 @@ func NewNode(opts *Options) (*Node, error) {
 				preconfSigner,
 				noOpUserStore{},
 				bidProcessor,
+				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 
@@ -243,4 +279,18 @@ func (noOpBidProcessor) ProcessBid(
 	close(statusC)
 
 	return statusC, nil
+}
+
+type noOpCommitmentDA struct{}
+
+func (noOpCommitmentDA) StoreCommitment(
+	_ context.Context,
+	_ *big.Int,
+	_ uint64,
+	_ string,
+	_ string,
+	_ []byte,
+	_ []byte,
+) error {
+	return nil
 }
