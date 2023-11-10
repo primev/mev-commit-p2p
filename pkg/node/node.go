@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var preconfContractABI = ""
+var preconfContractABI = preConfJson
 
 type Options struct {
 	Version            string
