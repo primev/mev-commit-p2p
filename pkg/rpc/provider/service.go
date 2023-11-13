@@ -3,25 +3,29 @@ package providerapi
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"sync"
 
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 )
 
 type Service struct {
 	providerapiv1.UnimplementedProviderServer
-	receiver      chan *providerapiv1.Bid
-	bidsInProcess map[string]func(providerapiv1.BidResponse_Status)
-	bidsMu        sync.Mutex
-	logger        *slog.Logger
+	receiver         chan *providerapiv1.Bid
+	bidsInProcess    map[string]func(providerapiv1.BidResponse_Status)
+	bidsMu           sync.Mutex
+	logger           *slog.Logger
+	registryContract registrycontract.Interface
 }
 
-func NewService(logger *slog.Logger) *Service {
+func NewService(logger *slog.Logger, registryContract registrycontract.Interface) *Service {
 	return &Service{
-		receiver:      make(chan *providerapiv1.Bid),
-		bidsInProcess: make(map[string]func(providerapiv1.BidResponse_Status)),
-		logger:        logger,
+		receiver:         make(chan *providerapiv1.Bid),
+		bidsInProcess:    make(map[string]func(providerapiv1.BidResponse_Status)),
+		registryContract: registryContract,
+		logger:           logger,
 	}
 }
 
@@ -94,4 +98,33 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 			callback(status.Status)
 		}
 	}
+}
+
+func (s *Service) RegisterStake(
+	ctx context.Context,
+	stake *providerapiv1.StakeRequest,
+) (*providerapiv1.StakeResponse, error) {
+	err := s.registryContract.RegisterProvider(ctx, big.NewInt(stake.Amount))
+	if err != nil {
+		return nil, err
+	}
+
+	stakeAmount, err := s.registryContract.GetStake(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+}
+
+func (s *Service) GetStake(
+	ctx context.Context,
+	_ *providerapiv1.EmptyMessage,
+) (*providerapiv1.StakeResponse, error) {
+	stakeAmount, err := s.registryContract.GetStake(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
 }

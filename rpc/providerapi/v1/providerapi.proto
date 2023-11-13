@@ -36,7 +36,42 @@ service Provider {
       body: "*"
     };
   }
+  // RegisterStake
+  //
+  // RegisterStake is called by the provider to register its stake in the provider registry.
+  rpc RegisterStake(StakeRequest) returns (StakeResponse) {
+    option (google.api.http) = {post: "/v1/provider/register_stake/{amount}"};
+  }
+  // GetStake
+  //
+  // GetStake is called by the provider to get its stake in the provider registry.
+  rpc GetStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/provider/get_stake"};
+  }
 }
+
+message StakeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake request"
+      description: "Stake provider in the provider registry."
+      required: ["stake"]
+    }
+    example: "{\"amount\": 1000000000000000000 }"
+  };
+  int64 amount = 1;
+};
+
+message StakeResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake response"
+      description: "Get staked amount for provider in the provider registry."
+    }
+    example: "{\"amount\": 1000000000000000000 }"
+  };
+  int64 amount = 1;
+};
 
 message EmptyMessage {};
 

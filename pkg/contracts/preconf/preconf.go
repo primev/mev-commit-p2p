@@ -64,7 +64,7 @@ func (p *preconfContract) StoreCommitment(
 
 	callData, err := p.preconfABI.Pack(
 		"storeCommitment",
-		bid,
+		uint64(bid.Int64()),
 		blockNumber,
 		txHash,
 		commitmentHash,
@@ -72,6 +72,7 @@ func (p *preconfContract) StoreCommitment(
 		commitmentSignature,
 	)
 	if err != nil {
+		p.logger.Error("preconf contract storeCommitment pack error", "err", err)
 		return err
 	}
 
@@ -85,15 +86,18 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
-	gasPrice, err := p.client.SuggestGasPrice(ctx)
-	if err != nil {
-		return err
-	}
+	// gasPrice, err := p.client.SuggestGasPrice(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 
-	gasTipCap, err := p.client.SuggestGasTipCap(ctx)
-	if err != nil {
-		return err
-	}
+	// gasTipCap, err := p.client.SuggestGasTipCap(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	gasPrice := big.NewInt(50000)
+	gasTipCap := big.NewInt(50000)
 
 	gasFeeCap := new(big.Int).Add(gasPrice, gasTipCap)
 
@@ -121,6 +125,8 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
+	p.logger.Info("sent txn", "txnData", txnData)
+
 	receipt, err := bind.WaitMined(ctx, p.client, txnData)
 	if err != nil {
 		return err
@@ -129,6 +135,8 @@ func (p *preconfContract) StoreCommitment(
 	if receipt.Status != types.ReceiptStatusSuccessful {
 		return err
 	}
+
+	p.logger.Info("preconf contract storeCommitment successful", "txnData", txnData)
 
 	return nil
 }

@@ -187,7 +187,7 @@ func (p *Preconfirmation) handleBid(
 
 	if p.us.CheckUserRegistred(ethAddress) {
 		// try to enqueue for 5 seconds
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 
 		statusC, err := p.processer.ProcessBid(ctx, bid)
