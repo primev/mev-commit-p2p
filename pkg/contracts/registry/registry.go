@@ -64,18 +64,20 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 		return err
 	}
 
-	// gasPrice, err := p.client.SuggestGasPrice(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	r.logger.Info("chainID", "chainID", chainID, "nonce", nonce)
 
-	// gasTipCap, err := p.client.SuggestGasTipCap(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	gasPrice, err := r.client.SuggestGasPrice(ctx)
+	if err != nil {
+		return err
+	}
 
-	gasPrice := big.NewInt(50000)
-	gasTipCap := big.NewInt(50000)
+	gasTipCap, err := r.client.SuggestGasTipCap(ctx)
+	if err != nil {
+		return err
+	}
+
+	gas := big.NewInt(10000000)
+	// gasTipCap := big.NewInt(0)
 
 	gasFeeCap := new(big.Int).Add(gasPrice, gasTipCap)
 
@@ -85,7 +87,7 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 		Nonce:     nonce,
 		Data:      callData,
 		Value:     amount,
-		Gas:       uint64(gasPrice.Int64()),
+		Gas:       uint64(gas.Int64()),
 		GasFeeCap: gasFeeCap,
 		GasTipCap: gasTipCap,
 	})
@@ -99,14 +101,22 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 		return err
 	}
 
+	r.logger.Info("signed txn", "txnData", signedTxn)
+
 	err = r.client.SendTransaction(ctx, signedTxn)
 	if err != nil {
 		return err
 	}
 
-	r.logger.Info("sent txn", "txnData", txnData)
+	// data, err := signedTxn.MarshalBinary()
+	// if err != nil {
+	// 	return err
+	// }
+	// rawTxHex := hexutil.Encode(data)
 
-	receipt, err := bind.WaitMined(ctx, r.client, txnData)
+	// r.logger.Info("sent txn", "txnData", txnData, "txHash", signedTxn.Hash(), "rawTxHex", rawTxHex)
+
+	receipt, err := bind.WaitMined(ctx, r.client, signedTxn)
 	if err != nil {
 		return err
 	}
@@ -121,10 +131,7 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 }
 
 func (r *registryContract) GetStake(ctx context.Context) (*big.Int, error) {
-	var address [32]byte
-	copy(address[:], r.owner.Bytes())
-
-	callData, err := r.registryABI.Pack("providerStakes", address)
+	callData, err := r.registryABI.Pack("checkStake", r.owner)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -142,14 +149,11 @@ func (r *registryContract) GetStake(ctx context.Context) (*big.Int, error) {
 		return nil, err
 	}
 
-	var stake *big.Int
-	err = r.registryABI.UnpackIntoInterface(&stake, "providerStakes", result)
+	results, err := r.registryABI.Unpack("checkStake", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
 	}
 
-	r.logger.Info("got stake", "address", address, "stake", stake)
-
-	return stake, nil
+	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }

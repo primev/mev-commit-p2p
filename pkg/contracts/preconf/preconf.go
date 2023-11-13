@@ -67,7 +67,6 @@ func (p *preconfContract) StoreCommitment(
 		uint64(bid.Int64()),
 		blockNumber,
 		txHash,
-		commitmentHash,
 		bidSignature,
 		commitmentSignature,
 	)
@@ -96,8 +95,17 @@ func (p *preconfContract) StoreCommitment(
 	// 	return err
 	// }
 
-	gasPrice := big.NewInt(50000)
-	gasTipCap := big.NewInt(50000)
+	gasPrice, err := p.client.SuggestGasPrice(ctx)
+	if err != nil {
+		return err
+	}
+
+	gasTipCap, err := p.client.SuggestGasTipCap(ctx)
+	if err != nil {
+		return err
+	}
+
+	gas := big.NewInt(10000000)
 
 	gasFeeCap := new(big.Int).Add(gasPrice, gasTipCap)
 
@@ -106,7 +114,7 @@ func (p *preconfContract) StoreCommitment(
 		To:        &p.preconfContractAddr,
 		Nonce:     nonce,
 		Data:      callData,
-		Gas:       uint64(gasPrice.Int64()),
+		Gas:       uint64(gas.Int64()),
 		GasFeeCap: gasFeeCap,
 		GasTipCap: gasTipCap,
 	})
@@ -127,7 +135,7 @@ func (p *preconfContract) StoreCommitment(
 
 	p.logger.Info("sent txn", "txnData", txnData)
 
-	receipt, err := bind.WaitMined(ctx, p.client, txnData)
+	receipt, err := bind.WaitMined(ctx, p.client, signedTxn)
 	if err != nil {
 		return err
 	}
