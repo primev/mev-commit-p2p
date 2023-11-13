@@ -2,6 +2,7 @@ package preconfirmation
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"log/slog"
 	"math/big"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -22,12 +24,13 @@ const (
 )
 
 type Preconfirmation struct {
-	signer    preconfsigner.Signer
-	topo      Topology
-	streamer  p2p.Streamer
-	us        UserStore
-	processer BidProcessor
-	logger    *slog.Logger
+	signer       preconfsigner.Signer
+	topo         Topology
+	streamer     p2p.Streamer
+	us           UserStore
+	processer    BidProcessor
+	commitmentDA preconfcontract.Interface
+	logger       *slog.Logger
 }
 
 type Topology interface {
@@ -48,15 +51,17 @@ func New(
 	signer preconfsigner.Signer,
 	us UserStore,
 	processor BidProcessor,
+	commitmentDA preconfcontract.Interface,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
-		topo:      topo,
-		streamer:  streamer,
-		signer:    signer,
-		us:        us,
-		processer: processor,
-		logger:    logger,
+		topo:         topo,
+		streamer:     streamer,
+		signer:       signer,
+		us:           us,
+		processer:    processor,
+		commitmentDA: commitmentDA,
+		logger:       logger,
 	}
 }
 
@@ -182,7 +187,7 @@ func (p *Preconfirmation) handleBid(
 
 	if p.us.CheckUserRegistred(ethAddress) {
 		// try to enqueue for 5 seconds
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 
 		statusC, err := p.processer.ProcessBid(ctx, bid)
@@ -198,6 +203,18 @@ func (p *Preconfirmation) handleBid(
 				return errors.New("bid rejected")
 			case providerapiv1.BidResponse_STATUS_ACCEPTED:
 				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
+				if err != nil {
+					return err
+				}
+				err = p.commitmentDA.StoreCommitment(
+					ctx,
+					preConfirmation.Bid.BidAmt,
+					uint64(preConfirmation.Bid.BlockNumber.Int64()),
+					preConfirmation.Bid.TxHash,
+					hex.EncodeToString(preConfirmation.Digest),
+					preConfirmation.Bid.Signature,
+					preConfirmation.Signature,
+				)
 				if err != nil {
 					return err
 				}

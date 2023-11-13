@@ -100,6 +100,9 @@ type config struct {
 	LogLevel          string   `yaml:"log_level" json:"log_level"`
 	Bootnodes         []string `yaml:"bootnodes" json:"bootnodes"`
 	ExposeProviderAPI bool     `yaml:"expose_provider_api" json:"expose_provider_api"`
+	PreconfContract   string   `yaml:"preconf_contract" json:"preconf_contract"`
+	RegistryContract  string   `yaml:"registry_contract" json:"registry_contract"`
+	RPCEndpoint       string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
 }
 
 func checkConfig(cfg *config) error {
@@ -186,6 +189,9 @@ func start(c *cli.Context) error {
 		Logger:            logger,
 		Bootnodes:         cfg.Bootnodes,
 		ExposeProviderAPI: cfg.ExposeProviderAPI,
+		PreconfContract:   cfg.PreconfContract,
+		RegistryContract:  cfg.RegistryContract,
+		RPCEndpoint:       cfg.RPCEndpoint,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)

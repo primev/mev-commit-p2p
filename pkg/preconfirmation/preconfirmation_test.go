@@ -66,6 +66,20 @@ func (t *testProcessor) ProcessBid(
 	return statusC, nil
 }
 
+type testCommitmentDA struct{}
+
+func (t *testCommitmentDA) StoreCommitment(
+	_ context.Context,
+	_ *big.Int,
+	_ uint64,
+	_ string,
+	_ string,
+	_ []byte,
+	_ []byte,
+) error {
+	return nil
+}
+
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()
 
@@ -118,7 +132,15 @@ func TestPreconfBidSubmission(t *testing.T) {
 			preConfirmationSigner: common.HexToAddress("0x2"),
 		}
 
-		p := preconfirmation.New(topo, svc, signer, us, proc, newTestLogger(t, os.Stdout))
+		p := preconfirmation.New(
+			topo,
+			svc,
+			signer,
+			us,
+			proc,
+			&testCommitmentDA{},
+			newTestLogger(t, os.Stdout),
+		)
 
 		svc.SetPeerHandler(server, p.Protocol())
 
