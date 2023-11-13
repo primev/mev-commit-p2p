@@ -10,6 +10,20 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/provider/get_stake:
+    get:
+      summary: GetStake
+      description: GetStake is called by the provider to get its stake in the provider registry.
+      operationId: Provider_GetStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
   /v1/provider/receive_bids:
     get:
       summary: ReceiveBids
@@ -32,6 +46,26 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
+  /v1/provider/register_stake/{amount}:
+    post:
+      summary: RegisterStake
+      description: RegisterStake is called by the provider to register its stake in the provider registry.
+      operationId: Provider_RegisterStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: amount
+          in: path
+          required: true
+          type: string
+          format: int64
   /v1/provider/send_processed_bids:
     post:
       summary: SendProcessedBids
@@ -131,3 +165,13 @@ definitions:
       - STATUS_REJECTED
   v1EmptyMessage:
     type: object
+  v1StakeResponse:
+    type: object
+    example:
+      amount: 1e+18
+    properties:
+      amount:
+        type: string
+        format: int64
+    description: Get staked amount for provider in the provider registry.
+    title: Stake response

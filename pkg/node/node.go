@@ -20,6 +20,7 @@ import (
 	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
+	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -35,21 +36,25 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var preconfContractABI = preConfJson
+var (
+	preconfContractABI  = preConfJson
+	registryContractABI = providerRegistryJson
+)
 
 type Options struct {
-	Version            string
-	PrivKey            *ecdsa.PrivateKey
-	Secret             string
-	PeerType           string
-	Logger             *slog.Logger
-	P2PPort            int
-	HTTPPort           int
-	RPCPort            int
-	Bootnodes          []string
-	ExposeProviderAPI  bool
-	PreconfContract    string
-	PreconfContractRPC string
+	Version           string
+	PrivKey           *ecdsa.PrivateKey
+	Secret            string
+	PeerType          string
+	Logger            *slog.Logger
+	P2PPort           int
+	HTTPPort          int
+	RPCPort           int
+	Bootnodes         []string
+	ExposeProviderAPI bool
+	PreconfContract   string
+	RegistryContract  string
+	RPCEndpoint       string
 }
 
 type Node struct {
@@ -120,8 +125,34 @@ func NewNode(opts *Options) (*Node, error) {
 
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
+			contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
+			if err != nil {
+				return nil, err
+			}
+			ownerEthAddress := libp2p.GetEthAddressFromPubKey(&opts.PrivKey.PublicKey)
+
 			if opts.ExposeProviderAPI {
-				providerAPI := providerapi.NewService(opts.Logger.With("component", "providerapi"))
+
+				registryContractABI, err := abi.JSON(strings.NewReader(registryContractABI))
+				if err != nil {
+					return nil, err
+				}
+
+				registryContractAddr := common.HexToAddress(opts.RegistryContract)
+
+				providerRegistry := registrycontract.New(
+					ownerEthAddress,
+					registryContractAddr,
+					registryContractABI,
+					contractRPC,
+					opts.PrivKey,
+					opts.Logger.With("component", "registrycontract"),
+				)
+
+				providerAPI := providerapi.NewService(
+					opts.Logger.With("component", "providerapi"),
+					providerRegistry,
+				)
 				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 				bidProcessor = providerAPI
 			}
@@ -133,16 +164,11 @@ func NewNode(opts *Options) (*Node, error) {
 
 			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
 
-			preconfRPC, err := ethclient.Dial(opts.PreconfContractRPC)
-			if err != nil {
-				return nil, err
-			}
-
 			commitmentDA = preconfcontract.New(
-				libp2p.GetEthAddressFromPubKey(&(opts.PrivKey.PublicKey)),
+				ownerEthAddress,
 				preconfContractAddr,
 				preconfContractABI,
-				preconfRPC,
+				contractRPC,
 				opts.PrivKey,
 				opts.Logger.With("component", "preconfcontract"),
 			)

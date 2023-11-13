@@ -64,14 +64,14 @@ func (p *preconfContract) StoreCommitment(
 
 	callData, err := p.preconfABI.Pack(
 		"storeCommitment",
-		bid,
+		uint64(bid.Int64()),
 		blockNumber,
 		txHash,
-		commitmentHash,
 		bidSignature,
 		commitmentSignature,
 	)
 	if err != nil {
+		p.logger.Error("preconf contract storeCommitment pack error", "err", err)
 		return err
 	}
 
@@ -85,6 +85,16 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
+	// gasPrice, err := p.client.SuggestGasPrice(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// gasTipCap, err := p.client.SuggestGasTipCap(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+
 	gasPrice, err := p.client.SuggestGasPrice(ctx)
 	if err != nil {
 		return err
@@ -95,6 +105,8 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
+	gas := big.NewInt(10000000)
+
 	gasFeeCap := new(big.Int).Add(gasPrice, gasTipCap)
 
 	txnData := types.NewTx(&types.DynamicFeeTx{
@@ -102,7 +114,7 @@ func (p *preconfContract) StoreCommitment(
 		To:        &p.preconfContractAddr,
 		Nonce:     nonce,
 		Data:      callData,
-		Gas:       uint64(gasPrice.Int64()),
+		Gas:       uint64(gas.Int64()),
 		GasFeeCap: gasFeeCap,
 		GasTipCap: gasTipCap,
 	})
@@ -121,7 +133,9 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
-	receipt, err := bind.WaitMined(ctx, p.client, txnData)
+	p.logger.Info("sent txn", "txnData", txnData)
+
+	receipt, err := bind.WaitMined(ctx, p.client, signedTxn)
 	if err != nil {
 		return err
 	}
@@ -129,6 +143,8 @@ func (p *preconfContract) StoreCommitment(
 	if receipt.Status != types.ReceiptStatusSuccessful {
 		return err
 	}
+
+	p.logger.Info("preconf contract storeCommitment successful", "txnData", txnData)
 
 	return nil
 }
