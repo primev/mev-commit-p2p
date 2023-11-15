@@ -163,4 +163,36 @@ func TestUserRegistryContract(t *testing.T) {
 			t.Fatalf("expected stake amount to be %s, got %s", amount.String(), stakeAmt.String())
 		}
 	})
+
+	t.Run("CheckUserRegistered", func(t *testing.T) {
+		registryContractAddr := common.HexToAddress("abcd")
+		amount := big.NewInt(1000000000000000000)
+		address := common.HexToAddress("abcdef")
+
+		mockClient := mockevmclient.New(
+			mockevmclient.WithCallFunc(
+				func(ctx context.Context, req *evmclient.TxRequest) ([]byte, error) {
+					if req.To.Cmp(registryContractAddr) != 0 {
+						t.Fatalf(
+							"expected to address to be %s, got %s",
+							registryContractAddr.Hex(), req.To.Hex(),
+						)
+					}
+
+					return amount.FillBytes(make([]byte, 32)), nil
+				},
+			),
+		)
+
+		registryContract := userregistrycontract.New(
+			registryContractAddr,
+			mockClient,
+			util.NewTestLogger(os.Stdout),
+		)
+
+		isRegistered := registryContract.CheckUserRegistered(context.Background(), address)
+		if !isRegistered {
+			t.Fatal("expected user to be registered")
+		}
+	})
 }
