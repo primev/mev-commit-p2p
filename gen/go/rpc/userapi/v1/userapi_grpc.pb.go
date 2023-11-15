@@ -19,7 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	User_SendBid_FullMethodName = "/rpc.seacherapi.v1.User/SendBid"
+	User_SendBid_FullMethodName       = "/rpc.seacherapi.v1.User/SendBid"
+	User_RegisterStake_FullMethodName = "/rpc.seacherapi.v1.User/RegisterStake"
+	User_GetStake_FullMethodName      = "/rpc.seacherapi.v1.User/GetStake"
+	User_GetMinStake_FullMethodName   = "/rpc.seacherapi.v1.User/GetMinStake"
 )
 
 // UserClient is the client API for User service.
@@ -30,6 +33,18 @@ type UserClient interface {
 	//
 	// Send a bid to the user mev-commit node.
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (User_SendBidClient, error)
+	// RegisterStake
+	//
+	// RegisterStake is called by the user to register its stake in the user registry.
+	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
+	// GetStake
+	//
+	// GetStake is called by the user to get its stake in the user registry.
+	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
+	// GetMinStake
+	//
+	// GetMinStake is called by the user to get the minimum stake required to be in the user registry.
+	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 }
 
 type userClient struct {
@@ -72,6 +87,33 @@ func (x *userSendBidClient) Recv() (*PreConfirmation, error) {
 	return m, nil
 }
 
+func (c *userClient) RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error) {
+	out := new(StakeResponse)
+	err := c.cc.Invoke(ctx, User_RegisterStake_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
+	out := new(StakeResponse)
+	err := c.cc.Invoke(ctx, User_GetStake_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
+	out := new(StakeResponse)
+	err := c.cc.Invoke(ctx, User_GetMinStake_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServer is the server API for User service.
 // All implementations must embed UnimplementedUserServer
 // for forward compatibility
@@ -80,6 +122,18 @@ type UserServer interface {
 	//
 	// Send a bid to the user mev-commit node.
 	SendBid(*Bid, User_SendBidServer) error
+	// RegisterStake
+	//
+	// RegisterStake is called by the user to register its stake in the user registry.
+	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
+	// GetStake
+	//
+	// GetStake is called by the user to get its stake in the user registry.
+	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
+	// GetMinStake
+	//
+	// GetMinStake is called by the user to get the minimum stake required to be in the user registry.
+	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -89,6 +143,15 @@ type UnimplementedUserServer struct {
 
 func (UnimplementedUserServer) SendBid(*Bid, User_SendBidServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendBid not implemented")
+}
+func (UnimplementedUserServer) RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterStake not implemented")
+}
+func (UnimplementedUserServer) GetStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStake not implemented")
+}
+func (UnimplementedUserServer) GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMinStake not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 
@@ -124,13 +187,80 @@ func (x *userSendBidServer) Send(m *PreConfirmation) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _User_RegisterStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StakeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).RegisterStake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_RegisterStake_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).RegisterStake(ctx, req.(*StakeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetStake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetStake_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetStake(ctx, req.(*EmptyMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_GetMinStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).GetMinStake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_GetMinStake_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).GetMinStake(ctx, req.(*EmptyMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var User_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "rpc.seacherapi.v1.User",
 	HandlerType: (*UserServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterStake",
+			Handler:    _User_RegisterStake_Handler,
+		},
+		{
+			MethodName: "GetStake",
+			Handler:    _User_GetStake_Handler,
+		},
+		{
+			MethodName: "GetMinStake",
+			Handler:    _User_GetMinStake_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "SendBid",

@@ -2,16 +2,24 @@ package preconfcontract
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"log/slog"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
+	contractsabi "github.com/primevprotocol/mev-commit/pkg/abi"
+	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
+
+var preconfABI = func() abi.ABI {
+	abi, err := abi.JSON(strings.NewReader(contractsabi.PreConfJson))
+	if err != nil {
+		panic(err)
+	}
+	return abi
+}
 
 type Interface interface {
 	StoreCommitment(
@@ -19,7 +27,6 @@ type Interface interface {
 		bid *big.Int,
 		blockNumber uint64,
 		txHash string,
-		commitmentHash string,
 		bidSignature []byte,
 		commitmentSignature []byte,
 	) error
@@ -28,26 +35,19 @@ type Interface interface {
 type preconfContract struct {
 	preconfABI          abi.ABI
 	preconfContractAddr common.Address
-	client              *ethclient.Client
-	owner               common.Address
-	signer              *ecdsa.PrivateKey
+	client              evmclient.Interface
 	logger              *slog.Logger
 }
 
 func New(
-	owner common.Address,
 	preconfContractAddr common.Address,
-	preconfABI abi.ABI,
-	client *ethclient.Client,
-	signer *ecdsa.PrivateKey,
+	client evmclient.Interface,
 	logger *slog.Logger,
 ) Interface {
 	return &preconfContract{
-		preconfABI:          preconfABI,
+		preconfABI:          preconfABI(),
 		preconfContractAddr: preconfContractAddr,
 		client:              client,
-		owner:               owner,
-		signer:              signer,
 		logger:              logger,
 	}
 }
@@ -57,7 +57,6 @@ func (p *preconfContract) StoreCommitment(
 	bid *big.Int,
 	blockNumber uint64,
 	txHash string,
-	commitmentHash string,
 	bidSignature []byte,
 	commitmentSignature []byte,
 ) error {
@@ -75,76 +74,26 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
-	nonce, err := p.client.PendingNonceAt(ctx, p.owner)
-	if err != nil {
-		return err
-	}
-
-	chainID, err := p.client.NetworkID(ctx)
-	if err != nil {
-		return err
-	}
-
-	// gasPrice, err := p.client.SuggestGasPrice(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// gasTipCap, err := p.client.SuggestGasTipCap(ctx)
-	// if err != nil {
-	// 	return err
-	// }
-
-	gasPrice, err := p.client.SuggestGasPrice(ctx)
-	if err != nil {
-		return err
-	}
-
-	gasTipCap, err := p.client.SuggestGasTipCap(ctx)
-	if err != nil {
-		return err
-	}
-
-	gas := big.NewInt(10000000)
-
-	gasFeeCap := new(big.Int).Add(gasPrice, gasTipCap)
-
-	txnData := types.NewTx(&types.DynamicFeeTx{
-		ChainID:   chainID,
-		To:        &p.preconfContractAddr,
-		Nonce:     nonce,
-		Data:      callData,
-		Gas:       uint64(gas.Int64()),
-		GasFeeCap: gasFeeCap,
-		GasTipCap: gasTipCap,
+	txnHash, err := p.client.Send(ctx, &evmclient.TxRequest{
+		To:       &p.preconfContractAddr,
+		CallData: callData,
 	})
 
-	signedTxn, err := types.SignTx(
-		txnData,
-		types.LatestSignerForChainID(chainID),
-		p.signer,
-	)
-	if err != nil {
-		return err
-	}
-
-	err = p.client.SendTransaction(ctx, signedTxn)
-	if err != nil {
-		return err
-	}
-
-	p.logger.Info("sent txn", "txnData", txnData)
-
-	receipt, err := bind.WaitMined(ctx, p.client, signedTxn)
+	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
 	if err != nil {
 		return err
 	}
 
 	if receipt.Status != types.ReceiptStatusSuccessful {
+		p.logger.Error(
+			"preconf contract storeCommitment receipt error",
+			"txnHash", txnHash,
+			"receipt", receipt,
+		)
 		return err
 	}
 
-	p.logger.Info("preconf contract storeCommitment successful", "txnData", txnData)
+	p.logger.Info("preconf contract storeCommitment successful", "txnHash", txnHash)
 
 	return nil
 }

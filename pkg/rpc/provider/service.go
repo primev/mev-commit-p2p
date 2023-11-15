@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -17,14 +18,20 @@ type Service struct {
 	bidsInProcess    map[string]func(providerapiv1.BidResponse_Status)
 	bidsMu           sync.Mutex
 	logger           *slog.Logger
+	owner            common.Address
 	registryContract registrycontract.Interface
 }
 
-func NewService(logger *slog.Logger, registryContract registrycontract.Interface) *Service {
+func NewService(
+	logger *slog.Logger,
+	registryContract registrycontract.Interface,
+	owner common.Address,
+) *Service {
 	return &Service{
 		receiver:         make(chan *providerapiv1.Bid),
 		bidsInProcess:    make(map[string]func(providerapiv1.BidResponse_Status)),
 		registryContract: registryContract,
+		owner:            owner,
 		logger:           logger,
 	}
 }
@@ -109,7 +116,7 @@ func (s *Service) RegisterStake(
 		return nil, err
 	}
 
-	stakeAmount, err := s.registryContract.GetStake(ctx)
+	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +128,19 @@ func (s *Service) GetStake(
 	ctx context.Context,
 	_ *providerapiv1.EmptyMessage,
 ) (*providerapiv1.StakeResponse, error) {
-	stakeAmount, err := s.registryContract.GetStake(ctx)
+	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
+	if err != nil {
+		return nil, err
+	}
+
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+}
+
+func (s *Service) GetMinStake(
+	ctx context.Context,
+	_ *providerapiv1.EmptyMessage,
+) (*providerapiv1.StakeResponse, error) {
+	stakeAmount, err := s.registryContract.GetMinStake(ctx)
 	if err != nil {
 		return nil, err
 	}

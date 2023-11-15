@@ -28,7 +28,50 @@ service User {
       body: "*"
     };
   }
+  // RegisterStake
+  //
+  // RegisterStake is called by the user to register its stake in the user registry.
+  rpc RegisterStake(StakeRequest) returns (StakeResponse) {
+    option (google.api.http) = {post: "/v1/user/register_stake/{amount}"};
+  }
+  // GetStake
+  //
+  // GetStake is called by the user to get its stake in the user registry.
+  rpc GetStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/user/get_stake"};
+  }
+  // GetMinStake
+  //
+  // GetMinStake is called by the user to get the minimum stake required to be in the user registry.
+  rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/user/get_min_stake"};
+  }
 }
+
+message StakeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake request"
+      description: "Stake user in the user registry."
+      required: ["stake"]
+    }
+    example: "{\"amount\": 1000000000000000000 }"
+  };
+  int64 amount = 1;
+};
+
+message StakeResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake response"
+      description: "Get staked amount for user in the user registry."
+    }
+    example: "{\"amount\": 1000000000000000000 }"
+  };
+  int64 amount = 1;
+};
+
+message EmptyMessage {};
 
 message Bid {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {

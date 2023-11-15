@@ -6,7 +6,9 @@ import (
 	"log/slog"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
+	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/userregistry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,14 +16,23 @@ import (
 
 type Service struct {
 	userapiv1.UnimplementedUserServer
-	sender PreconfSender
-	logger *slog.Logger
+	sender           PreconfSender
+	owner            common.Address
+	registryContract registrycontract.Interface
+	logger           *slog.Logger
 }
 
-func NewService(sender PreconfSender, logger *slog.Logger) *Service {
+func NewService(
+	sender PreconfSender,
+	owner common.Address,
+	registryContract registrycontract.Interface,
+	logger *slog.Logger,
+) *Service {
 	return &Service{
-		sender: sender,
-		logger: logger,
+		sender:           sender,
+		owner:            owner,
+		registryContract: registryContract,
+		logger:           logger,
 	}
 }
 
@@ -61,4 +72,45 @@ func (s *Service) SendBid(
 	}
 
 	return nil
+}
+
+func (s *Service) RegisterStake(
+	ctx context.Context,
+	stake *userapiv1.StakeRequest,
+) (*userapiv1.StakeResponse, error) {
+	err := s.registryContract.RegisterUser(ctx, big.NewInt(stake.Amount))
+	if err != nil {
+		return nil, err
+	}
+
+	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+}
+
+func (s *Service) GetStake(
+	ctx context.Context,
+	_ *userapiv1.EmptyMessage,
+) (*userapiv1.StakeResponse, error) {
+	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+}
+
+func (s *Service) GetMinStake(
+	ctx context.Context,
+	_ *userapiv1.EmptyMessage,
+) (*userapiv1.StakeResponse, error) {
+	stakeAmount, err := s.registryContract.GetMinStake(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
 }
