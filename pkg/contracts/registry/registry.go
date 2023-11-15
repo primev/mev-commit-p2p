@@ -64,6 +64,9 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 		CallData: callData,
 		Value:    amount,
 	})
+	if err != nil {
+		return err
+	}
 
 	receipt, err := r.client.WaitForReceipt(ctx, txnHash)
 	if err != nil {

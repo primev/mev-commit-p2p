@@ -78,6 +78,9 @@ func (p *preconfContract) StoreCommitment(
 		To:       &p.preconfContractAddr,
 		CallData: callData,
 	})
+	if err != nil {
+		return err
+	}
 
 	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
 	if err != nil {
