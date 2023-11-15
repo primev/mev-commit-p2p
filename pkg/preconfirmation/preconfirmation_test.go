@@ -27,7 +27,7 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 
 type testUserStore struct{}
 
-func (t *testUserStore) CheckUserRegistred(_ *common.Address) bool {
+func (t *testUserStore) CheckUserRegistered(_ context.Context, _ common.Address) bool {
 	return true
 }
 
@@ -72,7 +72,6 @@ func (t *testCommitmentDA) StoreCommitment(
 	_ context.Context,
 	_ *big.Int,
 	_ uint64,
-	_ string,
 	_ string,
 	_ []byte,
 	_ []byte,

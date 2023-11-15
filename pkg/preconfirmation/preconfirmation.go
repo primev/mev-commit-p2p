@@ -2,7 +2,6 @@ package preconfirmation
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"log/slog"
 	"math/big"
@@ -38,7 +37,7 @@ type Topology interface {
 }
 
 type UserStore interface {
-	CheckUserRegistred(*common.Address) bool
+	CheckUserRegistered(context.Context, common.Address) bool
 }
 
 type BidProcessor interface {
@@ -185,7 +184,7 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	if p.us.CheckUserRegistred(ethAddress) {
+	if p.us.CheckUserRegistered(ctx, *ethAddress) {
 		// try to enqueue for 5 seconds
 		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
@@ -211,7 +210,6 @@ func (p *Preconfirmation) handleBid(
 					preConfirmation.Bid.BidAmt,
 					uint64(preConfirmation.Bid.BlockNumber.Int64()),
 					preConfirmation.Bid.TxHash,
-					hex.EncodeToString(preConfirmation.Digest),
 					preConfirmation.Bid.Signature,
 					preConfirmation.Signature,
 				)

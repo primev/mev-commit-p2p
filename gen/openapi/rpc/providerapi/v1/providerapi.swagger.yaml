@@ -10,6 +10,20 @@ consumes:
 produces:
   - application/json
 paths:
+  /v1/provider/get_min_stake:
+    get:
+      summary: GetMinStake
+      description: GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
+      operationId: Provider_GetMinStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
   /v1/provider/get_stake:
     get:
       summary: GetStake
@@ -19,7 +33,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1StakeResponse'
+            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -55,7 +69,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1StakeResponse'
+            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -77,7 +91,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1EmptyMessage'
+            $ref: '#/definitions/rpcproviderapiv1EmptyMessage'
         default:
           description: An unexpected error response.
           schema:
@@ -140,6 +154,18 @@ definitions:
       - bidAmount
       - blockNumber
       - bidDigest
+  rpcproviderapiv1EmptyMessage:
+    type: object
+  rpcproviderapiv1StakeResponse:
+    type: object
+    example:
+      amount: 1e+18
+    properties:
+      amount:
+        type: string
+        format: int64
+    description: Get staked amount for provider in the provider registry.
+    title: Stake response
   v1BidResponse:
     type: object
     example:
@@ -163,15 +189,3 @@ definitions:
     enum:
       - STATUS_ACCEPTED
       - STATUS_REJECTED
-  v1EmptyMessage:
-    type: object
-  v1StakeResponse:
-    type: object
-    example:
-      amount: 1e+18
-    properties:
-      amount:
-        type: string
-        format: int64
-    description: Get staked amount for provider in the provider registry.
-    title: Stake response

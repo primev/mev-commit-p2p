@@ -10,9 +10,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -21,8 +19,10 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
+	userregistrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/userregistry"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
+	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -36,25 +36,21 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var (
-	preconfContractABI  = preConfJson
-	registryContractABI = providerRegistryJson
-)
-
 type Options struct {
-	Version           string
-	PrivKey           *ecdsa.PrivateKey
-	Secret            string
-	PeerType          string
-	Logger            *slog.Logger
-	P2PPort           int
-	HTTPPort          int
-	RPCPort           int
-	Bootnodes         []string
-	ExposeProviderAPI bool
-	PreconfContract   string
-	RegistryContract  string
-	RPCEndpoint       string
+	Version              string
+	PrivKey              *ecdsa.PrivateKey
+	Secret               string
+	PeerType             string
+	Logger               *slog.Logger
+	P2PPort              int
+	HTTPPort             int
+	RPCPort              int
+	Bootnodes            []string
+	ExposeProviderAPI    bool
+	PreconfContract      string
+	RegistryContract     string
+	UserRegistryContract string
+	RPCEndpoint          string
 }
 
 type Node struct {
@@ -74,9 +70,38 @@ func NewNode(opts *Options) (*Node, error) {
 	}
 
 	srv := apiserver.New(opts.Version, opts.Logger.With("component", "apiserver"))
-
-	closers := make([]io.Closer, 0)
 	peerType := p2p.FromString(opts.PeerType)
+	ownerEthAddress := libp2p.GetEthAddressFromPubKey(&opts.PrivKey.PublicKey)
+
+	contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
+	if err != nil {
+		return nil, err
+	}
+	evmClient, err := evmclient.New(
+		ownerEthAddress,
+		opts.PrivKey,
+		contractRPC,
+		opts.Logger.With("component", "evmclient"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	userRegistryContractAddr := common.HexToAddress(opts.UserRegistryContract)
+
+	userRegistry := userregistrycontract.New(
+		userRegistryContractAddr,
+		evmClient,
+		opts.Logger.With("component", "registrycontract"),
+	)
+
+	registryContractAddr := common.HexToAddress(opts.RegistryContract)
+
+	providerRegistry := registrycontract.New(
+		registryContractAddr,
+		evmClient,
+		opts.Logger.With("component", "registrycontract"),
+	)
 
 	p2pSvc, err := libp2p.New(&libp2p.Options{
 		PrivKey:        opts.PrivKey,
@@ -114,8 +139,8 @@ func NewNode(opts *Options) (*Node, error) {
 			_ = nd.Close()
 			return nil, err
 		}
-		grpcServer := grpc.NewServer()
 
+		grpcServer := grpc.NewServer()
 		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
 
 		var (
@@ -125,51 +150,21 @@ func NewNode(opts *Options) (*Node, error) {
 
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
-			contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
-			if err != nil {
-				return nil, err
-			}
-			ownerEthAddress := libp2p.GetEthAddressFromPubKey(&opts.PrivKey.PublicKey)
-
 			if opts.ExposeProviderAPI {
-
-				registryContractABI, err := abi.JSON(strings.NewReader(registryContractABI))
-				if err != nil {
-					return nil, err
-				}
-
-				registryContractAddr := common.HexToAddress(opts.RegistryContract)
-
-				providerRegistry := registrycontract.New(
-					ownerEthAddress,
-					registryContractAddr,
-					registryContractABI,
-					contractRPC,
-					opts.PrivKey,
-					opts.Logger.With("component", "registrycontract"),
-				)
-
 				providerAPI := providerapi.NewService(
 					opts.Logger.With("component", "providerapi"),
 					providerRegistry,
+					ownerEthAddress,
 				)
 				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 				bidProcessor = providerAPI
 			}
 
-			preconfContractABI, err := abi.JSON(strings.NewReader(preconfContractABI))
-			if err != nil {
-				return nil, err
-			}
-
 			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
 
 			commitmentDA = preconfcontract.New(
-				ownerEthAddress,
 				preconfContractAddr,
-				preconfContractABI,
-				contractRPC,
-				opts.PrivKey,
+				evmClient,
 				opts.Logger.With("component", "preconfcontract"),
 			)
 
@@ -177,7 +172,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfSigner,
-				noOpUserStore{},
+				userRegistry,
 				bidProcessor,
 				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
@@ -190,7 +185,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfSigner,
-				noOpUserStore{},
+				userRegistry,
 				bidProcessor,
 				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
@@ -198,6 +193,8 @@ func NewNode(opts *Options) (*Node, error) {
 
 			userAPI := userapi.NewService(
 				preconfProto,
+				ownerEthAddress,
+				userRegistry,
 				opts.Logger.With("component", "userapi"),
 			)
 			userapiv1.RegisterUserServer(grpcServer, userAPI)
@@ -273,9 +270,9 @@ func NewNode(opts *Options) (*Node, error) {
 			opts.Logger.Error("failed to start server", "err", err)
 		}
 	}()
-	closers = append(closers, server)
+	nd.closers = append(nd.closers, server)
 
-	return &Node{closers: closers}, nil
+	return nd, nil
 }
 
 func (n *Node) Close() error {
@@ -285,12 +282,6 @@ func (n *Node) Close() error {
 	}
 
 	return err
-}
-
-type noOpUserStore struct{}
-
-func (noOpUserStore) CheckUserRegistred(_ *common.Address) bool {
-	return true
 }
 
 type noOpBidProcessor struct{}
@@ -313,7 +304,6 @@ func (noOpCommitmentDA) StoreCommitment(
 	_ context.Context,
 	_ *big.Int,
 	_ uint64,
-	_ string,
 	_ string,
 	_ []byte,
 	_ []byte,

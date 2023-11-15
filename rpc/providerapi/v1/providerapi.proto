@@ -48,6 +48,12 @@ service Provider {
   rpc GetStake(EmptyMessage) returns (StakeResponse) {
     option (google.api.http) = {get: "/v1/provider/get_stake"};
   }
+  // GetMinStake
+  //
+  // GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
+  rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/provider/get_min_stake"};
+  }
 }
 
 message StakeRequest {

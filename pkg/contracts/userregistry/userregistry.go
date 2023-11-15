@@ -1,4 +1,4 @@
-package registrycontract
+package userregistrycontract
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
-var registryABI = func() abi.ABI {
-	abi, err := abi.JSON(strings.NewReader(contractsabi.ProviderRegistryJson))
+var userRegistryABI = func() abi.ABI {
+	abi, err := abi.JSON(strings.NewReader(contractsabi.UserRegistryJson))
 	if err != nil {
 		panic(err)
 	}
@@ -22,8 +22,8 @@ var registryABI = func() abi.ABI {
 }
 
 type Interface interface {
-	// RegisterProvider registers a provider with the registry contract.
-	RegisterProvider(ctx context.Context, amount *big.Int) error
+	// RegisterUser registers a provider with the registry contract.
+	RegisterUser(ctx context.Context, amount *big.Int) error
 	// GetStake returns the stake of a provider.
 	GetStake(ctx context.Context, address common.Address) (*big.Int, error)
 	// GetMinStake returns the minimum stake required to register as a provider.
@@ -32,35 +32,35 @@ type Interface interface {
 	CheckUserRegistered(ctx context.Context, address common.Address) bool
 }
 
-type registryContract struct {
-	registryABI          abi.ABI
-	registryContractAddr common.Address
-	client               evmclient.Interface
-	logger               *slog.Logger
+type userRegistryContract struct {
+	userRegistryABI          abi.ABI
+	userRegistryContractAddr common.Address
+	client                   evmclient.Interface
+	logger                   *slog.Logger
 }
 
 func New(
-	registryContractAddr common.Address,
+	userRegistryContractAddr common.Address,
 	client evmclient.Interface,
 	logger *slog.Logger,
 ) Interface {
-	return &registryContract{
-		registryABI:          registryABI(),
-		registryContractAddr: registryContractAddr,
-		client:               client,
-		logger:               logger,
+	return &userRegistryContract{
+		userRegistryABI:          userRegistryABI(),
+		userRegistryContractAddr: userRegistryContractAddr,
+		client:                   client,
+		logger:                   logger,
 	}
 }
 
-func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int) error {
-	callData, err := r.registryABI.Pack("registerAndStake")
+func (r *userRegistryContract) RegisterUser(ctx context.Context, amount *big.Int) error {
+	callData, err := r.userRegistryABI.Pack("registerAndStake")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return err
 	}
 
 	txnHash, err := r.client.Send(ctx, &evmclient.TxRequest{
-		To:       &r.registryContractAddr,
+		To:       &r.userRegistryContractAddr,
 		CallData: callData,
 		Value:    amount,
 	})
@@ -87,25 +87,25 @@ func (r *registryContract) RegisterProvider(ctx context.Context, amount *big.Int
 	return nil
 }
 
-func (r *registryContract) GetStake(
+func (r *userRegistryContract) GetStake(
 	ctx context.Context,
 	address common.Address,
 ) (*big.Int, error) {
-	callData, err := r.registryABI.Pack("checkStake", address)
+	callData, err := r.userRegistryABI.Pack("checkStake", address)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
 	}
 
 	result, err := r.client.Call(ctx, &evmclient.TxRequest{
-		To:       &r.registryContractAddr,
+		To:       &r.userRegistryContractAddr,
 		CallData: callData,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := r.registryABI.Unpack("checkStake", result)
+	results, err := r.userRegistryABI.Unpack("checkStake", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
@@ -114,22 +114,22 @@ func (r *registryContract) GetStake(
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *registryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
-	callData, err := r.registryABI.Pack("minStake")
+func (r *userRegistryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
+	callData, err := r.userRegistryABI.Pack("minStake")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
 	}
 
 	result, err := r.client.Call(ctx, &evmclient.TxRequest{
-		To:       &r.registryContractAddr,
+		To:       &r.userRegistryContractAddr,
 		CallData: callData,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := r.registryABI.Unpack("minStake", result)
+	results, err := r.userRegistryABI.Unpack("minStake", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
@@ -138,7 +138,7 @@ func (r *registryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *registryContract) CheckUserRegistered(
+func (r *userRegistryContract) CheckUserRegistered(
 	ctx context.Context,
 	address common.Address,
 ) bool {

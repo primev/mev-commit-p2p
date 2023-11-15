@@ -37,6 +37,54 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/rpcseacherapiv1Bid'
+  /v1/user/get_min_stake:
+    get:
+      summary: GetMinStake
+      description: GetMinStake is called by the user to get the minimum stake required to be in the user registry.
+      operationId: User_GetMinStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+  /v1/user/get_stake:
+    get:
+      summary: GetStake
+      description: GetStake is called by the user to get its stake in the user registry.
+      operationId: User_GetStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+  /v1/user/register_stake/{amount}:
+    post:
+      summary: RegisterStake
+      description: RegisterStake is called by the user to register its stake in the user registry.
+      operationId: User_RegisterStake
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: amount
+          in: path
+          required: true
+          type: string
+          format: int64
 definitions:
   googlerpcStatus:
     type: object
@@ -82,6 +130,16 @@ definitions:
       - txHash
       - amount
       - blockNumber
+  rpcseacherapiv1StakeResponse:
+    type: object
+    example:
+      amount: 1e+18
+    properties:
+      amount:
+        type: string
+        format: int64
+    description: Get staked amount for user in the user registry.
+    title: Stake response
   v1PreConfirmation:
     type: object
     properties:

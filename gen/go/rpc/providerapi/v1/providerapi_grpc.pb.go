@@ -23,6 +23,7 @@ const (
 	Provider_SendProcessedBids_FullMethodName = "/rpc.providerapi.v1.Provider/SendProcessedBids"
 	Provider_RegisterStake_FullMethodName     = "/rpc.providerapi.v1.Provider/RegisterStake"
 	Provider_GetStake_FullMethodName          = "/rpc.providerapi.v1.Provider/GetStake"
+	Provider_GetMinStake_FullMethodName       = "/rpc.providerapi.v1.Provider/GetMinStake"
 )
 
 // ProviderClient is the client API for Provider service.
@@ -47,6 +48,10 @@ type ProviderClient interface {
 	//
 	// GetStake is called by the provider to get its stake in the provider registry.
 	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
+	// GetMinStake
+	//
+	// GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
+	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 }
 
 type providerClient struct {
@@ -141,6 +146,15 @@ func (c *providerClient) GetStake(ctx context.Context, in *EmptyMessage, opts ..
 	return out, nil
 }
 
+func (c *providerClient) GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
+	out := new(StakeResponse)
+	err := c.cc.Invoke(ctx, Provider_GetMinStake_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProviderServer is the server API for Provider service.
 // All implementations must embed UnimplementedProviderServer
 // for forward compatibility
@@ -163,6 +177,10 @@ type ProviderServer interface {
 	//
 	// GetStake is called by the provider to get its stake in the provider registry.
 	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
+	// GetMinStake
+	//
+	// GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
+	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	mustEmbedUnimplementedProviderServer()
 }
 
@@ -181,6 +199,9 @@ func (UnimplementedProviderServer) RegisterStake(context.Context, *StakeRequest)
 }
 func (UnimplementedProviderServer) GetStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetStake not implemented")
+}
+func (UnimplementedProviderServer) GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMinStake not implemented")
 }
 func (UnimplementedProviderServer) mustEmbedUnimplementedProviderServer() {}
 
@@ -278,6 +299,24 @@ func _Provider_GetStake_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Provider_GetMinStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyMessage)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderServer).GetMinStake(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Provider_GetMinStake_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderServer).GetMinStake(ctx, req.(*EmptyMessage))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Provider_ServiceDesc is the grpc.ServiceDesc for Provider service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -292,6 +331,10 @@ var Provider_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetStake",
 			Handler:    _Provider_GetStake_Handler,
+		},
+		{
+			MethodName: "GetMinStake",
+			Handler:    _Provider_GetMinStake_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
