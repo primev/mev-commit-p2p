@@ -81,9 +81,10 @@ func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transacti
 	if req.GasLimit == 0 {
 		// if gas limit is not provided, estimate it
 		req.GasLimit, err = c.ethClient.EstimateGas(ctx, ethereum.CallMsg{
-			From: c.owner,
-			To:   req.To,
-			Data: req.CallData,
+			From:  c.owner,
+			To:    req.To,
+			Data:  req.CallData,
+			Value: req.Value,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to estimate gas: %w", err)
@@ -184,11 +185,11 @@ func (c *evmClient) Call(
 		Value:    tx.Value,
 	}
 
-	receipt, err := c.ethClient.CallContract(ctx, msg, nil)
+	result, err := c.ethClient.CallContract(ctx, msg, nil)
 	if err != nil {
 		c.logger.Error("failed to call contract", "err", err)
 		return nil, fmt.Errorf("failed to call contract: %w", err)
 	}
 
-	return receipt, nil
+	return result, nil
 }

@@ -92,7 +92,7 @@ func NewNode(opts *Options) (*Node, error) {
 	userRegistry := userregistrycontract.New(
 		userRegistryContractAddr,
 		evmClient,
-		opts.Logger.With("component", "registrycontract"),
+		opts.Logger.With("component", "userregistry"),
 	)
 
 	registryContractAddr := common.HexToAddress(opts.RegistryContract)
@@ -100,7 +100,7 @@ func NewNode(opts *Options) (*Node, error) {
 	providerRegistry := registrycontract.New(
 		registryContractAddr,
 		evmClient,
-		opts.Logger.With("component", "registrycontract"),
+		opts.Logger.With("component", "providerregistry"),
 	)
 
 	p2pSvc, err := libp2p.New(&libp2p.Options{
