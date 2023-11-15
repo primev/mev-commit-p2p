@@ -142,6 +142,8 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
+			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
+
 			select {
 			case preConfirmations <- preConfirmation:
 			case <-ctx.Done():
@@ -214,6 +216,7 @@ func (p *Preconfirmation) handleBid(
 					preConfirmation.Signature,
 				)
 				if err != nil {
+					p.logger.Error("storing commitment", "err", err)
 					return err
 				}
 				return w.WriteMsg(ctx, preConfirmation)
