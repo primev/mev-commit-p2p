@@ -2,6 +2,7 @@ package preconfcontract
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math/big"
 	"strings"
@@ -93,7 +94,7 @@ func (p *preconfContract) StoreCommitment(
 			"txnHash", txnHash,
 			"receipt", receipt,
 		)
-		return err
+		return errors.New("preconf contract storeCommitment receipt error")
 	}
 
 	p.logger.Info("preconf contract storeCommitment successful", "txnHash", txnHash)
