@@ -63,9 +63,9 @@ message StakeRequest {
       description: "Stake provider in the provider registry."
       required: ["stake"]
     }
-    example: "{\"amount\": 1000000000000000000 }"
+    example: "{\"amount\": \"1000000000000000000\" }"
   };
-  int64 amount = 1;
+  string amount = 1;
 };
 
 message StakeResponse {
@@ -74,9 +74,9 @@ message StakeResponse {
       title: "Stake response"
       description: "Get staked amount for provider in the provider registry."
     }
-    example: "{\"amount\": 1000000000000000000 }"
+    example: "{\"amount\": \"1000000000000000000\" }"
   };
-  int64 amount = 1;
+  string amount = 1;
 };
 
 message EmptyMessage {};

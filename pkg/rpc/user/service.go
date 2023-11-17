@@ -3,6 +3,7 @@ package userapi
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"log/slog"
 	"math/big"
 
@@ -74,11 +75,17 @@ func (s *Service) SendBid(
 	return nil
 }
 
+var ErrInvalidAmount = errors.New("invalid amount for stake")
+
 func (s *Service) RegisterStake(
 	ctx context.Context,
 	stake *userapiv1.StakeRequest,
 ) (*userapiv1.StakeResponse, error) {
-	err := s.registryContract.RegisterUser(ctx, big.NewInt(stake.Amount))
+	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
+	if !success {
+		return nil, ErrInvalidAmount
+	}
+	err := s.registryContract.RegisterUser(ctx, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +95,7 @@ func (s *Service) RegisterStake(
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetStake(
@@ -100,7 +107,8 @@ func (s *Service) GetStake(
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	stakedAmt := stakeAmount.Div(stakeAmount, big.NewInt(1e18))
+	return &userapiv1.StakeResponse{Amount: stakedAmt.String()}, nil
 }
 
 func (s *Service) GetMinStake(
@@ -112,5 +120,5 @@ func (s *Service) GetMinStake(
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }

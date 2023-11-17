@@ -7,6 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+var EIPVerify = eipVerify
+
 func (p *privateKeySigner) BidOriginator(bid *Bid) (*common.Address, *ecdsa.PublicKey, error) {
 	_, err := p.VerifyBid(bid)
 	if err != nil {

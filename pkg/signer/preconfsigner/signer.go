@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -33,11 +34,25 @@ type Bid struct {
 	Signature []byte `json:"bid_signature"`
 }
 
+func (b Bid) String() string {
+	return fmt.Sprintf(
+		"TxHash: %s, BidAmt: %s, BlockNumber: %s, Digest: %s, Signature: %s",
+		b.TxHash, b.BidAmt, b.BlockNumber, hex.EncodeToString(b.Digest), hex.EncodeToString(b.Signature),
+	)
+}
+
 type PreConfirmation struct {
 	Bid Bid `json:"bid"`
 
 	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"signature"`
+}
+
+func (p PreConfirmation) String() string {
+	return fmt.Sprintf(
+		"Bid: %s, Digest: %s, Signature: %s",
+		p.Bid, hex.EncodeToString(p.Digest), hex.EncodeToString(p.Signature),
+	)
 }
 
 type Signer interface {
@@ -82,6 +97,10 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, err
 	}
 
+	if sig[64] == 0 || sig[64] == 1 {
+		sig[64] += 27 // Transform V from 0/1 to 27/28
+	}
+
 	bid.Digest = bidHash
 	bid.Signature = sig
 
@@ -106,6 +125,10 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 	sig, err := crypto.Sign(preConfirmationHash, p.privKey)
 	if err != nil {
 		return nil, err
+	}
+
+	if sig[64] == 0 || sig[64] == 1 {
+		sig[64] += 27 // Transform V from 0/1 to 27/28
 	}
 
 	preConfirmation.Digest = preConfirmationHash
@@ -158,7 +181,13 @@ func eipVerify(
 		return nil, ErrInvalidHash
 	}
 
-	pubkey, err := crypto.SigToPub(payloadHash, signature)
+	sig := make([]byte, len(signature))
+	copy(sig, signature)
+	if sig[64] >= 27 && sig[64] <= 28 {
+		sig[64] -= 27
+	}
+
+	pubkey, err := crypto.SigToPub(payloadHash, sig)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +195,7 @@ func eipVerify(
 	if !crypto.VerifySignature(
 		crypto.FromECDSAPub(pubkey),
 		payloadHash,
-		signature[:len(signature)-1],
+		sig[:len(sig)-1],
 	) {
 		return nil, ErrInvalidSignature
 	}

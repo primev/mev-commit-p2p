@@ -2,6 +2,7 @@ package providerapi
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math/big"
 	"sync"
@@ -107,11 +108,17 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 	}
 }
 
+var ErrInvalidAmount = errors.New("invalid amount for stake")
+
 func (s *Service) RegisterStake(
 	ctx context.Context,
 	stake *providerapiv1.StakeRequest,
 ) (*providerapiv1.StakeResponse, error) {
-	err := s.registryContract.RegisterProvider(ctx, big.NewInt(stake.Amount))
+	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
+	if !success {
+		return nil, ErrInvalidAmount
+	}
+	err := s.registryContract.RegisterProvider(ctx, amount)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +128,7 @@ func (s *Service) RegisterStake(
 		return nil, err
 	}
 
-	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetStake(
@@ -133,7 +140,7 @@ func (s *Service) GetStake(
 		return nil, err
 	}
 
-	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetMinStake(
@@ -145,5 +152,5 @@ func (s *Service) GetMinStake(
 		return nil, err
 	}
 
-	return &providerapiv1.StakeResponse{Amount: stakeAmount.Int64()}, nil
+	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }

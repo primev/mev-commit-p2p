@@ -134,3 +134,35 @@ func TestHashing(t *testing.T) {
 		}
 	})
 }
+
+func TestVerify(t *testing.T) {
+	t.Parallel()
+
+	bidSig := "8af22e36247e14ba05d3a5a3cc62eee708cfd9ce293c0aebcbe7f89229f6db56638af8427806247d9abb295f681c1a2f2bb127f3bf80799f80d62b252cce04d91c"
+	bidHash := "2574b1ab8a90e173528ddee748be8e8e696b1f0cf687f75966550f5e9ef408b0"
+
+	bidHashBytes, err := hex.DecodeString(bidHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bidSigBytes, err := hex.DecodeString(bidSig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Adjust the last byte if it's 27 or 28
+	if bidSigBytes[64] >= 27 && bidSigBytes[64] <= 28 {
+		bidSigBytes[64] -= 27
+	}
+
+	owner, err := preconfsigner.EIPVerify(bidHashBytes, bidHashBytes, bidSigBytes)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expOwner := "0x8339F9E3d7B2693aD8955Aa5EC59D56669A84d60"
+	if owner.Hex() != expOwner {
+		t.Fatalf("owner mismatch: %s != %s", owner.Hex(), expOwner)
+	}
+}
