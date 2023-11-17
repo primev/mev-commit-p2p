@@ -8,6 +8,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
@@ -71,9 +72,7 @@ func (p *privateKeySigner) ConstructSignedBid(
 		BlockNumber: blockNumber,
 	}
 
-	internalPayload := constructBidPayload(txHash, bidAmt, blockNumber)
-
-	bidHash, _, err := apitypes.TypedDataAndHash(internalPayload)
+	bidHash, err := GetBidHash(bid)
 	if err != nil {
 		return nil, err
 	}
@@ -99,25 +98,17 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		Bid: *bid,
 	}
 
-	eip712Payload := constructPreConfirmationPayload(
-		bid.TxHash,
-		bid.BidAmt,
-		bid.BlockNumber,
-		bid.Digest,
-		bid.Signature,
-	)
-
-	preconfirmationDigest, _, err := apitypes.TypedDataAndHash(eip712Payload)
+	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
 	if err != nil {
 		return nil, err
 	}
 
-	sig, err := crypto.Sign(preconfirmationDigest, p.privKey)
+	sig, err := crypto.Sign(preConfirmationHash, p.privKey)
 	if err != nil {
 		return nil, err
 	}
 
-	preConfirmation.Digest = preconfirmationDigest
+	preConfirmation.Digest = preConfirmationHash
 	preConfirmation.Signature = sig
 
 	return preConfirmation, nil
@@ -128,8 +119,13 @@ func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
 		return nil, ErrMissingHashSignature
 	}
 
+	bidHash, err := GetBidHash(bid)
+	if err != nil {
+		return nil, err
+	}
+
 	return eipVerify(
-		constructBidPayload(bid.TxHash, bid.BidAmt, bid.BlockNumber),
+		bidHash,
 		bid.Digest,
 		bid.Signature,
 	)
@@ -145,27 +141,19 @@ func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Ad
 		return nil, err
 	}
 
-	internalPayload := constructPreConfirmationPayload(
-		c.Bid.TxHash,
-		c.Bid.BidAmt,
-		c.Bid.BlockNumber,
-		c.Bid.Digest,
-		c.Bid.Signature,
-	)
-
-	return eipVerify(internalPayload, c.Digest, c.Signature)
-}
-
-func eipVerify(
-	internalPayload apitypes.TypedData,
-	expectedhash []byte,
-	signature []byte,
-) (*common.Address, error) {
-	payloadHash, _, err := apitypes.TypedDataAndHash(internalPayload)
+	preConfirmationHash, err := GetPreConfirmationHash(c)
 	if err != nil {
 		return nil, err
 	}
 
+	return eipVerify(preConfirmationHash, c.Digest, c.Signature)
+}
+
+func eipVerify(
+	payloadHash []byte,
+	expectedhash []byte,
+	signature []byte,
+) (*common.Address, error) {
 	if !bytes.Equal(payloadHash, expectedhash) {
 		return nil, ErrInvalidHash
 	}
@@ -188,7 +176,80 @@ func eipVerify(
 	return &c, err
 }
 
+// GetBidHash returns the hash of the bid message. This is done manually to match the
+// Solidity implementation. If the types change, this will need to be updated.
+func GetBidHash(bid *Bid) ([]byte, error) {
+	// DOMAIN_SEPARATOR_BID
+	var (
+		domainTypeHash = crypto.Keccak256Hash(
+			[]byte("EIP712Domain(string name,string version)"),
+		)
+		nameHash           = crypto.Keccak256Hash([]byte("PreConfBid"))
+		versionHash        = crypto.Keccak256Hash([]byte("1"))
+		domainSeparatorBid = crypto.Keccak256Hash(
+			append(append(domainTypeHash.Bytes(), nameHash.Bytes()...), versionHash.Bytes()...),
+		)
+	)
+
+	// EIP712_MESSAGE_TYPEHASH
+	eip712MessageTypeHash := crypto.Keccak256Hash(
+		[]byte("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber)"),
+	)
+
+	// Convert the txnHash to a byte array and hash it
+	txnHashHash := crypto.Keccak256Hash([]byte(bid.TxHash))
+
+	// Encode values similar to Solidity's abi.encode
+	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
+	data = append(data, math.U256Bytes(bid.BidAmt)...)
+	data = append(data, math.U256Bytes(bid.BlockNumber)...)
+	dataHash := crypto.Keccak256Hash(data)
+
+	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
+	// Create the final hash
+	return crypto.Keccak256Hash(rawData).Bytes(), nil
+}
+
+// GetPreConfirmationHash returns the hash of the preconfirmation message. This is done manually to match the
+// Solidity implementation. If the types change, this will need to be updated.
+func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
+	// DOMAIN_SEPARATOR_BID
+	var (
+		domainTypeHash = crypto.Keccak256Hash(
+			[]byte("EIP712Domain(string name,string version)"),
+		)
+		nameHash           = crypto.Keccak256Hash([]byte("PreConfCommitment"))
+		versionHash        = crypto.Keccak256Hash([]byte("1"))
+		domainSeparatorBid = crypto.Keccak256Hash(
+			append(append(domainTypeHash.Bytes(), nameHash.Bytes()...), versionHash.Bytes()...),
+		)
+	)
+
+	// EIP712_MESSAGE_TYPEHASH
+	eip712MessageTypeHash := crypto.Keccak256Hash(
+		[]byte("PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,string bidHash,string signature)"),
+	)
+
+	// Convert the txnHash to a byte array and hash it
+	txnHashHash := crypto.Keccak256Hash([]byte(c.Bid.TxHash))
+	bidDigestHash := crypto.Keccak256Hash([]byte(hex.EncodeToString(c.Bid.Digest)))
+	bidSigHash := crypto.Keccak256Hash([]byte(hex.EncodeToString(c.Bid.Signature)))
+
+	// Encode values similar to Solidity's abi.encode
+	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
+	data = append(data, math.U256Bytes(c.Bid.BidAmt)...)
+	data = append(data, math.U256Bytes(c.Bid.BlockNumber)...)
+	data = append(data, bidDigestHash.Bytes()...)
+	data = append(data, bidSigHash.Bytes()...)
+	dataHash := crypto.Keccak256Hash(data)
+
+	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
+	// Create the final hash
+	return crypto.Keccak256Hash(rawData).Bytes(), nil
+}
+
 // Constructs the EIP712 formatted bid
+// nolint:unused
 func constructPreConfirmationPayload(
 	txHash string,
 	bid *big.Int,
@@ -228,6 +289,7 @@ func constructPreConfirmationPayload(
 }
 
 // Constructs the EIP712 formatted bid
+// nolint:unused
 func constructBidPayload(txHash string, bid *big.Int, blockNumber *big.Int) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
