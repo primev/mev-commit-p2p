@@ -249,6 +249,7 @@ func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
 }
 
 // Constructs the EIP712 formatted bid
+// nolint:unused
 func constructPreConfirmationPayload(
 	txHash string,
 	bid *big.Int,
@@ -288,6 +289,7 @@ func constructPreConfirmationPayload(
 }
 
 // Constructs the EIP712 formatted bid
+// nolint:unused
 func constructBidPayload(txHash string, bid *big.Int, blockNumber *big.Int) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
