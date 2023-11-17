@@ -107,8 +107,7 @@ func (s *Service) GetStake(
 		return nil, err
 	}
 
-	stakedAmt := stakeAmount.Div(stakeAmount, big.NewInt(1e18))
-	return &userapiv1.StakeResponse{Amount: stakedAmt.String()}, nil
+	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetMinStake(
