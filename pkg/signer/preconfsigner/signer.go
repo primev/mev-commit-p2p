@@ -119,8 +119,13 @@ func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
 		return nil, ErrMissingHashSignature
 	}
 
+	bidHash, err := GetBidHash(bid)
+	if err != nil {
+		return nil, err
+	}
+
 	return eipVerify(
-		constructBidPayload(bid.TxHash, bid.BidAmt, bid.BlockNumber),
+		bidHash,
 		bid.Digest,
 		bid.Signature,
 	)
@@ -136,27 +141,19 @@ func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Ad
 		return nil, err
 	}
 
-	internalPayload := constructPreConfirmationPayload(
-		c.Bid.TxHash,
-		c.Bid.BidAmt,
-		c.Bid.BlockNumber,
-		c.Bid.Digest,
-		c.Bid.Signature,
-	)
-
-	return eipVerify(internalPayload, c.Digest, c.Signature)
-}
-
-func eipVerify(
-	internalPayload apitypes.TypedData,
-	expectedhash []byte,
-	signature []byte,
-) (*common.Address, error) {
-	payloadHash, _, err := apitypes.TypedDataAndHash(internalPayload)
+	preConfirmationHash, err := GetPreConfirmationHash(c)
 	if err != nil {
 		return nil, err
 	}
 
+	return eipVerify(preConfirmationHash, c.Digest, c.Signature)
+}
+
+func eipVerify(
+	payloadHash []byte,
+	expectedhash []byte,
+	signature []byte,
+) (*common.Address, error) {
 	if !bytes.Equal(payloadHash, expectedhash) {
 		return nil, ErrInvalidHash
 	}
