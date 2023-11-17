@@ -72,7 +72,7 @@ func request_User_RegisterStake_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount")
 	}
 
-	protoReq.Amount, err = runtime.Int64(val)
+	protoReq.Amount, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount", err)
 	}
@@ -98,7 +98,7 @@ func local_request_User_RegisterStake_0(ctx context.Context, marshaler runtime.M
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount")
 	}
 
-	protoReq.Amount, err = runtime.Int64(val)
+	protoReq.Amount, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount", err)
 	}

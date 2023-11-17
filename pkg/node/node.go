@@ -37,20 +37,20 @@ import (
 )
 
 type Options struct {
-	Version              string
-	PrivKey              *ecdsa.PrivateKey
-	Secret               string
-	PeerType             string
-	Logger               *slog.Logger
-	P2PPort              int
-	HTTPPort             int
-	RPCPort              int
-	Bootnodes            []string
-	ExposeProviderAPI    bool
-	PreconfContract      string
-	RegistryContract     string
-	UserRegistryContract string
-	RPCEndpoint          string
+	Version                  string
+	PrivKey                  *ecdsa.PrivateKey
+	Secret                   string
+	PeerType                 string
+	Logger                   *slog.Logger
+	P2PPort                  int
+	HTTPPort                 int
+	RPCPort                  int
+	Bootnodes                []string
+	ExposeProviderAPI        bool
+	PreconfContract          string
+	ProviderRegistryContract string
+	UserRegistryContract     string
+	RPCEndpoint              string
 }
 
 type Node struct {
@@ -95,10 +95,10 @@ func NewNode(opts *Options) (*Node, error) {
 		opts.Logger.With("component", "userregistry"),
 	)
 
-	registryContractAddr := common.HexToAddress(opts.RegistryContract)
+	providerRegistryContractAddr := common.HexToAddress(opts.ProviderRegistryContract)
 
 	providerRegistry := registrycontract.New(
-		registryContractAddr,
+		providerRegistryContractAddr,
 		evmClient,
 		opts.Logger.With("component", "providerregistry"),
 	)

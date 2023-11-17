@@ -92,6 +92,7 @@ func (p *Preconfirmation) SendBid(
 		p.logger.Error("constructing signed bid", "err", err, "txHash", txHash)
 		return nil, err
 	}
+	p.logger.Info("constructed signed bid", "signedBid", signedBid)
 
 	providers := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
 	if len(providers) == 0 {
@@ -123,6 +124,7 @@ func (p *Preconfirmation) SendBid(
 			}
 
 			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](providerStream)
+			p.logger.Info("sending signed bid", "signedBid", signedBid)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				logger.Error("writing message", "err", err)
@@ -181,6 +183,8 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
+	p.logger.Info("received bid", "bid", bid)
+
 	ethAddress, err := p.signer.VerifyBid(bid)
 	if err != nil {
 		return err
@@ -207,6 +211,7 @@ func (p *Preconfirmation) handleBid(
 				if err != nil {
 					return err
 				}
+				p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
 				err = p.commitmentDA.StoreCommitment(
 					ctx,
 					preConfirmation.Bid.BidAmt,
