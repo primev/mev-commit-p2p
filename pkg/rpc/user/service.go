@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
@@ -45,8 +46,12 @@ func (s *Service) SendBid(
 	bid *userapiv1.Bid,
 	srv userapiv1.User_SendBidServer,
 ) error {
+	// timeout to prevent hanging of user node if provider node is not responding
+	ctx, cancel := context.WithTimeout(srv.Context(), 10*time.Second)
+	defer cancel()
+
 	respC, err := s.sender.SendBid(
-		srv.Context(),
+		ctx,
 		bid.TxHash,
 		big.NewInt(bid.Amount),
 		big.NewInt(bid.BlockNumber),
