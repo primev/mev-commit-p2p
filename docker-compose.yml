@@ -1,8 +1,6 @@
 version: '3'
 
 services:
-
-  # P2p section
   bootnode:
     build:
       context: .
@@ -14,8 +12,6 @@ services:
     networks:
       mev-net:
         ipv4_address: 172.28.0.2
-    profiles:
-      - p2pnode
 
   provider:
     build:
@@ -29,8 +25,6 @@ services:
       - provider-keys:/keys
     networks:
       - mev-net
-    profiles:
-      - p2pnode
 
   user:
     build:
@@ -47,8 +41,6 @@ services:
     ports:
       - "13523:13523"
       - "13524:13524"
-    profiles:
-      - p2pnode
 
 volumes:
   bootnode-keys:

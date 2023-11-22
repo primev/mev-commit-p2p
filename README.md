@@ -98,12 +98,7 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 
    If you want to just spin up the mev-commit p2p nodes, you may use:
   ```
-  docker-compose --profile p2pnode up --build
-  ```
-
-  If you would also like to spin up the settlment layer:
-  ```
-  docker-compose --profile p2pnode --profile settlement up --build
+  docker-compose up --build
   ```
 
 - Stopping the Service:
