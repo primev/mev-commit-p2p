@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	mevcommit "github.com/primevprotocol/mev-commit"
 	"github.com/primevprotocol/mev-commit/pkg/node"
+	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 )
@@ -85,7 +86,10 @@ func createKey(c *cli.Context) error {
 		return err
 	}
 
+	wallet := libp2p.GetEthAddressFromPubKey(&privKey.PublicKey)
+
 	fmt.Fprintf(c.App.Writer, "Private key saved to file: %s\n", outputFile)
+	fmt.Fprintf(c.App.Writer, "Wallet address: %s\n", wallet.Hex())
 	return nil
 }
 
