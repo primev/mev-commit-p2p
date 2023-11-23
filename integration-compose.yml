@@ -15,9 +15,20 @@ services:
       mev-int-net:
         ipv4_address: 172.29.0.2
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-1:
     build:
@@ -32,9 +43,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-1:
     build:
@@ -46,6 +68,19 @@ services:
       - PROVIDER_IP=provider-1:13524
     networks:
       - mev-int-net
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
     labels:
       - "prometheus.io/scrape=true"
       - "prometheus.io/path=/metrics"
@@ -64,9 +99,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-2:
     build:
@@ -79,9 +125,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   provider-3:
     build:
@@ -96,9 +151,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-3:
     build:
@@ -111,9 +177,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-1:
     build:
@@ -128,9 +203,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-1:
     build:
@@ -144,9 +230,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-2:
     build:
@@ -161,9 +256,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-2:
     build:
@@ -177,9 +283,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-3:
     build:
@@ -194,9 +309,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-3:
     build:
@@ -210,9 +336,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-4:
     build:
@@ -227,9 +362,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-4:
     build:
@@ -243,9 +389,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-5:
     build:
@@ -260,9 +415,20 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-5:
     build:
@@ -276,9 +442,18 @@ services:
     networks:
       - mev-int-net
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   funder:
     build:
@@ -287,23 +462,18 @@ services:
       - RPC_URL=http://34.215.163.180:8545
       - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-  prometheus-datadog-exporter:
-    image: datadog/prometheus-datadog-exporter
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
     environment:
       - DD_API_KEY=${DD_KEY}
       - DD_TAGS=env:test
       - DD_SITE=datadoghq.com
     ports:
       - "5000:5000"
-    networks:
-      - mev-int-net
-
-  prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
     networks:
       - mev-int-net
 
