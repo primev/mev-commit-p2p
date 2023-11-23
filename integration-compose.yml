@@ -471,7 +471,8 @@ services:
     ports:
       - "5000:5000"
     networks:
-      - mev-int-net
+      mev-int-net:
+        ipv4_address: 172.29.0.3
 
 networks:
   mev-int-net:
