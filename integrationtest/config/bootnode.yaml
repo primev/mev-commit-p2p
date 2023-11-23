@@ -1,0 +1,11 @@
+priv_key_file: /key
+peer_type: bootnode
+p2p_port: 13522
+http_port: 13523
+rpc_port: 13524
+secret: hello
+log_fmt: text
+log_level: debug
+user_registry_contract: 0x17855D7AB9B84cF2eddb8a7Db2df825c54a492aD
+provider_registry_contract: 0x11a315df6B4aCDbB6816B287a10F92F0C3a1BBc1
+rpc_endpoint: http://34.215.163.180:8545

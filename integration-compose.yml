@@ -1,0 +1,80 @@
+version: '3'
+
+services:
+  bootnode:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: bootnode
+    volumes:
+      - ./integrationtest/keys/bootnode:/key
+    depends_on:
+      - funder
+    networks:
+      mev-int-net:
+        ipv4_address: 172.28.0.2
+
+  provider-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: provider
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/provider1:/key
+    networks:
+      - mev-int-net
+
+  provider-emulator-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/provider/Dockerfile
+    depends_on:
+      - provider-1
+    environment:
+      - PROVIDER_IP=provider-1:13524
+    networks:
+      - mev-int-net
+
+  user-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: user
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/user1:/key
+    networks:
+      - mev-int-net
+
+  user-emulator-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/user/Dockerfile
+    depends_on:
+      - user-1
+    environment:
+      - USER_IP=user-1:13524
+      - RPC_URL=http://34.215.163.180:8545
+    networks:
+      - mev-int-net
+
+  funder:
+    build:
+      context: ./integrationtest/foundry
+    environment:
+      - RPC_URL=http://34.215.163.180:8545
+      - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+networks:
+  mev-int-net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+
