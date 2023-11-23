@@ -96,35 +96,28 @@ func main() {
 
 	fmt.Printf("connected to provider %s, receiving bids...\n", *serverAddr)
 
-	for {
-		select {
-		case bid, more := <-bidS:
-			if !more {
-				logger.Warn("closed bid stream")
-				return
-			}
-			receivedBids.Inc()
-			logger.Info("received new bid", "bid", bidString(bid))
+	for bid := range bidS {
+		receivedBids.Inc()
+		logger.Info("received new bid", "bid", bidString(bid))
 
-			status := providerapiv1.BidResponse_STATUS_ACCEPTED
-			if *errorProbablity > 0 {
-				if rand.Intn(100) < *errorProbablity {
-					logger.Warn("sending error response")
-					status = providerapiv1.BidResponse_STATUS_REJECTED
-					rejectedBids.Inc()
-				}
+		status := providerapiv1.BidResponse_STATUS_ACCEPTED
+		if *errorProbablity > 0 {
+			if rand.Intn(100) < *errorProbablity {
+				logger.Warn("sending error response")
+				status = providerapiv1.BidResponse_STATUS_REJECTED
+				rejectedBids.Inc()
 			}
-			err := providerClient.SendBidResponse(context.Background(), &providerapiv1.BidResponse{
-				BidDigest: bid.BidDigest,
-				Status:    status,
-			})
-			if err != nil {
-				logger.Error("failed to send bid response", "error", err)
-				return
-			}
-			sentBids.Inc()
-			logger.Info("sent bid", "status", status.String())
 		}
+		err := providerClient.SendBidResponse(context.Background(), &providerapiv1.BidResponse{
+			BidDigest: bid.BidDigest,
+			Status:    status,
+		})
+		if err != nil {
+			logger.Error("failed to send bid response", "error", err)
+			return
+		}
+		sentBids.Inc()
+		logger.Info("sent bid", "status", status.String())
 	}
 }
 

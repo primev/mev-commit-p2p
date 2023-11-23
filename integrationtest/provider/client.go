@@ -9,6 +9,7 @@ import (
 
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ProviderClient struct {
@@ -23,7 +24,7 @@ func NewProviderClient(
 	serverAddr string,
 	logger *slog.Logger,
 ) (*ProviderClient, error) {
-	conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +39,10 @@ func NewProviderClient(
 		senderClosed: make(chan struct{}),
 	}
 
-	b.startSender()
+	err = b.startSender()
+	if err != nil {
+		return nil, errors.Join(err, b.Close())
+	}
 
 	return b, nil
 }

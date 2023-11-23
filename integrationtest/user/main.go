@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
@@ -167,7 +168,7 @@ func sendBid(
 	}
 
 	randBytes := make([]byte, 32)
-	_, err = rand.Read(randBytes)
+	_, err = cryptorand.Read(randBytes)
 	if err != nil {
 		return err
 	}
