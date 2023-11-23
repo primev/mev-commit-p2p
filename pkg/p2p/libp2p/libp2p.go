@@ -28,6 +28,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	defaultMetricsNamespace = "mev_commit"
+)
+
 type Service struct {
 	baseCtx       context.Context
 	baseCtxCancel context.CancelFunc
@@ -77,7 +81,7 @@ func New(opts *Options) (*Service, error) {
 	var metrics = new(metrics)
 	if opts.MetricsReg != nil {
 		rcmgr.MustRegisterWith(opts.MetricsReg)
-		metrics = newMetrics(opts.MetricsReg, "primev")
+		metrics = newMetrics(opts.MetricsReg, defaultMetricsNamespace)
 	}
 
 	str, err := rcmgr.NewStatsTraceReporter()
