@@ -7,6 +7,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bootnode
+    restart: always
     volumes:
       - ./integrationtest/keys/bootnode:/key
     depends_on:
@@ -36,6 +37,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -62,6 +64,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-1
     environment:
@@ -88,6 +91,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -114,6 +118,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-2
     environment:
@@ -140,6 +145,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -166,6 +172,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-3
     environment:
@@ -192,6 +199,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -218,6 +226,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-1
     environment:
@@ -245,6 +254,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -271,6 +281,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-2
     environment:
@@ -298,6 +309,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -324,6 +336,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-3
     environment:
@@ -351,6 +364,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -377,6 +391,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-4
     environment:
@@ -404,6 +419,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
@@ -430,6 +446,7 @@ services:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-5
     environment:
@@ -460,6 +477,7 @@ services:
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
+    restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
