@@ -1,0 +1,4 @@
+scrape_configs:
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['prometheus-datadog-exporter:5000']

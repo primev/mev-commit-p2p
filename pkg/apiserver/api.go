@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultNamespace = "primev"
+	defaultNamespace = "mev_commit"
 )
 
 // Service wraps http.Server with additional functionality for metrics and

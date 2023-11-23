@@ -14,6 +14,10 @@ services:
     networks:
       mev-int-net:
         ipv4_address: 172.29.0.2
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   provider-1:
     build:
@@ -27,6 +31,10 @@ services:
       - ./integrationtest/keys/provider1:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   provider-emulator-1:
     build:
@@ -38,6 +46,10 @@ services:
       - PROVIDER_IP=provider-1:13524
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   provider-2:
     build:
@@ -51,6 +63,10 @@ services:
       - ./integrationtest/keys/provider2:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   provider-emulator-2:
     build:
@@ -62,6 +78,10 @@ services:
       - PROVIDER_IP=provider-2:13524
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   provider-3:
     build:
@@ -75,6 +95,10 @@ services:
       - ./integrationtest/keys/provider3:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   provider-emulator-3:
     build:
@@ -86,6 +110,10 @@ services:
       - PROVIDER_IP=provider-3:13524
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   user-1:
     build:
@@ -99,6 +127,10 @@ services:
       - ./integrationtest/keys/user1:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   user-emulator-1:
     build:
@@ -111,6 +143,10 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   user-2:
     build:
@@ -124,6 +160,10 @@ services:
       - ./integrationtest/keys/user2:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   user-emulator-2:
     build:
@@ -136,6 +176,10 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   user-3:
     build:
@@ -149,6 +193,10 @@ services:
       - ./integrationtest/keys/user3:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   user-emulator-3:
     build:
@@ -161,6 +209,10 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   user-4:
     build:
@@ -174,6 +226,10 @@ services:
       - ./integrationtest/keys/user4:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   user-emulator-4:
     build:
@@ -186,6 +242,10 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   user-5:
     build:
@@ -199,6 +259,10 @@ services:
       - ./integrationtest/keys/user5:/key
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=13523"
 
   user-emulator-5:
     build:
@@ -211,6 +275,10 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    labels:
+      - "prometheus.io/scrape=true"
+      - "prometheus.io/path=/metrics"
+      - "prometheus.io/port=8080"
 
   funder:
     build:
@@ -218,6 +286,26 @@ services:
     environment:
       - RPC_URL=http://34.215.163.180:8545
       - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
+  prometheus-datadog-exporter:
+    image: datadog/prometheus-datadog-exporter
+    environment:
+      - DD_API_KEY=${DD_KEY}
+      - DD_TAGS=env:test
+      - DD_SITE=datadoghq.com
+    ports:
+      - "5000:5000"
+    networks:
+      - mev-int-net
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - mev-int-net
 
 networks:
   mev-int-net:
