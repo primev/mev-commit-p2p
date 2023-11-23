@@ -468,6 +468,9 @@ services:
       - DD_API_KEY=${DD_KEY}
       - DD_TAGS=env:test
       - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
     ports:
       - "5000:5000"
     networks:
