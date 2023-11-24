@@ -13,7 +13,7 @@ import (
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	signer "github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -23,7 +23,7 @@ const (
 )
 
 type Preconfirmation struct {
-	signer       preconfsigner.Signer
+	signer       signer.Signer
 	topo         Topology
 	streamer     p2p.Streamer
 	us           UserStore
@@ -41,13 +41,13 @@ type UserStore interface {
 }
 
 type BidProcessor interface {
-	ProcessBid(context.Context, *preconfsigner.Bid) (chan providerapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *signer.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
 
 func New(
 	topo Topology,
 	streamer p2p.Streamer,
-	signer preconfsigner.Signer,
+	signer signer.Signer,
 	us UserStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
@@ -86,7 +86,7 @@ func (p *Preconfirmation) SendBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-) (chan *preconfsigner.PreConfirmation, error) {
+) (chan *signer.PreConfirmation, error) {
 	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "err", err, "txHash", txHash)
@@ -101,7 +101,7 @@ func (p *Preconfirmation) SendBid(
 	}
 
 	// Create a new channel to receive preConfirmations
-	preConfirmations := make(chan *preconfsigner.PreConfirmation, len(providers))
+	preConfirmations := make(chan *signer.PreConfirmation, len(providers))
 
 	wg := sync.WaitGroup{}
 	for idx := range providers {
@@ -123,19 +123,24 @@ func (p *Preconfirmation) SendBid(
 				return
 			}
 
-			r, w := msgpack.NewReaderWriter[preconfsigner.PreConfirmation, preconfsigner.Bid](providerStream)
-			p.logger.Info("sending signed bid", "signedBid", signedBid)
+			logger.Info("sending signed bid", "signedBid", signedBid)
+
+			r, w := msgpack.NewReaderWriter[signer.PreConfirmation, signer.Bid](providerStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
+				_ = providerStream.Reset()
 				logger.Error("writing message", "err", err)
 				return
 			}
 
 			preConfirmation, err := r.ReadMsg(ctx)
 			if err != nil {
+				_ = providerStream.Reset()
 				logger.Error("reading message", "err", err)
 				return
 			}
+
+			_ = providerStream.Close()
 
 			// Process preConfirmation as a user
 			_, err = p.signer.VerifyPreConfirmation(preConfirmation)
@@ -176,8 +181,7 @@ func (p *Preconfirmation) handleBid(
 		return ErrInvalidUserTypeForBid
 	}
 
-	// TODO(@ckartik): Change to reader only once availble
-	r, w := msgpack.NewReaderWriter[preconfsigner.Bid, preconfsigner.PreConfirmation](stream)
+	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
@@ -192,7 +196,7 @@ func (p *Preconfirmation) handleBid(
 
 	if p.us.CheckUserRegistered(ctx, *ethAddress) {
 		// try to enqueue for 5 seconds
-		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		statusC, err := p.processer.ProcessBid(ctx, bid)

@@ -15,6 +15,8 @@ services:
     networks:
       mev-int-net:
         ipv4_address: 172.29.0.2
+    ports:
+      - "8080:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -44,6 +46,8 @@ services:
       - ./integrationtest/keys/provider1:/key
     networks:
       - mev-int-net
+    ports:
+      - "8081:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -71,6 +75,8 @@ services:
       - PROVIDER_IP=provider-1:13524
     networks:
       - mev-int-net
+    ports:
+      - "8082:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -98,6 +104,8 @@ services:
       - ./integrationtest/keys/provider2:/key
     networks:
       - mev-int-net
+    ports:
+      - "8083:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -125,6 +133,8 @@ services:
       - PROVIDER_IP=provider-2:13524
     networks:
       - mev-int-net
+    ports:
+      - "8084:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -152,6 +162,8 @@ services:
       - ./integrationtest/keys/provider3:/key
     networks:
       - mev-int-net
+    ports:
+      - "8085:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -179,6 +191,8 @@ services:
       - PROVIDER_IP=provider-3:13524
     networks:
       - mev-int-net
+    ports:
+      - "8086:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -206,6 +220,8 @@ services:
       - ./integrationtest/keys/user1:/key
     networks:
       - mev-int-net
+    ports:
+      - "8087:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -234,6 +250,8 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8088:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -261,6 +279,8 @@ services:
       - ./integrationtest/keys/user2:/key
     networks:
       - mev-int-net
+    ports:
+      - "8089:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -289,6 +309,8 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8090:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -316,6 +338,8 @@ services:
       - ./integrationtest/keys/user3:/key
     networks:
       - mev-int-net
+    ports:
+      - "8091:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -344,6 +368,8 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8092:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -371,6 +397,8 @@ services:
       - ./integrationtest/keys/user4:/key
     networks:
       - mev-int-net
+    ports:
+      - "8093:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -399,6 +427,8 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8094:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -426,6 +456,8 @@ services:
       - ./integrationtest/keys/user5:/key
     networks:
       - mev-int-net
+    ports:
+      - "8095:13523"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -454,6 +486,8 @@ services:
       - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8096:8080"
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
