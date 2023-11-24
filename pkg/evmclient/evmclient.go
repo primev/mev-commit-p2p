@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"sync/atomic"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -43,19 +43,13 @@ type Interface interface {
 	Call(ctx context.Context, tx *TxRequest) ([]byte, error)
 }
 
-type AtomicNonce uint64
-
-func (a *AtomicNonce) IncrementAndReceive() uint64 {
-	return atomic.AddUint64((*uint64)(a), 1)
-}
-
 type evmClient struct {
-	chainID     *big.Int
-	ethClient   *ethclient.Client
-	owner       common.Address
-	signer      *ecdsa.PrivateKey
-	logger      *slog.Logger
-	atomicNonce AtomicNonce
+	mtx       sync.Mutex
+	chainID   *big.Int
+	ethClient *ethclient.Client
+	owner     common.Address
+	signer    *ecdsa.PrivateKey
+	logger    *slog.Logger
 }
 
 func New(
@@ -69,25 +63,22 @@ func New(
 		return nil, fmt.Errorf("failed to get chain id: %w", err)
 	}
 
-	nonce, err := ethClient.PendingNonceAt(context.Background(), owner)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get nonce: %w", err)
-	}
-
 	return &evmClient{
-		chainID:     chainID,
-		ethClient:   ethClient,
-		owner:       owner,
-		signer:      signer,
-		logger:      logger,
-		atomicNonce: AtomicNonce(nonce),
+		chainID:   chainID,
+		ethClient: ethClient,
+		owner:     owner,
+		signer:    signer,
+		logger:    logger,
 	}, nil
 }
 
 func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transaction, error) {
 	var err error
 
-	nonce := c.atomicNonce.IncrementAndReceive()
+	nonce, err := c.ethClient.PendingNonceAt(ctx, c.owner)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get nonce: %w", err)
+	}
 
 	if req.GasLimit == 0 {
 		// if gas limit is not provided, estimate it
@@ -130,6 +121,9 @@ func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transacti
 }
 
 func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
 	txnData, err := c.newTx(ctx, tx)
 	if err != nil {
 		c.logger.Error("failed to create tx", "err", err)
