@@ -240,7 +240,10 @@ func (s *Service) AddProtocol(spec p2p.ProtocolSpec) {
 			stream := newStream(streamlibp2p)
 
 			if err := ss.Handler(ctx, p, stream); err != nil {
+				_ = stream.Reset()
 				s.logger.Error("error handling stream", "err", err)
+			} else {
+				_ = stream.Close()
 			}
 		})
 	}
