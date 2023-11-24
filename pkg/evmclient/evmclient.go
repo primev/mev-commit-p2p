@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -51,7 +50,6 @@ func (a *AtomicNonce) IncrementAndReceive() uint64 {
 }
 
 type evmClient struct {
-	sendMtx     sync.Mutex
 	chainID     *big.Int
 	ethClient   *ethclient.Client
 	owner       common.Address
@@ -132,9 +130,6 @@ func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transacti
 }
 
 func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error) {
-	c.sendMtx.Lock()
-	defer c.sendMtx.Unlock()
-
 	txnData, err := c.newTx(ctx, tx)
 	if err != nil {
 		c.logger.Error("failed to create tx", "err", err)
