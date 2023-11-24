@@ -247,7 +247,7 @@ services:
       - user-1
     environment:
       - USER_IP=user-1:13524
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -306,7 +306,7 @@ services:
       - user-2
     environment:
       - USER_IP=user-2:13524
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -365,7 +365,7 @@ services:
       - user-3
     environment:
       - USER_IP=user-3:13524
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -424,7 +424,7 @@ services:
       - user-4
     environment:
       - USER_IP=user-4:13524
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -483,7 +483,7 @@ services:
       - user-5
     environment:
       - USER_IP=user-5:13524
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -506,7 +506,7 @@ services:
     build:
       context: ./integrationtest/foundry
     environment:
-      - RPC_URL=http://172.31.17.214:8545
+      - RPC_URL=http://34.215.163.180:8545
       - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
   datadog-agent:
