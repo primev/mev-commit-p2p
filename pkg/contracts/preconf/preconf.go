@@ -2,12 +2,14 @@ package preconfcontract
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	contractsabi "github.com/primevprotocol/mev-commit/pkg/abi"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
@@ -76,24 +78,25 @@ func (p *preconfContract) StoreCommitment(
 	txnHash, err := p.client.Send(ctx, &evmclient.TxRequest{
 		To:       &p.preconfContractAddr,
 		CallData: callData,
+		GasLimit: 1000000,
 	})
 	if err != nil {
 		return err
 	}
 
-	// receipt, err := p.client.WaitForReceipt(ctx, txnHash)
-	// if err != nil {
-	// 	return err
-	// }
+	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
+	if err != nil {
+		return err
+	}
 
-	// if receipt.Status != types.ReceiptStatusSuccessful {
-	// 	p.logger.Error(
-	// 		"preconf contract storeCommitment receipt error",
-	// 		"txnHash", txnHash,
-	// 		"receipt", receipt,
-	// 	)
-	// 	return errors.New("preconf contract storeCommitment receipt error")
-	// }
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		p.logger.Error(
+			"preconf contract storeCommitment receipt error",
+			"txnHash", txnHash,
+			"receipt", receipt,
+		)
+		return errors.New("preconf contract storeCommitment receipt error")
+	}
 
 	p.logger.Info("preconf contract storeCommitment successful", "txnHash", txnHash)
 

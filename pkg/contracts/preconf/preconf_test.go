@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	mockevmclient "github.com/primevprotocol/mev-commit/pkg/evmclient/mock"
@@ -54,16 +55,16 @@ func TestPreconfContract(t *testing.T) {
 					return txHash, nil
 				},
 			),
-			// mockevmclient.WithWaitForReceiptFunc(
-			// 	func(ctx context.Context, txnHash common.Hash) (*types.Receipt, error) {
-			// 		if txnHash != txHash {
-			// 			t.Fatalf("expected tx hash to be %s, got %s", txHash.Hex(), txnHash.Hex())
-			// 		}
-			// 		return &types.Receipt{
-			// 			Status: 1,
-			// 		}, nil
-			// 	},
-			// ),
+			mockevmclient.WithWaitForReceiptFunc(
+				func(ctx context.Context, txnHash common.Hash) (*types.Receipt, error) {
+					if txnHash != txHash {
+						t.Fatalf("expected tx hash to be %s, got %s", txHash.Hex(), txnHash.Hex())
+					}
+					return &types.Receipt{
+						Status: 1,
+					}, nil
+				},
+			),
 		)
 
 		preConfContractClient := preconfcontract.New(
