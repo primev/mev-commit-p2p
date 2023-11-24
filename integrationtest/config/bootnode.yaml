@@ -8,4 +8,4 @@ log_fmt: text
 log_level: debug
 user_registry_contract: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 provider_registry_contract: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-rpc_endpoint: http://54.191.95.100:8545
+rpc_endpoint: http://172.31.17.214:8545

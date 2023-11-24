@@ -10,6 +10,6 @@ expose_provider_api: true
 preconf_contract: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
 user_registry_contract: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 provider_registry_contract: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-rpc_endpoint: http://54.191.95.100:8545
+rpc_endpoint: http://172.31.17.214:8545
 bootnodes:
   - /ip4/172.29.0.2/tcp/13522/p2p/16Uiu2HAmLYUvthfDCewNMdfPhrVefBbsfaPL22fWWfC2zuoh5SpV
