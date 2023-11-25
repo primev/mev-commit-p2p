@@ -79,6 +79,10 @@ func (t *testCommitmentDA) StoreCommitment(
 	return nil
 }
 
+func (t *testCommitmentDA) Close() error {
+	return nil
+}
+
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()
 
