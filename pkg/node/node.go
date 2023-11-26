@@ -167,6 +167,7 @@ func NewNode(opts *Options) (*Node, error) {
 				evmClient,
 				opts.Logger.With("component", "preconfcontract"),
 			)
+			nd.closers = append(nd.closers, commitmentDA)
 
 			preconfProto := preconfirmation.New(
 				topo,
@@ -308,5 +309,9 @@ func (noOpCommitmentDA) StoreCommitment(
 	_ []byte,
 	_ []byte,
 ) error {
+	return nil
+}
+
+func (noOpCommitmentDA) Close() error {
 	return nil
 }
