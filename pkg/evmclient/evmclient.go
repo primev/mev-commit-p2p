@@ -247,17 +247,29 @@ func (c *evmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 		return common.Hash{}, ethereum.NotFound
 	}
 
-	gasFeeCap, gasTipCap, err := c.suggestMaxFeeAndTipCap(ctx, big.NewInt(0))
+	gasFeeCap, gasTipCap, err := c.suggestMaxFeeAndTipCap(ctx, nil)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("failed to suggest max fee and tip cap: %w", err)
 	}
+
+	if gasFeeCap.Cmp(txn.GasFeeCap()) <= 0 {
+		gasFeeCap = txn.GasFeeCap()
+	}
+
+	if gasTipCap.Cmp(txn.GasTipCap()) <= 0 {
+		gasTipCap = txn.GasTipCap()
+	}
+
+	// increase gas fee cap and tip cap by 10% for better chance of replacing
+	gasTipCap = new(big.Int).Div(new(big.Int).Mul(gasTipCap, big.NewInt(110)), big.NewInt(100))
+	gasFeeCap.Add(gasFeeCap, gasTipCap)
 
 	tx := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     txn.Nonce(),
 		ChainID:   c.chainID,
 		To:        &c.owner,
 		Value:     big.NewInt(0),
-		Gas:       75000,
+		Gas:       21000,
 		GasFeeCap: gasFeeCap,
 		GasTipCap: gasTipCap,
 		Data:      []byte{},
