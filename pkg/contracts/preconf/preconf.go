@@ -92,7 +92,6 @@ func (p *preconfContract) StoreCommitment(
 	txnHash, err := p.client.Send(ctx, &evmclient.TxRequest{
 		To:       &p.preconfContractAddr,
 		CallData: callData,
-		GasLimit: 500_000,
 	})
 	if err != nil {
 		return err
