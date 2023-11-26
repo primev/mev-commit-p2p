@@ -3,7 +3,6 @@ package preconfcontract_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"math/big"
 	"os"
 	"testing"
@@ -177,8 +176,8 @@ func TestPreconfContract(t *testing.T) {
 			mockevmclient.WithWaitForReceiptFunc(
 				func(ctx context.Context, txnHash common.Hash) (*types.Receipt, error) {
 					for {
+						time.Sleep(1 * time.Second)
 					}
-					return nil, errors.New("should not be called")
 				},
 			),
 		)
