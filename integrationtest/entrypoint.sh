@@ -8,6 +8,14 @@ if [ "$NODE_TYPE" != "bootnode" ]; then
     sleep 10
 fi
 
+sed -i "s|<USER_REGISTRY>|${USER_REGISTRY}|" /config.yaml
+sed -i "s|<PROVIDER_REGISTRY>|${PROVIDER_REGISTRY}|" /config.yaml
+sed -i "s|<RPC_URL>|${RPC_URL}|" /config.yaml
+
+if [ "$NODE_TYPE" == "provider" ]; then
+    sed -i "s|<PRECONF_CONTRACT>|${PRECONF_CONTRACT}|" /config.yaml
+fi
+
 CONFIG=$(cat /config.yaml)
 
 echo "starting mev-commit with config: ${CONFIG}"

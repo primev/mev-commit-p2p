@@ -17,6 +17,8 @@ services:
         ipv4_address: 172.29.0.2
     ports:
       - "8080:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -48,6 +50,8 @@ services:
       - mev-int-net
     ports:
       - "8081:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -106,6 +110,8 @@ services:
       - mev-int-net
     ports:
       - "8083:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -164,6 +170,8 @@ services:
       - mev-int-net
     ports:
       - "8085:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -222,6 +230,8 @@ services:
       - mev-int-net
     ports:
       - "8087:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -245,9 +255,10 @@ services:
     restart: always
     depends_on:
       - user-1
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-1:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -281,6 +292,8 @@ services:
       - mev-int-net
     ports:
       - "8089:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -304,9 +317,10 @@ services:
     restart: always
     depends_on:
       - user-2
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-2:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -340,6 +354,8 @@ services:
       - mev-int-net
     ports:
       - "8091:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -363,9 +379,10 @@ services:
     restart: always
     depends_on:
       - user-3
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-3:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -399,6 +416,8 @@ services:
       - mev-int-net
     ports:
       - "8093:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -422,9 +441,10 @@ services:
     restart: always
     depends_on:
       - user-4
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-4:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -458,6 +478,8 @@ services:
       - mev-int-net
     ports:
       - "8095:13523"
+    env_file:
+      - integrationtest/.env
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -481,9 +503,10 @@ services:
     restart: always
     depends_on:
       - user-5
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-5:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
     ports:
@@ -505,9 +528,8 @@ services:
   funder:
     build:
       context: ./integrationtest/foundry
-    environment:
-      - RPC_URL=http://34.215.163.180:8545
-      - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+    env_file:
+      - integrationtest/.env
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
