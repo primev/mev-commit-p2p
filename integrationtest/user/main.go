@@ -116,7 +116,7 @@ func main() {
 		if err != nil {
 			logger.Error("failed to send bid", "err", err)
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
