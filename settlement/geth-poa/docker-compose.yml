@@ -1,0 +1,58 @@
+version: '3'
+services:
+  bootnode:
+    build:
+      context: .
+      dockerfile: Dockerfile 
+    image: shaspitz/geth-poa:v0
+    environment:
+      - GETH_NODE_TYPE=bootnode
+      - BOOT_KEY=7b548c1c0fbe80ef1eb0aaec2edf26fd20fb0d758e94948cf6c5f2a486e735f6
+    networks:
+      poa_net:
+        ipv4_address: '172.13.0.100'
+    ports:
+      - 8545:8545
+    volumes:
+      - geth-data-bootnode:/data
+  node1:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: shaspitz/geth-poa:v0
+    environment:
+      - GETH_NODE_TYPE=signer
+      - BLOCK_SIGNER_ADDRESS=0x26D7AA13257f7975AC07fA792138B84E4bfC6396
+      - BLOCK_SIGNER_PRIVATE_KEY=75bd18de9d0de30c451ebc91ce76188f728c60715618827361996ffcd46f9a48
+    networks:
+      poa_net:
+        ipv4_address: '172.13.0.2'
+    volumes:
+      - geth-data-node1:/data
+  node2:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: shaspitz/geth-poa:v0
+    environment:
+      - GETH_NODE_TYPE=signer
+      - BLOCK_SIGNER_ADDRESS=0xE2D050cbd6C5F825ac346DC338FCE66Cb96427C6
+      - BLOCK_SIGNER_PRIVATE_KEY=9b829557581217ecaddf42dfb1656bda95a2af972b378eaee0e9ba784ba899c1
+    networks:
+      poa_net:
+        ipv4_address: '172.13.0.3'
+    volumes:
+      - geth-data-node2:/data
+
+networks:
+  poa_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.13.0.0/16
+
+volumes:
+  geth-data-bootnode:
+  geth-data-node1:
+  geth-data-node2:
