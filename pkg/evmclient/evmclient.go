@@ -177,9 +177,23 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
-	c.logger.Info("sent txn", "tx", txnData, "txHash", signedTx.Hash().Hex())
+	c.logger.Info("sent txn", "tx", txnString(txnData), "txHash", signedTx.Hash().Hex())
 
 	return signedTx.Hash(), nil
+}
+
+func txnString(tx *types.Transaction) string {
+	return fmt.Sprintf(
+		"nonce=%d, gasPrice=%s, gasLimit=%d, gasTip=%s gasFeeCap=%s to=%s, value=%s, data=%x",
+		tx.Nonce(),
+		tx.GasPrice().String(),
+		tx.Gas(),
+		tx.GasTipCap().String(),
+		tx.GasFeeCap().String(),
+		tx.To().Hex(),
+		tx.Value().String(),
+		tx.Data(),
+	)
 }
 
 func (c *evmClient) WaitForReceipt(
