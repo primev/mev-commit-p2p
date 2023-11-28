@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type TxRequest struct {
@@ -44,7 +45,7 @@ type Interface interface {
 	CancelTx(ctx context.Context, txHash common.Hash) (common.Hash, error)
 }
 
-type evmClient struct {
+type EvmClient struct {
 	mtx       sync.Mutex
 	chainID   *big.Int
 	ethClient *ethclient.Client
@@ -52,6 +53,7 @@ type evmClient struct {
 	signer    *ecdsa.PrivateKey
 	logger    *slog.Logger
 	nonce     uint64
+	metrics   *metrics
 }
 
 func New(
@@ -59,22 +61,23 @@ func New(
 	signer *ecdsa.PrivateKey,
 	ethClient *ethclient.Client,
 	logger *slog.Logger,
-) (Interface, error) {
+) (*EvmClient, error) {
 	chainID, err := ethClient.NetworkID(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chain id: %w", err)
 	}
 
-	return &evmClient{
+	return &EvmClient{
 		chainID:   chainID,
 		ethClient: ethClient,
 		owner:     owner,
 		signer:    signer,
 		logger:    logger,
+		metrics:   newMetrics(),
 	}, nil
 }
 
-func (c *evmClient) suggestMaxFeeAndTipCap(
+func (c *EvmClient) suggestMaxFeeAndTipCap(
 	ctx context.Context,
 	gasPrice *big.Int,
 ) (*big.Int, *big.Int, error) {
@@ -95,7 +98,7 @@ func (c *evmClient) suggestMaxFeeAndTipCap(
 	return gasFeeCap, gasTipCap, nil
 }
 
-func (c *evmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*types.Transaction, error) {
+func (c *EvmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*types.Transaction, error) {
 	var err error
 
 	if req.GasLimit == 0 {
@@ -128,7 +131,7 @@ func (c *evmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*t
 	}), nil
 }
 
-func (c *evmClient) getNonce(ctx context.Context) (uint64, error) {
+func (c *EvmClient) getNonce(ctx context.Context) (uint64, error) {
 	accountNonce, err := c.ethClient.PendingNonceAt(ctx, c.owner)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get nonce: %w", err)
@@ -152,9 +155,11 @@ func (c *evmClient) getNonce(ctx context.Context) (uint64, error) {
 	return c.nonce, nil
 }
 
-func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error) {
+func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+
+	c.metrics.AttemptedTxCount.Inc()
 
 	nonce, err := c.getNonce(ctx)
 	if err != nil {
@@ -179,6 +184,7 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
+	c.metrics.SentTxCount.Inc()
 	c.nonce++
 	c.logger.Info("sent txn", "tx", txnString(txnData), "txHash", signedTx.Hash().Hex())
 
@@ -199,7 +205,7 @@ func txnString(tx *types.Transaction) string {
 	)
 }
 
-func (c *evmClient) WaitForReceipt(
+func (c *EvmClient) WaitForReceipt(
 	ctx context.Context,
 	txHash common.Hash,
 ) (*types.Receipt, error) {
@@ -209,6 +215,12 @@ func (c *evmClient) WaitForReceipt(
 	for {
 		receipt, err := c.ethClient.TransactionReceipt(ctx, txHash)
 		if err == nil {
+			switch receipt.Status {
+			case types.ReceiptStatusSuccessful:
+				c.metrics.SuccessfulTxCount.Inc()
+			case types.ReceiptStatusFailed:
+				c.metrics.FailedTxCount.Inc()
+			}
 			c.logger.Info("tx receipt", "txHash", txHash.Hex(), "status", receipt.Status)
 			return receipt, nil
 		}
@@ -228,7 +240,7 @@ func (c *evmClient) WaitForReceipt(
 	}
 }
 
-func (c *evmClient) Call(
+func (c *EvmClient) Call(
 	ctx context.Context,
 	tx *TxRequest,
 ) ([]byte, error) {
@@ -251,16 +263,20 @@ func (c *evmClient) Call(
 	return result, nil
 }
 
-func (c *evmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.Hash, error) {
+func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.Hash, error) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
 	txn, isPending, err := c.ethClient.TransactionByHash(ctx, txnHash)
 	if err != nil {
+		if errors.Is(err, ethereum.NotFound) {
+			c.metrics.NotFoundDuringCancelCount.Inc()
+		}
 		return common.Hash{}, fmt.Errorf("failed to get transaction: %w", err)
 	}
 
 	if !isPending {
+		c.metrics.NotFoundDuringCancelCount.Inc()
 		return common.Hash{}, ethereum.NotFound
 	}
 
@@ -304,6 +320,11 @@ func (c *evmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 		return common.Hash{}, err
 	}
 
+	c.metrics.CancelledTxCount.Inc()
 	c.logger.Info("sent cancel txn", "txHash", signedTx.Hash().Hex())
 	return signedTx.Hash(), nil
+}
+
+func (e *EvmClient) Metrics() []prometheus.Collector {
+	return e.metrics.collectors()
 }
