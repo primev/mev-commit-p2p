@@ -71,16 +71,16 @@ func main() {
 
 	logger := newLogger(*logLevel)
 
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(receivedPreconfs, sentBids)
+
 	router := http.NewServeMux()
-	router.Handle("/metrics", promhttp.Handler())
+	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", *httpPort),
 		Handler: router,
 	}
-
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(receivedPreconfs, sentBids)
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -116,7 +116,7 @@ func main() {
 		if err != nil {
 			logger.Error("failed to send bid", "err", err)
 		}
-		time.Sleep(10 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 

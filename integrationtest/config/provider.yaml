@@ -7,9 +7,9 @@ secret: hello
 log_fmt: text
 log_level: debug
 expose_provider_api: true
-preconf_contract: 0x610178dA211FEF7D417bC0e6FeD39F05609AD788
-user_registry_contract: 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6
-provider_registry_contract: 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
-rpc_endpoint: http://34.215.163.180:8545
+preconf_contract: <PRECONF_CONTRACT>
+user_registry_contract: <USER_REGISTRY>
+provider_registry_contract: <PROVIDER_REGISTRY>
+rpc_endpoint: <RPC_URL>
 bootnodes:
   - /ip4/172.29.0.2/tcp/13522/p2p/16Uiu2HAmLYUvthfDCewNMdfPhrVefBbsfaPL22fWWfC2zuoh5SpV

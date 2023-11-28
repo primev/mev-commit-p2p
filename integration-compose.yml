@@ -7,6 +7,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bootnode
+    restart: always
     volumes:
       - ./integrationtest/keys/bootnode:/key
     depends_on:
@@ -14,10 +15,25 @@ services:
     networks:
       mev-int-net:
         ipv4_address: 172.29.0.2
+    ports:
+      - "8080:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-1:
     build:
@@ -25,31 +41,59 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/provider1:/key
     networks:
       - mev-int-net
+    ports:
+      - "8081:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-1:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-1
     environment:
       - PROVIDER_IP=provider-1:13524
     networks:
       - mev-int-net
+    ports:
+      - "8082:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   provider-2:
     build:
@@ -57,31 +101,59 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/provider2:/key
     networks:
       - mev-int-net
+    ports:
+      - "8083:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-2:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-2
     environment:
       - PROVIDER_IP=provider-2:13524
     networks:
       - mev-int-net
+    ports:
+      - "8084:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   provider-3:
     build:
@@ -89,31 +161,59 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/provider3:/key
     networks:
       - mev-int-net
+    ports:
+      - "8085:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   provider-emulator-3:
     build:
       context: .
       dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
     depends_on:
       - provider-3
     environment:
       - PROVIDER_IP=provider-3:13524
     networks:
       - mev-int-net
+    ports:
+      - "8086:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-1:
     build:
@@ -121,32 +221,61 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/user1:/key
     networks:
       - mev-int-net
+    ports:
+      - "8087:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-1:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-1
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-1:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8088:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-2:
     build:
@@ -154,32 +283,61 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/user2:/key
     networks:
       - mev-int-net
+    ports:
+      - "8089:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-2:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-2
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-2:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8090:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-3:
     build:
@@ -187,32 +345,61 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/user3:/key
     networks:
       - mev-int-net
+    ports:
+      - "8091:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-3:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-3
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-3:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8092:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-4:
     build:
@@ -220,32 +407,61 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/user4:/key
     networks:
       - mev-int-net
+    ports:
+      - "8093:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-4:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-4
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-4:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8094:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-5:
     build:
@@ -253,59 +469,87 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: user
+    restart: always
     depends_on:
       - bootnode
     volumes:
       - ./integrationtest/keys/user5:/key
     networks:
       - mev-int-net
+    ports:
+      - "8095:13523"
+    env_file:
+      - integrationtest/.env
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=13523"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
   user-emulator-5:
     build:
       context: .
       dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
     depends_on:
       - user-5
+    env_file:
+      - integrationtest/.env
     environment:
       - USER_IP=user-5:13524
-      - RPC_URL=http://34.215.163.180:8545
     networks:
       - mev-int-net
+    ports:
+      - "8096:8080"
     labels:
-      - "prometheus.io/scrape=true"
-      - "prometheus.io/path=/metrics"
-      - "prometheus.io/port=8080"
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   funder:
     build:
       context: ./integrationtest/foundry
-    environment:
-      - RPC_URL=http://34.215.163.180:8545
-      - PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+    env_file:
+      - integrationtest/.env
 
-  prometheus-datadog-exporter:
-    image: datadog/prometheus-datadog-exporter
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
     environment:
       - DD_API_KEY=${DD_KEY}
       - DD_TAGS=env:test
       - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
     ports:
       - "5000:5000"
     networks:
-      - mev-int-net
-
-  prometheus:
-    image: prom/prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    ports:
-      - "9090:9090"
-    networks:
-      - mev-int-net
+      mev-int-net:
+        ipv4_address: 172.29.0.3
 
 networks:
   mev-int-net:

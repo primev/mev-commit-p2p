@@ -58,16 +58,16 @@ func main() {
 
 	logger := newLogger(*logLevel)
 
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(receivedBids, sentBids)
+
 	router := http.NewServeMux()
-	router.Handle("/metrics", promhttp.Handler())
+	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", *httpPort),
 		Handler: router,
 	}
-
-	registry := prometheus.NewRegistry()
-	registry.MustRegister(receivedBids, sentBids)
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

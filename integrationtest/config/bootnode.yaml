@@ -6,6 +6,6 @@ rpc_port: 13524
 secret: hello
 log_fmt: text
 log_level: debug
-user_registry_contract: 0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6
-provider_registry_contract: 0x8A791620dd6260079BF849Dc5567aDC3F2FdC318
-rpc_endpoint: http://34.215.163.180:8545
+user_registry_contract: <USER_REGISTRY>
+provider_registry_contract: <PROVIDER_REGISTRY>
+rpc_endpoint: <RPC_URL>
