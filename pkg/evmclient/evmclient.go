@@ -182,6 +182,20 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 	return signedTx.Hash(), nil
 }
 
+func txnString(tx *types.Transaction) string {
+	return fmt.Sprintf(
+		"nonce=%d, gasPrice=%s, gasLimit=%d, gasTip=%d gasFeeCap=%d to=%s, value=%s, data=%x",
+		tx.Nonce(),
+		tx.GasPrice().String(),
+		tx.Gas(),
+		tx.GasTipCap().String(),
+		tx.GasFeeCap().String(),
+		tx.To().Hex(),
+		tx.Value().String(),
+		tx.Data(),
+	)
+}
+
 func (c *evmClient) WaitForReceipt(
 	ctx context.Context,
 	txHash common.Hash,
