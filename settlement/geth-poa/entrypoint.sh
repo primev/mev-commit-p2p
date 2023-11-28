@@ -63,8 +63,12 @@ if [ "$GETH_NODE_TYPE" = "bootnode" ]; then
 		--ws.origins="*" \
 		--ws.api=debug,eth,txpool,net,engine \
 		--syncmode=full \
+		--gcmode=archive \
 		--networkid=$CHAIN_ID \
 		--nousb \
+		--metrics \
+		--metrics.addr=0.0.0.0 \
+		--metrics.port=6060 \
 		--nodekey $GETH_DATA_DIR/boot.key \
 		--netrestrict 172.13.0.0/24 \
 		--nat extip:$NODE_IP
@@ -77,7 +81,7 @@ elif [ "$GETH_NODE_TYPE" = "signer" ]; then
 		--datadir="$GETH_DATA_DIR" \
 		--port 30311 \
 		--syncmode=full \
-		--gcmode=archive \
+		--gcmode=full \
 		--http \
 		--http.corsdomain="*" \
 		--http.vhosts="*" \
@@ -102,9 +106,6 @@ elif [ "$GETH_NODE_TYPE" = "signer" ]; then
 		--authrpc.addr="0.0.0.0" \
 		--authrpc.port="8551" \
 		--authrpc.vhosts="*" \
-		--metrics \
-		--metrics.addr=0.0.0.0 \
-		--metrics.port=6060 \
 		--nat extip:$NODE_IP
 else
 	echo "Invalid GETH_NODE_TYPE specified"
