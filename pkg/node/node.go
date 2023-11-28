@@ -87,6 +87,8 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 
+	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
+
 	userRegistryContractAddr := common.HexToAddress(opts.UserRegistryContract)
 
 	userRegistry := userregistrycontract.New(
