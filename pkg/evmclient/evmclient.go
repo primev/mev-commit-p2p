@@ -177,14 +177,14 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
-	c.logger.Info("sent txn", "tx", txnData, "txHash", signedTx.Hash().Hex())
+	c.logger.Info("sent txn", "tx", txnString(txnData), "txHash", signedTx.Hash().Hex())
 
 	return signedTx.Hash(), nil
 }
 
 func txnString(tx *types.Transaction) string {
 	return fmt.Sprintf(
-		"nonce=%d, gasPrice=%s, gasLimit=%d, gasTip=%d gasFeeCap=%d to=%s, value=%s, data=%x",
+		"nonce=%d, gasPrice=%s, gasLimit=%d, gasTip=%s gasFeeCap=%s to=%s, value=%s, data=%x",
 		tx.Nonce(),
 		tx.GasPrice().String(),
 		tx.Gas(),
