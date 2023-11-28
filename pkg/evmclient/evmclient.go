@@ -168,12 +168,14 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 	signedTx, err := types.SignTx(txnData, types.NewLondonSigner(c.chainID), c.signer)
 	if err != nil {
 		c.logger.Error("failed to sign tx", "err", err)
+		c.nonce--
 		return common.Hash{}, fmt.Errorf("failed to sign tx: %w", err)
 	}
 
 	err = c.ethClient.SendTransaction(ctx, signedTx)
 	if err != nil {
 		c.logger.Error("failed to send tx", "err", err)
+		c.nonce--
 		return common.Hash{}, err
 	}
 
