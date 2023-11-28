@@ -18,6 +18,28 @@ services:
       - geth-data-bootnode:/data
     profiles:
       - settlement
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:6060/debug/metrics",
+            "namespace": "geth-poa",
+            "metrics": [
+              "txpool*",
+              "trie*",
+              "system*",
+              "state*",
+              "rpc*",
+              "p2p*",
+              "eth*",
+              "chain*",
+              "memstats*"
+            ]
+          }
+        ]
+  
   node1:
     build: 
       context: .
@@ -33,6 +55,7 @@ services:
       - geth-data-node1:/data
     profiles:
       - settlement
+  
   node2:
     build: 
       context: .
@@ -48,6 +71,7 @@ services:
       - geth-data-node2:/data
     profiles:
       - settlement
+  
   hyperlane-deployer:
     build:
       context: ./hyperlane-deployer
@@ -65,6 +89,7 @@ services:
       - hyperlane-deploy-artifacts:/hyperlane-monorepo/artifacts
     profiles:
       - bridge
+  
   hyperlane-validator1:
     build:
       context: ./hyperlane-validator
@@ -88,6 +113,7 @@ services:
       - hyperlane-validator1-db:/val-db
     profiles:
       - bridge
+  
   hyperlane-validator2:
     build:
       context: ./hyperlane-validator
@@ -110,6 +136,7 @@ services:
       - hyperlane-validator2-db:/val-db
     profiles:
       - bridge
+  
   hyperlane-relayer:
     build:
       context: ./hyperlane-relayer
@@ -132,6 +159,7 @@ services:
       - hyperlane-relayer-db:/relayer-db
     profiles:
       - bridge
+  
   frontend:
     build:
       context: ./frontend
@@ -153,6 +181,27 @@ services:
       - hyperlane-deploy-artifacts:/deploy-artifacts
     profiles:
       - bridge
+
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    environment:
+      - DD_API_KEY=${DD_KEY}
+      - DD_TAGS=env:test
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
+    ports:
+      - "5000:5000"
+    networks:
+      poa_net:
+        ipv4_address: 172.13.4.24
+
 
 networks:
   poa_net:
