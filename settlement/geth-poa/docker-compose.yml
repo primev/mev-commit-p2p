@@ -24,7 +24,7 @@ services:
       com.datadoghq.ad.instances: |
         [
           {
-            "openmetrics_endpoint": "http://%%host%%:6060/debug/metrics",
+            "openmetrics_endpoint": "http://%%host%%:6060/debug/metrics/prometheus",
             "namespace": "geth-poa",
             "metrics": [
               "txpool*",
@@ -34,8 +34,7 @@ services:
               "rpc*",
               "p2p*",
               "eth*",
-              "chain*",
-              "memstats*"
+              "chain*"
             ]
           }
         ]
