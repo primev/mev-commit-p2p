@@ -200,7 +200,8 @@ services:
     networks:
       poa_net:
         ipv4_address: 172.13.4.24
-
+    profiles:
+      - prod_agents
 
 networks:
   poa_net:
