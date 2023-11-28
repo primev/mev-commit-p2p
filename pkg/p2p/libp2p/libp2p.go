@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -114,6 +115,7 @@ func New(opts *Options) (*Service, error) {
 		libp2p.ResourceManager(rmgr),
 		libp2p.NATPortMap(),
 		libp2p.EnableNATService(),
+		libp2p.MultiaddrResolver(madns.DefaultResolver),
 	)
 	if err != nil {
 		return nil, err

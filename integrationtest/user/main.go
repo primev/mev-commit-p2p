@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -34,8 +35,9 @@ var (
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
-	logLevel = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
-	httpPort = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
+	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
+	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
+	parallelWorkers = flag.Int("parallel-workers", 5, "The number of parallel workers to run")
 )
 
 var (
@@ -111,13 +113,23 @@ func main() {
 		return
 	}
 
-	for {
-		err = sendBid(userClient, logger, rpcClient)
-		if err != nil {
-			logger.Error("failed to send bid", "err", err)
-		}
-		time.Sleep(1 * time.Second)
+	wg := sync.WaitGroup{}
+
+	for i := 0; i < *parallelWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				err = sendBid(userClient, logger, rpcClient)
+				if err != nil {
+					logger.Error("failed to send bid", "err", err)
+				}
+				time.Sleep(1 * time.Second)
+			}
+		}()
 	}
+
+	wg.Wait()
 }
 
 func checkOrStake(

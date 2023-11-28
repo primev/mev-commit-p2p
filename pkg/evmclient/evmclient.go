@@ -95,13 +95,8 @@ func (c *evmClient) suggestMaxFeeAndTipCap(
 	return gasFeeCap, gasTipCap, nil
 }
 
-func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transaction, error) {
+func (c *evmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*types.Transaction, error) {
 	var err error
-
-	nonce, err := c.getNonce(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get nonce: %w", err)
-	}
 
 	if req.GasLimit == 0 {
 		// if gas limit is not provided, estimate it
@@ -134,22 +129,24 @@ func (c *evmClient) newTx(ctx context.Context, req *TxRequest) (*types.Transacti
 }
 
 func (c *evmClient) getNonce(ctx context.Context) (uint64, error) {
-	chainNonce, err := c.ethClient.PendingNonceAt(ctx, c.owner)
+	accountNonce, err := c.ethClient.PendingNonceAt(ctx, c.owner)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get nonce: %w", err)
 	}
 
 	// first nonce
-	if chainNonce == 0 {
+	if accountNonce == 0 {
 		return 0, nil
 	}
 
-	c.nonce++
+	if c.nonce == 0 {
+		c.nonce = accountNonce
+	}
 
 	// if external transactions were sent from the owner account, update the
 	// nonce to the latest one
-	if chainNonce > c.nonce {
-		c.nonce = chainNonce
+	if accountNonce > c.nonce {
+		c.nonce = accountNonce
 	}
 
 	return c.nonce, nil
@@ -159,7 +156,12 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	txnData, err := c.newTx(ctx, tx)
+	nonce, err := c.getNonce(ctx)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("failed to get nonce: %w", err)
+	}
+
+	txnData, err := c.newTx(ctx, tx, nonce)
 	if err != nil {
 		c.logger.Error("failed to create tx", "err", err)
 		return common.Hash{}, err
@@ -177,9 +179,24 @@ func (c *evmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
-	c.logger.Info("sent txn", "tx", txnData, "txHash", signedTx.Hash().Hex())
+	c.nonce++
+	c.logger.Info("sent txn", "tx", txnString(txnData), "txHash", signedTx.Hash().Hex())
 
 	return signedTx.Hash(), nil
+}
+
+func txnString(tx *types.Transaction) string {
+	return fmt.Sprintf(
+		"nonce=%d, gasPrice=%s, gasLimit=%d, gasTip=%s gasFeeCap=%s to=%s, value=%s, data=%x",
+		tx.Nonce(),
+		tx.GasPrice().String(),
+		tx.Gas(),
+		tx.GasTipCap().String(),
+		tx.GasFeeCap().String(),
+		tx.To().Hex(),
+		tx.Value().String(),
+		tx.Data(),
+	)
 }
 
 func (c *evmClient) WaitForReceipt(
