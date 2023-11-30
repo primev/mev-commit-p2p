@@ -117,5 +117,5 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 
 ## Settlment Layer
 
-This repository contains a settlment layer udner the settlement/geth-poa folder. You can run the entire stack for a POA node locally from this folder.
+This repository contains a settlment layer under the settlement/geth-poa folder. You can run the entire stack for multiple POA nodes locally from this folder.
 See [here](./settlement/geth-poa/README.md#local-run) for instructions on running the Settlment Layer locally.
