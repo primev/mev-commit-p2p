@@ -112,3 +112,10 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 - This includes: 
    - the payload for the User API
    - The required setup for execution providers to process bids into commitments in their personal infra.
+
+
+
+## Settlment Layer
+
+This repository contains a settlment layer udner the settlement/geth-poa folder. You can run the entire stack for a POA node locally from this folder.
+See [here](./settlement/geth-poa/README.md#local-run) for instructions on running the Settlment Layer locally.

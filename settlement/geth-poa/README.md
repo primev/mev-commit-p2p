@@ -39,3 +39,7 @@ Address:     `0x788EBABe5c3dD422Ef92Ca6714A69e2eabcE1Ee4`
 
 Address:     `0x0DCaa27B9E4Db92F820189345792f8eC5Ef148F6`
 
+## Local Run
+
+1. To run the local setup, set the .env file with the keys specified in .env.example.
+2. Run `$ make up-dev-build` to run the whole stack including bridge, or `$ make up-dev-settlement` to bring up only the settlement layer.
