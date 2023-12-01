@@ -2,7 +2,7 @@
 
 ## Overview
 
-Primev will soon release a settlement layer testnet consisting of a sidechain, oracle service, and bridge to Sepolia. 
+Primev will maintain a settlement layer testnet consisting of a sidechain, oracle service, and bridge to Sepolia. 
 
 TODO: diagram here
 
@@ -77,7 +77,7 @@ Primev currently maintains one bootnode who doesn’t participate in consensus, 
 
 In order for mev-commit’s reward mechanism to be granular enough, the settlement layer must be able to commit blocks at a much faster rate than L1 ethereum. We’ve chosen a target block period of 200ms. Thus on average 72 blocks will be committed on our sidechain for every ethereum mainnet block. 
 
-Future experimentation will help identify the maximize the number of signers that can feasibly achieve our 200ms block period constraint. Additionally, we'll be investigating the impact of geographical distance between nodes on network latency.
+Future experimentation will help identify the maximize the number of signers that can feasibly achieve our 200ms block period constraint. Additionally, we'll be investigating the impact of geographical distance between signers on network latency.
 
 ### Bridge Settlement ↔ SepoliaETH
 
