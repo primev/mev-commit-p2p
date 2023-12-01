@@ -32,7 +32,7 @@ For more on commitment privacy
 
 ## Settlement Layer
 
-Bids and commitments will settle on a specialized Ethereum fork based on the OP stack. Initially centralized, the settlement layer operates as a high-throughput chain to expedite the settlement process. As governance processes are initiated, this chain will become a federated rollup to providers on the network to assume the Sequencer role in turns. A rollup sequencer maintains the state of bids and commitments, acting as a network peer and handles fund settlements, rewards, or slashes.
+Bids and commitments will settle on a specialized EVM sidechain ran with go-ethereum’s Clique proof-of-authoriy (POA) consensus mechanism. Initially operated by primev entities, the settlement layer operates as a high-throughput chain to expedite the settlement process. Over time we plan to authorize entities from around the MEV ecosystem to join the POA block signer set. The end goal is enabling a federated settlement chain for providers on the network to assume the settlement proposer role in turns. A sequencer updates the state of bids and commitments, acting as a network peer and settlement block producer. and handles fund settlements, rewards, or slashes.
 
 ## Network Flows
 
