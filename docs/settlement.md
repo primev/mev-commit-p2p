@@ -26,7 +26,7 @@ TBD, depends on stable deployment.
 
 ### Joining the testnet
 
-To join the testnet with your own full-node, use primev's [geth fork](https://github.com/primevprotocol/go-ethereum). Geth configuration will vary based on environment, but an example is provided below:
+To join the testnet with your own full-node, use primev's [geth fork](https://github.com/primevprotocol/go-ethereum). We've modified geth to achieve shorter block periods than mainnet Ethereum, and to enable seamless native token bridging capabilities. Geth configuration will vary based on environment, but an example is provided below:
 
 ```bash
 exec geth \
@@ -79,16 +79,12 @@ In order for mev-commit’s reward mechanism to be granular enough, the settleme
 
 Future experimentation will help identify the maximize the number of signers that can feasibly achieve our 200ms block period constraint. Additionally, we'll be investigating the impact of geographical distance between nodes on network latency.
 
-## Bridge Settlement ↔ SepoliaETH
+### Bridge Settlement ↔ SepoliaETH
 
 The settlement layer is bridged to Sepolia via a [hyperlane warp route](https://docs.hyperlane.xyz/docs/protocol/warp-routes), involving multiple agents delivering or validating cross chain messages.
 
-Users initiate a bridge transaction on the origin chain by locking native ether. A Validator set monitors for these transactions and attests to their merkle inclusion on the origin chain. A permissionless relayer then delivers the message to the destination chain’s `Interchain Security Module` (ISM), which verifies validator signatures and mints native tokens as needed. 
+Users initiate a bridge transaction on the origin chain by locking native ether in the bridge contract. A permissioned validator set monitors for these transactions and attests to their merkle inclusion on the origin chain. A permissionless relayer agent then delivers the message to the destination chain’s `Interchain Security Module` (ISM), which verifies validator signatures and mints native tokens as needed. 
 
-### Key Components and Features
+Hyperlane exposes a contract interface which allows bridge users to pay relayers native tokens on the origin chain to cover the costs of delivering a message on the destination chain. See [Interchain Gas Payment](https://docs.hyperlane.xyz/docs/protocol/interchain-gas-payment) for more details.
 
-- **Bridge Actors**: Bridge users, relayers, and validators. The validators provide attestations, and the relayer ensures proper delivery and validation on the destination chain.
-- **Warp Route**: An abstraction to lock collateral tokens on an origin chain and mint an equivalent token on the destination chain. Supports bridging native mainnet ether.
-- **Interchain Gas Payment**: Detailed at [Hyperlane Docs](https://docs.hyperlane.xyz/docs/protocol/interchain-gas-payment).
-- **Primev Geth Fork**: Modifications to geth to enable practical and secure hyperlane bridging. 
-- **Admin Router Contract**: Allows only the hyperlane contract to burn/mint native tokens on the sidechain.
+Running a hyperlane relayer is permissionless, and we encourage anyone to run their own relayer relevant to the settlement bridge. See [Running Relayers](https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer) for more details. In the future we will add entities to the validator set that signs off on bridge transaction merkle inclusion, and instructions for running validators will follow [Running Validators](https://docs.hyperlane.xyz/docs/operate/validators/run-validators).
