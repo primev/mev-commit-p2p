@@ -4,3 +4,4 @@
 * [Quickstart](quickstart.md "Quickstart")
 * [API clients](api-clients.md "API clients")
 * [Debugging](debugging.md "Debugging")
+* [Settlement](settlement.md "Settlement")

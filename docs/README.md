@@ -34,6 +34,8 @@ For more on commitment privacy
 
 Bids and commitments will settle on a specialized EVM sidechain ran with go-ethereum’s Clique proof-of-authoriy (POA) consensus mechanism. Initially operated by primev entities, the settlement layer operates as a high-throughput chain to expedite the settlement process. Over time we plan to authorize entities from around the MEV ecosystem to join the POA block signer set. The end goal is enabling a federated settlement chain for providers on the network to assume the settlement proposer role in turns. A sequencer updates the state of bids and commitments, acting as a network peer and settlement block producer. and handles fund settlements, rewards, or slashes.
 
+For more information, see [settlement details](settlement.md).
+
 ## Network Flows
 
 Diagram depicting **the flow of bids, commitments, and funds**
