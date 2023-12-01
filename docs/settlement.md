@@ -79,9 +79,25 @@ In order for mev-commit’s reward mechanism to be granular enough, the settleme
 
 Future experimentation will help identify the maximize the number of signers that can feasibly achieve our 200ms block period constraint. Additionally, we'll be investigating the impact of geographical distance between signers on network latency.
 
+### Contracts
+
+Settlement contracts are deployed on the settlement chain to follow the state of bids and commitments, and invoke rewards or slashing as needed. Contracts are designed as follows:
+
+* A pre-confirmation contract allows pre-confirmation commitments and bids from the p2p network to be tracked/updated on-chain.
+* Two separate registry contracts exist to manage users and providers, where both parties must stake ETH to participate. Rewards and/or slashing are managed by these contracts. 
+* An oracle contract emits events requesting the oracle service to retrieve block data from mainnet ethereum, and exposes an interface for the oracle service to submit said data.
+
+TODO: Add flow of actors diagram from contract repo, once that's open sourced.
+
+### Oracle Service
+
+The oracle service is an off-chain process which interacts with the oracle contract as needed. This service monitors and extracts the winning builder and corresponding transaction hash list from each mainnet block, and submits this data to the oracle contract residing on the settlement chain.
+
+Although this oracle is currently centralized and operated by Primev, it can eventually be integrated into the settlement chain validation protocol, and secured by the same federated actors that operate the settlement chain.
+
 ### Bridge Settlement ↔ SepoliaETH
 
-The settlement layer is bridged to Sepolia via a [hyperlane warp route](https://docs.hyperlane.xyz/docs/protocol/warp-routes), involving multiple agents delivering or validating cross chain messages.
+The settlement chain is bridged to Sepolia via a [hyperlane warp route](https://docs.hyperlane.xyz/docs/protocol/warp-routes), involving multiple agents delivering or validating cross chain messages.
 
 Users initiate a bridge transaction on the origin chain by locking native ether in the bridge contract. A permissioned validator set monitors for these transactions and attests to their merkle inclusion on the origin chain. A permissionless relayer agent then delivers the message to the destination chain’s `Interchain Security Module` (ISM), which verifies validator signatures and mints native tokens as needed. 
 
