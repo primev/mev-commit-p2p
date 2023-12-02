@@ -4,7 +4,7 @@
 
 Primev will maintain a settlement layer testnet consisting of a sidechain, oracle service, and bridge to Sepolia. 
 
-TODO: diagram here
+<img src="settlement.png" alt="Settlement Diagram" width="500" height="425"/>
 
 ## Connection details
 
@@ -86,8 +86,6 @@ Settlement contracts are deployed on the settlement chain to follow the state of
 * A pre-confirmation contract allows pre-confirmation commitments and bids from the p2p network to be tracked/updated on-chain.
 * Two separate registry contracts exist to manage users and providers, where both parties must stake ETH to participate. Rewards and/or slashing are managed by these contracts. 
 * An oracle contract emits events requesting the oracle service to retrieve block data from mainnet ethereum, and exposes an interface for the oracle service to submit said data.
-
-TODO: Add flow of actors diagram from contract repo, once that's open sourced.
 
 ### Oracle Service
 
