@@ -67,9 +67,19 @@ exec geth \
 
 Note this configuration will be productionized further in the coming weeks.
 
-## Protocol
+## Level of Decentralization
 
-Our settlement layer is built out as an ethereum sidechain ran with [go-ethereum’s Clique proof-of-authoriy consensus mechanism](https://geth.ethereum.org/docs/tools/clef/clique-signing). 
+Today, most or arguably all ethereum scaling solutions rely on centralized bridging and sequencing. Our system components rely on existing tech, and consequently inherit some centralization downfalls. However, we’ve chosen solutions that allow anyone to permissionlessly validate correct execution, and operation of chain infrastructure. 
+
+To start, primev entities will run all validating infrastructure, where correct/honest operation can be permissionlessly audited. Spinning up a full node and connecting to our settlement chain as a peer is encouraged. It’s also encouraged for anyone to run their own bridge relayers. Over time we can permit entities outside of primev to become POA signers or bridge validators.  
+
+However, It’s important to recognize that the end goal of most blockchain scaling solutions still involve centralized components. Instead of overly optimizing for decentralization (often at the cost of speed), clever economic incentives or cryptography can be leveraged to provably secure our settlement chain.
+
+MEV-commit’s settlement chain will continue to evolve. As certain open source scaling solutions become more practical and provably secure, we will use them.
+
+## Current Design
+
+Our settlement layer is currently built out as an ethereum sidechain ran with [go-ethereum’s Clique proof-of-authoriy consensus mechanism](https://geth.ethereum.org/docs/tools/clef/clique-signing). 
 
 ### POA Geth Nodes
 
