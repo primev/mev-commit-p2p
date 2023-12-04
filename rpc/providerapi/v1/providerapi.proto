@@ -54,6 +54,18 @@ service Provider {
   rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
     option (google.api.http) = {get: "/v1/provider/get_min_stake"};
   }
+  // GetPendingTxns
+  //
+  // GetPendingTxns is called by the provider to get the pending transactions in the provider registry.
+  rpc GetPendingTxns(EmptyMessage) returns (PendingTxnsResponse) {
+    option (google.api.http) = {get: "/v1/provider/get_pending_txns"};
+  }
+  // CancelTransaction
+  //
+  // CancelTransaction is called by the provider to cancel a transaction in the provider registry.
+  rpc CancelTransaction(CancelReq) returns (CancelResponse) {
+    option (google.api.http) = {post: "/v1/provider/cancel_transaction/{tx_hash}"};
+  }
 }
 
 message StakeRequest {
@@ -127,3 +139,66 @@ message BidResponse {
   }];
 };
 
+message PendingTxnsResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Pending transactions list"
+      description: "Transaction info returned by the provider."
+      required: ["pendingTxns"]
+    }
+  };
+  repeated TransactionInfo pending_txns = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "List of pending transactions in the provider registry."
+  }];
+};
+
+message TransactionInfo {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Transaction info"
+      description: "Transaction info returned by the provider."
+      required: ["txHash", "nonce", "created"]
+    }
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"nonce\": 1234, \"created\": \"2009-11-10 23:00:00 +0000 UTC m=+0.000000001\"}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 nonce = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Nonce used for the transaction."
+  }];
+  string created = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Time when the transaction was created."
+  }];
+};
+
+message CancelReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Cancel request"
+      description: "Cancel transaction request message from users to the provider."
+      required: ["txHash"]
+    }
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to cancel."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+};
+
+message CancelResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Cancel response"
+      description: "Hash of the cancellation transaction request."
+      required: ["txHash"]
+    }
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the user wants to cancel."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+};
