@@ -13,7 +13,7 @@ paths:
   /v1/provider/cancel_transaction/{txHash}:
     post:
       summary: CancelTransaction
-      description: CancelTransaction is called by the provider to cancel a transaction in the provider registry.
+      description: CancelTransaction is called by the provider to cancel a transaction sent from this wallet.
       operationId: Provider_CancelTransaction
       responses:
         "200":
@@ -47,7 +47,7 @@ paths:
   /v1/provider/get_pending_txns:
     get:
       summary: GetPendingTxns
-      description: GetPendingTxns is called by the provider to get the pending transactions in the provider registry.
+      description: GetPendingTxns is called by the provider to get the pending transactions for the wallet.
       operationId: Provider_GetPendingTxns
       responses:
         "200":

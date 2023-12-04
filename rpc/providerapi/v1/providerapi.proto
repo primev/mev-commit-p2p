@@ -56,13 +56,13 @@ service Provider {
   }
   // GetPendingTxns
   //
-  // GetPendingTxns is called by the provider to get the pending transactions in the provider registry.
+  // GetPendingTxns is called by the provider to get the pending transactions for the wallet.
   rpc GetPendingTxns(EmptyMessage) returns (PendingTxnsResponse) {
     option (google.api.http) = {get: "/v1/provider/get_pending_txns"};
   }
   // CancelTransaction
   //
-  // CancelTransaction is called by the provider to cancel a transaction in the provider registry.
+  // CancelTransaction is called by the provider to cancel a transaction sent from this wallet.
   rpc CancelTransaction(CancelReq) returns (CancelResponse) {
     option (google.api.http) = {post: "/v1/provider/cancel_transaction/{tx_hash}"};
   }

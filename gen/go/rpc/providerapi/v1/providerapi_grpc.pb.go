@@ -56,11 +56,11 @@ type ProviderClient interface {
 	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetPendingTxns
 	//
-	// GetPendingTxns is called by the provider to get the pending transactions in the provider registry.
+	// GetPendingTxns is called by the provider to get the pending transactions for the wallet.
 	GetPendingTxns(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PendingTxnsResponse, error)
 	// CancelTransaction
 	//
-	// CancelTransaction is called by the provider to cancel a transaction in the provider registry.
+	// CancelTransaction is called by the provider to cancel a transaction sent from this wallet.
 	CancelTransaction(ctx context.Context, in *CancelReq, opts ...grpc.CallOption) (*CancelResponse, error)
 }
 
@@ -211,11 +211,11 @@ type ProviderServer interface {
 	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	// GetPendingTxns
 	//
-	// GetPendingTxns is called by the provider to get the pending transactions in the provider registry.
+	// GetPendingTxns is called by the provider to get the pending transactions for the wallet.
 	GetPendingTxns(context.Context, *EmptyMessage) (*PendingTxnsResponse, error)
 	// CancelTransaction
 	//
-	// CancelTransaction is called by the provider to cancel a transaction in the provider registry.
+	// CancelTransaction is called by the provider to cancel a transaction sent from this wallet.
 	CancelTransaction(context.Context, *CancelReq) (*CancelResponse, error)
 	mustEmbedUnimplementedProviderServer()
 }
