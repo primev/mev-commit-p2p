@@ -42,7 +42,7 @@ func NewTxMonitor(
 	if m == nil {
 		m = newMetrics()
 	}
-	return &txmonitor{
+	tm := &txmonitor{
 		baseCtx:    baseCtx,
 		baseCancel: baseCancel,
 		owner:      owner,
@@ -53,6 +53,8 @@ func NewTxMonitor(
 		newTxAdded: make(chan struct{}),
 		waitDone:   make(chan struct{}),
 	}
+	go tm.watchLoop()
+	return tm
 }
 
 type Result struct {

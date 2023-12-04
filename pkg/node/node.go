@@ -158,6 +158,7 @@ func NewNode(opts *Options) (*Node, error) {
 					opts.Logger.With("component", "providerapi"),
 					providerRegistry,
 					ownerEthAddress,
+					evmClient,
 				)
 				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 				bidProcessor = providerAPI
