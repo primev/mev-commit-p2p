@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"sort"
 	"sync"
 	"time"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus"
+)
+
+var (
+	maxSentTxs = 64
 )
 
 type TxRequest struct {
@@ -54,6 +59,13 @@ type EvmClient struct {
 	logger    *slog.Logger
 	nonce     uint64
 	metrics   *metrics
+	sentTxs   map[common.Hash]txnDetails
+	monitor   *txmonitor
+}
+
+type txnDetails struct {
+	nonce   uint64
+	created time.Time
 }
 
 func New(
@@ -67,14 +79,29 @@ func New(
 		return nil, fmt.Errorf("failed to get chain id: %w", err)
 	}
 
+	m := newMetrics()
+
+	monitor := NewTxMonitor(
+		owner,
+		ethClient,
+		logger.With("component", "evmclient/txmonitor"),
+		m,
+	)
+
 	return &EvmClient{
 		chainID:   chainID,
 		ethClient: ethClient,
 		owner:     owner,
 		signer:    signer,
 		logger:    logger,
-		metrics:   newMetrics(),
+		metrics:   m,
+		sentTxs:   make(map[common.Hash]txnDetails),
+		monitor:   monitor,
 	}, nil
+}
+
+func (c *EvmClient) Close() error {
+	return c.monitor.Close()
 }
 
 func (c *EvmClient) suggestMaxFeeAndTipCap(
@@ -152,6 +179,8 @@ func (c *EvmClient) getNonce(ctx context.Context) (uint64, error) {
 		c.nonce = accountNonce
 	}
 
+	c.metrics.LastUsedNonce.Set(float64(c.nonce))
+
 	return c.nonce, nil
 }
 
@@ -160,6 +189,10 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 	defer c.mtx.Unlock()
 
 	c.metrics.AttemptedTxCount.Inc()
+
+	if len(c.sentTxs) >= maxSentTxs {
+		return common.Hash{}, fmt.Errorf("too many pending transactions")
+	}
 
 	nonce, err := c.getNonce(ctx)
 	if err != nil {
@@ -188,7 +221,38 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 	c.nonce++
 	c.logger.Info("sent txn", "tx", txnString(txnData), "txHash", signedTx.Hash().Hex())
 
+	c.sentTxs[signedTx.Hash()] = txnDetails{nonce: nonce, created: time.Now()}
+	c.waitForTxn(signedTx.Hash(), nonce)
+
 	return signedTx.Hash(), nil
+}
+
+func (c *EvmClient) waitForTxn(txnHash common.Hash, nonce uint64) {
+	go func() {
+		res, err := c.monitor.WatchTx(txnHash, nonce)
+		if err != nil {
+			c.logger.Error("failed to watch tx", "err", err)
+			return
+		}
+
+		receipt := <-res
+		if receipt.Err != nil {
+			c.logger.Error("failed to get receipt", "err", receipt.Err)
+			return
+		}
+		switch receipt.Receipt.Status {
+		case types.ReceiptStatusSuccessful:
+			c.metrics.SuccessfulTxCount.Inc()
+		case types.ReceiptStatusFailed:
+			c.metrics.FailedTxCount.Inc()
+		}
+		c.mtx.Lock()
+		delete(c.sentTxs, txnHash)
+		c.mtx.Unlock()
+
+		c.logger.Info("tx status", "txHash", txnHash.Hex(), "status", receipt.Receipt.Status)
+	}()
+
 }
 
 func txnString(tx *types.Transaction) string {
@@ -209,34 +273,27 @@ func (c *EvmClient) WaitForReceipt(
 	ctx context.Context,
 	txHash common.Hash,
 ) (*types.Receipt, error) {
-	queryTicker := time.NewTicker(1 * time.Second)
-	defer queryTicker.Stop()
 
-	for {
-		receipt, err := c.ethClient.TransactionReceipt(ctx, txHash)
-		if err == nil {
-			switch receipt.Status {
-			case types.ReceiptStatusSuccessful:
-				c.metrics.SuccessfulTxCount.Inc()
-			case types.ReceiptStatusFailed:
-				c.metrics.FailedTxCount.Inc()
-			}
-			c.logger.Info("tx receipt", "txHash", txHash.Hex(), "status", receipt.Status)
-			return receipt, nil
-		}
+	c.mtx.Lock()
+	d, ok := c.sentTxs[txHash]
+	if !ok {
+		return nil, fmt.Errorf("tx not found")
+	}
+	c.mtx.Unlock()
 
-		if errors.Is(err, ethereum.NotFound) {
-			c.logger.Debug("tx not found", "txHash", txHash.Hex())
-		} else {
-			c.logger.Error("failed to get tx receipt", "txHash", txHash.Hex(), "err", err)
-		}
+	res, err := c.monitor.WatchTx(txHash, d.nonce)
+	if err != nil {
+		return nil, fmt.Errorf("failed to watch tx: %w", err)
+	}
 
-		select {
-		case <-ctx.Done():
-			c.logger.Error("context cancelled", "txHash", txHash.Hex())
-			return nil, ctx.Err()
-		case <-queryTicker.C:
+	select {
+	case receipt := <-res:
+		if receipt.Err != nil {
+			return nil, fmt.Errorf("failed to get receipt: %w", receipt.Err)
 		}
+		return receipt.Receipt, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 }
 
@@ -322,9 +379,39 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 
 	c.metrics.CancelledTxCount.Inc()
 	c.logger.Info("sent cancel txn", "txHash", signedTx.Hash().Hex())
+
+	c.sentTxs[signedTx.Hash()] = txnDetails{nonce: txn.Nonce(), created: time.Now()}
+	c.waitForTxn(signedTx.Hash(), txn.Nonce())
+
 	return signedTx.Hash(), nil
 }
 
-func (e *EvmClient) Metrics() []prometheus.Collector {
-	return e.metrics.collectors()
+type TxnInfo struct {
+	Hash    common.Hash
+	Nonce   uint64
+	Created time.Time
+}
+
+func (c *EvmClient) PendingTxns() []TxnInfo {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	var txns []TxnInfo
+	for hash, d := range c.sentTxs {
+		txns = append(txns, TxnInfo{
+			Hash:    hash,
+			Nonce:   d.nonce,
+			Created: d.created,
+		})
+	}
+
+	sort.Slice(txns, func(i, j int) bool {
+		return txns[i].Nonce < txns[j].Nonce
+	})
+
+	return txns
+}
+
+func (c *EvmClient) Metrics() []prometheus.Collector {
+	return c.metrics.collectors()
 }

@@ -86,6 +86,7 @@ func NewNode(opts *Options) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
+	nd.closers = append(nd.closers, evmClient)
 
 	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
 
@@ -169,7 +170,6 @@ func NewNode(opts *Options) (*Node, error) {
 				evmClient,
 				opts.Logger.With("component", "preconfcontract"),
 			)
-			nd.closers = append(nd.closers, commitmentDA)
 
 			preconfProto := preconfirmation.New(
 				topo,
