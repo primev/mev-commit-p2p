@@ -1,10 +1,10 @@
 # mev-commit
-mev-commit is P2P software that creates a network of execution providers and users. Users can broadcast bids to providers and receive commitments from them.
+mev-commit is P2P software that creates a network of execution providers and users. Users can broadcast bids to providers and receive commitments from them. A high throughput POA EVM chain settles the bids at the end of a block slot.
 
 ![](node-architecture.png)
 
 ## Quickstart
-- The software needs an ECDSA private key. This key creates the ethereum address for the node as well as used for the P2P network. Users can use an existing key or create a new key using the `create-key` command.
+- An ECDSA private key is required to create an ethereum address for the node as well as to use for the P2P network. Users can add an existing key or create a new key using the `create-key` command.
 ```
 NAME:
    mev-commit create-key - Create a new ECDSA private key and save it to a file
@@ -16,7 +16,7 @@ OPTIONS:
    --help, -h  show help
 ```
 
-- Once the key is available the users need to create a yaml config file. Example config files are available in the [config](https://github.com/primevprotocol/mev-commit/tree/main/config) folder. The important options are defined below:
+- Once the key is available, create a yaml config file. Example config files are available in the [config](https://github.com/primevprotocol/mev-commit/tree/main/config) folder. The important options are defined below:
 ```yaml
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
@@ -50,7 +50,7 @@ bootnodes:
 expose_provider_api: false
 ```
 
-- After the config file is ready, run `mev-commit start` with the config option.
+- Once the config file is ready, run `mev-commit start` with the config option.
 ```
 NAME:
    mev-commit start - Start the mev-commit node
@@ -63,7 +63,7 @@ OPTIONS:
    --help, -h      show help
 ```
 
-- After the node is started, users can check the status of the peers connected to the node using the `/topology` endpoint on the HTTP port.
+- After the node is started, check the status of the peers connected to the node using the `/topology` endpoint on the HTTP port (optional).
 ```json
 {
    "self": {
@@ -115,7 +115,7 @@ To simplify the deployment process, you may utilize Docker to create an isolated
 
 
 
-## Settlment Layer
+## Settlement Layer
 
-This repository contains a settlment layer under the settlement/geth-poa folder. You can run the entire stack for multiple POA nodes locally from this folder.
+This repository contains a settlement layer under the settlement/geth-poa folder. You can run the entire stack for multiple POA nodes locally from this folder.
 See [here](./settlement/geth-poa/README.md#local-run) for instructions on running the Settlment Layer locally.
