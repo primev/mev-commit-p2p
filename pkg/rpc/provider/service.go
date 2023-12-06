@@ -42,6 +42,7 @@ func NewService(
 		registryContract: registryContract,
 		owner:            owner,
 		logger:           logger,
+		evmClient:        e,
 	}
 }
 
