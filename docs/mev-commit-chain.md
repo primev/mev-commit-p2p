@@ -110,9 +110,9 @@ Contracts are deployed on the mev-commit chain to follow the state of bids and c
 
 ### Oracle service
 
-The oracle service is an off-chain process which interacts with the oracle contract as needed. This service monitors and extracts the winning builder and corresponding transaction hash list from each mainnet block, and submits this data to the oracle contract residing on the settlement chain.
+The oracle service is an off-chain process which interacts with the oracle contract as needed. This service monitors and extracts the winning builder and corresponding transaction hash list from each L1 block, and submits this data to the oracle contract residing on the mev-commit chain.
 
-Although this oracle is currently centralized and operated by Primev, it can eventually be integrated into the settlement chain validation protocol, and secured by the same federated actors that operate the settlement chain.
+Although this oracle is currently centralized and operated by Primev, it can eventually be integrated into the mev-commit chain validation protocol, and secured by the same federated actors that operate the mev-commit chain.
 
 ### Bridge to Sepolia
 
@@ -124,4 +124,4 @@ Bridging ether from the mev-commit chain back to L1 follows a similar process, e
 
 Hyperlane exposes a contract interface which allows bridge users to pay ether to cover the costs of delivering a message on the destination chain. See [Interchain Gas Payment](https://docs.hyperlane.xyz/docs/protocol/interchain-gas-payment) for more details.
 
-Running a hyperlane relayer is permissionless, and we encourage anyone to run their own relayer relevant to the settlement bridge. See [Running Relayers](https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer) for more details.
+Running a hyperlane relayer is permissionless, and we encourage anyone to run their own relayer relevant to the mev-commit chain bridge. See [Running Relayers](https://docs.hyperlane.xyz/docs/operate/relayer/run-relayer) for more details.
