@@ -172,9 +172,9 @@ func (s *Service) GetPendingTxns(
 	txnsMsg := make([]*providerapiv1.TransactionInfo, len(txns))
 	for i, txn := range txns {
 		txnsMsg[i] = &providerapiv1.TransactionInfo{
-			TxHash:  txn.Hash.Hex(),
+			TxHash:  txn.Hash,
 			Nonce:   int64(txn.Nonce),
-			Created: txn.Created.String(),
+			Created: txn.Created,
 		}
 	}
 

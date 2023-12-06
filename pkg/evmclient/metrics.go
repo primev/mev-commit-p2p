@@ -73,5 +73,7 @@ func (m *metrics) collectors() []prometheus.Collector {
 		m.CancelledTxCount,
 		m.FailedTxCount,
 		m.NotFoundDuringCancelCount,
+		m.LastUsedNonce,
+		m.LastConfirmedNonce,
 	}
 }

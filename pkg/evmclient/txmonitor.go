@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 var (
@@ -25,16 +24,16 @@ type txmonitor struct {
 	owner      common.Address
 	mtx        sync.Mutex
 	waitMap    map[uint64]map[common.Hash][]chan Result
-	client     *ethclient.Client
+	client     EVM
 	newTxAdded chan struct{}
 	waitDone   chan struct{}
 	logger     *slog.Logger
 	metrics    *metrics
 }
 
-func NewTxMonitor(
+func newTxMonitor(
 	owner common.Address,
-	client *ethclient.Client,
+	client EVM,
 	logger *slog.Logger,
 	m *metrics,
 ) *txmonitor {

@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -53,7 +52,7 @@ type Interface interface {
 type EvmClient struct {
 	mtx       sync.Mutex
 	chainID   *big.Int
-	ethClient *ethclient.Client
+	ethClient EVM
 	owner     common.Address
 	signer    *ecdsa.PrivateKey
 	logger    *slog.Logger
@@ -71,7 +70,7 @@ type txnDetails struct {
 func New(
 	owner common.Address,
 	signer *ecdsa.PrivateKey,
-	ethClient *ethclient.Client,
+	ethClient EVM,
 	logger *slog.Logger,
 ) (*EvmClient, error) {
 	chainID, err := ethClient.NetworkID(context.Background())
@@ -81,7 +80,7 @@ func New(
 
 	m := newMetrics()
 
-	monitor := NewTxMonitor(
+	monitor := newTxMonitor(
 		owner,
 		ethClient,
 		logger.With("component", "evmclient/txmonitor"),
@@ -337,7 +336,7 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 		return common.Hash{}, ethereum.NotFound
 	}
 
-	gasFeeCap, gasTipCap, err := c.suggestMaxFeeAndTipCap(ctx, nil)
+	gasFeeCap, gasTipCap, err := c.suggestMaxFeeAndTipCap(ctx, txn.GasPrice())
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("failed to suggest max fee and tip cap: %w", err)
 	}
@@ -387,9 +386,9 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 }
 
 type TxnInfo struct {
-	Hash    common.Hash
+	Hash    string
 	Nonce   uint64
-	Created time.Time
+	Created string
 }
 
 func (c *EvmClient) PendingTxns() []TxnInfo {
@@ -399,9 +398,9 @@ func (c *EvmClient) PendingTxns() []TxnInfo {
 	var txns []TxnInfo
 	for hash, d := range c.sentTxs {
 		txns = append(txns, TxnInfo{
-			Hash:    hash,
+			Hash:    hash.Hex(),
 			Nonce:   d.nonce,
-			Created: d.created,
+			Created: d.created.String(),
 		})
 	}
 
