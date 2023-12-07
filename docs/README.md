@@ -22,15 +22,16 @@ Users will connect to providers, each of these nodes will have access to a bootn
 
 ## Bids and Privacy
 
-mev-commit is inherently pseudonymous, allowing any Ethereum address to submit a bid for transaction execution, including bids for transactions that belong to others. Bids use the transaction hash identifier for universal provider pickup and are visible to network actors. Bids are processed by both network providers and settlement layer nodes, ensuring verifiable commitments and seamless reward settlements.
+mev-commit is inherently pseudonymous, allowing any Ethereum address to submit a bid for transaction execution, including bids for transactions that belong to others. Bids use the transaction hash identifier for universal provider pickup and are visible to network actors. Bids are processed by both network providers and mev-commit chain nodes, ensuring verifiable commitments and seamless reward settlements.
 
 ## Commitments and Privacy
 
 Commitments are commitment signatures from providers in response to bids. mev-commit provides a standard commitment method and a private commitment method for providers to choose from. Private commitments are encrypted and can only be read by the bidder until after the block slot ends and they’re revealed. Providers can also maintain their pseudonymity with commitments, using alternate addresses to obfuscate their identity as known block provider or sequencers.
 
-## Settlement Layer
+## mev-commit chain
 
-Bids and commitments will settle on a specialized EVM sidechain ran with go-ethereum’s Clique proof-of-authoriy (POA) consensus mechanism. Initially operated by primev entities, the settlement layer operates as a high-throughput chain handling fund settlements, rewards, and slashing. Over time we plan to authorize entities from around the MEV ecosystem to join the POA block signer set. The end goal is enabling a federated settlement chain for providers on the network to sign each block, and assume the block producer role in turns. Note this settlement chain is entirely separate from the Ethereum mainnet blockspace, and will be intentionally more centralized to achieve significantly higher throughput.
+Bids and commitments will settle on a specialized EVM sidechain ran with go-ethereum’s Clique proof-of-authoriy (POA) consensus mechanism. Initially operated by Primev entities, the mev-commit chain handles fund settlements, rewards, and slashing. Over time we plan to authorize entities from around the MEV ecosystem to join the POA block signer set. The end goal is to enable a federated mev-commit chain where various actors from the system are assuming the block producer role in turns. Note this mev-commit chain is entirely separate from the Ethereum mainnet blockspace, and will be intentionally more centralized to achieve significantly higher throughput.
+
 
 For more information, see [settlement details](settlement.md).
 
