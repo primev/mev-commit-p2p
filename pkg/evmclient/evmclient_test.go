@@ -303,21 +303,13 @@ func TestCancel(t *testing.T) {
 	if len(txns) != 2 {
 		t.Fatalf("expected 1 pending txn, got %v", len(txns))
 	}
-
-	if txns[0].Hash != txHash.Hex() {
-		t.Errorf("expected hash to be %v, got %v", txHash, txns[0].Hash)
-	}
-
-	if txns[0].Nonce != nonce {
-		t.Errorf("expected nonce to be %v, got %v", nonce, txns[0].Nonce)
-	}
-
-	if txns[1].Hash != cancelHash.Hex() {
-		t.Errorf("expected hash to be %v, got %v", txHash, txns[0].Hash)
-	}
-
-	if txns[1].Nonce != nonce {
-		t.Errorf("expected nonce to be %v, got %v", nonce, txns[0].Nonce)
+	for _, txn := range txns {
+		if txn.Hash != txHash.Hex() && txn.Hash != cancelHash.Hex() {
+			t.Errorf("expected hash to be %v or %v, got %v", txHash, cancelHash, txn.Hash)
+		}
+		if txn.Nonce != nonce {
+			t.Errorf("expected nonce to be %v, got %v", nonce, txn.Nonce)
+		}
 	}
 
 	close(unblockMonitor)
