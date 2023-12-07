@@ -13,6 +13,9 @@ type metrics struct {
 	CancelledTxCount          prometheus.Counter
 	FailedTxCount             prometheus.Counter
 	NotFoundDuringCancelCount prometheus.Counter
+
+	LastUsedNonce      prometheus.Gauge
+	LastConfirmedNonce prometheus.Gauge
 }
 
 func newMetrics() *metrics {
@@ -47,6 +50,16 @@ func newMetrics() *metrics {
 			Name:      "not_found_during_cancel_count",
 			Help:      "Number of transactions not found during cancel",
 		}),
+		LastUsedNonce: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: defaultMetricsNamespace,
+			Name:      "last_used_nonce",
+			Help:      "Last used nonce",
+		}),
+		LastConfirmedNonce: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: defaultMetricsNamespace,
+			Name:      "last_confirmed_nonce",
+			Help:      "Last confirmed nonce",
+		}),
 	}
 
 	return m
@@ -60,5 +73,7 @@ func (m *metrics) collectors() []prometheus.Collector {
 		m.CancelledTxCount,
 		m.FailedTxCount,
 		m.NotFoundDuringCancelCount,
+		m.LastUsedNonce,
+		m.LastConfirmedNonce,
 	}
 }

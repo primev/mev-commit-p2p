@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
+	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 )
 
@@ -21,12 +22,19 @@ type Service struct {
 	logger           *slog.Logger
 	owner            common.Address
 	registryContract registrycontract.Interface
+	evmClient        EvmClient
+}
+
+type EvmClient interface {
+	PendingTxns() []evmclient.TxnInfo
+	CancelTx(ctx context.Context, txHash common.Hash) (common.Hash, error)
 }
 
 func NewService(
 	logger *slog.Logger,
 	registryContract registrycontract.Interface,
 	owner common.Address,
+	e EvmClient,
 ) *Service {
 	return &Service{
 		receiver:         make(chan *providerapiv1.Bid),
@@ -34,6 +42,7 @@ func NewService(
 		registryContract: registryContract,
 		owner:            owner,
 		logger:           logger,
+		evmClient:        e,
 	}
 }
 
@@ -153,4 +162,35 @@ func (s *Service) GetMinStake(
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+}
+
+func (s *Service) GetPendingTxns(
+	ctx context.Context,
+	_ *providerapiv1.EmptyMessage,
+) (*providerapiv1.PendingTxnsResponse, error) {
+	txns := s.evmClient.PendingTxns()
+
+	txnsMsg := make([]*providerapiv1.TransactionInfo, len(txns))
+	for i, txn := range txns {
+		txnsMsg[i] = &providerapiv1.TransactionInfo{
+			TxHash:  txn.Hash,
+			Nonce:   int64(txn.Nonce),
+			Created: txn.Created,
+		}
+	}
+
+	return &providerapiv1.PendingTxnsResponse{PendingTxns: txnsMsg}, nil
+}
+
+func (s *Service) CancelTransaction(
+	ctx context.Context,
+	cancel *providerapiv1.CancelReq,
+) (*providerapiv1.CancelResponse, error) {
+	txHash := common.HexToHash(cancel.TxHash)
+	cHash, err := s.evmClient.CancelTx(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &providerapiv1.CancelResponse{TxHash: cHash.Hex()}, nil
 }
