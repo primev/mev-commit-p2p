@@ -35,10 +35,10 @@ start_mev_commit() {
 # Function to clean up
 cleanup() {
     echo "Cleaning up..."
+    cd ~/
     cd go-ethereum/geth-poa
     make clean-dbs
-    cd - # Return to the original directory
-
+    
     # Docker cleanup script
     echo "Stopping all Docker containers..."
     docker stop $(docker ps -aq)
