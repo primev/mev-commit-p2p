@@ -87,7 +87,7 @@ case "$1" in
         # Pause for user to update config files
         echo "Please update /integration-test/config/{nodetype}.yml files as needed."
         echo "Press Enter to continue after you have made the updates..."
-        echo "Note: If you're on mac, set RPC endpoint to host.internal.docker to connect to localhost"
+        echo "Note: If you're on mac, set RPC endpoint to host.docker.internal to connect to localhost"
         read -p " " # This will pause and wait for the user to press Enter
 
         start_mev_commit "$datadog_key"

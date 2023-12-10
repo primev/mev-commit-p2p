@@ -2,7 +2,7 @@
 
 THRESHOLD=50000000000000000000  # Set your threshold value here in wei
 # THRESHOLD is set to 50 Ether in wei for comparison
-
+echo "Starting funder at RPC endpoint $RPC_URL with threshold $THRESHOLD"
 while true; do
     while IFS= read -r address; do
         balance=$(cast balance $address --rpc-url $RPC_URL)
