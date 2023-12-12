@@ -2,7 +2,9 @@ package providerapi
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"sync"
@@ -44,6 +46,13 @@ func NewService(
 		logger:           logger,
 		evmClient:        e,
 	}
+}
+
+func toString(bid *providerapiv1.Bid) string {
+	return fmt.Sprintf(
+		"{TxHash: %s, BidAmount: %d, BlockNumber: %d, BidDigest: %x}",
+		bid.TxHash, bid.BidAmount, bid.BlockNumber, bid.BidDigest,
+	)
 }
 
 func (s *Service) ProcessBid(
@@ -88,7 +97,7 @@ func (s *Service) ReceiveBids(
 			s.logger.Error("context cancelled for receiving bid", "err", srv.Context().Err())
 			return srv.Context().Err()
 		case bid := <-s.receiver:
-			s.logger.Info("received bid from node", "bid", bid)
+			s.logger.Info("received bid from node", "bid", toString(bid))
 			err := srv.Send(bid)
 			if err != nil {
 				return err
@@ -111,7 +120,11 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 		s.bidsMu.Unlock()
 
 		if ok {
-			s.logger.Info("received bid status from node", "status", status)
+			s.logger.Info(
+				"received bid status from node",
+				"bidDigest", hex.EncodeToString(status.BidDigest),
+				"status", status.Status.String(),
+			)
 			callback(status.Status)
 		}
 	}
