@@ -108,14 +108,14 @@ stop_services() {
     echo "Stopping Docker Compose services..."
 
     case $service in
-        "geth-poa")
-            docker compose -f "$GETH_POA_PATH/docker-compose.yml" down
+        "sl")
+            docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
             ;;
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         "all")
-            docker compose -f "$GETH_POA_PATH/docker-compose.yml" down
+            docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         *)
