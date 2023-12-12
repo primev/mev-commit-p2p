@@ -19,6 +19,8 @@ services:
       - "8080:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -52,6 +54,8 @@ services:
       - "8081:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -81,6 +85,8 @@ services:
       - primev_net
     ports:
       - "8082:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -112,6 +118,8 @@ services:
       - "8083:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -141,6 +149,8 @@ services:
       - primev_net
     ports:
       - "8084:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -172,6 +182,8 @@ services:
       - "8085:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -201,6 +213,8 @@ services:
       - primev_net
     ports:
       - "8086:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -232,6 +246,8 @@ services:
       - "8087:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -263,6 +279,8 @@ services:
       - primev_net
     ports:
       - "8088:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -294,6 +312,8 @@ services:
       - "8089:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -325,6 +345,8 @@ services:
       - primev_net
     ports:
       - "8090:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -356,6 +378,8 @@ services:
       - "8091:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -387,6 +411,8 @@ services:
       - primev_net
     ports:
       - "8092:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -418,6 +444,8 @@ services:
       - "8093:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -449,6 +477,8 @@ services:
       - primev_net
     ports:
       - "8094:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -480,6 +510,8 @@ services:
       - "8095:13523"
     env_file:
       - integrationtest/.env
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -511,6 +543,8 @@ services:
       - primev_net
     ports:
       - "8096:8080"
+    profiles:
+      - non-datadog
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -532,6 +566,8 @@ services:
       - integrationtest/.env
     networks:
       - primev_net
+    profiles:
+      - non-datadog
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
