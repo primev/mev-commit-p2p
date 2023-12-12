@@ -65,7 +65,7 @@ NEXT_PUBLIC_WALLET_CONNECT_ID=
 DD_KEY=${datadog_key}
 EOF
 
-    make -C "$GETH_POA_PATH" up-prod-settlement
+    make -C "$GETH_POA_PATH"/geth-poa up-prod-settlement
 }
 
 start_mev_commit() {
