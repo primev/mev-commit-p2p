@@ -29,8 +29,8 @@ deploy_contracts() {
     local rpc_url=$1
     echo "Deploying Contracts with RPC URL: $rpc_url..."
     cd ~/
-    git clone git@github.com:primevprotocol/rollup-preconf.git
-    cd rollup-preconf
+    git clone git@github.com:primevprotocol/contracts.git
+    cd contracts
     forge compile
     forge script scripts/DeployScripts.s.sol:DeployScript --rpc-url "$rpc_url" --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast --chain-id 17864 -vvvv
     cd ~/ # Return to the original directory
