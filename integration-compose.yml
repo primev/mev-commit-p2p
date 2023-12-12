@@ -95,125 +95,125 @@ services:
           }
         ]
 
-  # provider-2:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/Dockerfile
-  #     args:
-  #       node_type: provider
-  #   restart: always
-  #   depends_on:
-  #     - bootnode
-  #   volumes:
-  #     - ./integrationtest/keys/provider2:/key
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8083:13523"
-  #   env_file:
-  #     - integrationtest/.env
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:13523/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*",
-  #             "go*",
-  #             "libp2p*"
-  #           ]
-  #         }
-  #       ]
+  provider-2:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: provider
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/provider2:/key
+    networks:
+      - primev_net
+    ports:
+      - "8083:13523"
+    env_file:
+      - integrationtest/.env
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
-  # provider-emulator-2:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/provider/Dockerfile
-  #   restart: always
-  #   depends_on:
-  #     - provider-2
-  #   environment:
-  #     - PROVIDER_IP=provider-2:13524
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8084:8080"
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:8080/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*"
-  #           ]
-  #         }
-  #       ]
+  provider-emulator-2:
+    build:
+      context: .
+      dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
+    depends_on:
+      - provider-2
+    environment:
+      - PROVIDER_IP=provider-2:13524
+    networks:
+      - primev_net
+    ports:
+      - "8084:8080"
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
-  # provider-3:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/Dockerfile
-  #     args:
-  #       node_type: provider
-  #   restart: always
-  #   depends_on:
-  #     - bootnode
-  #   volumes:
-  #     - ./integrationtest/keys/provider3:/key
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8085:13523"
-  #   env_file:
-  #     - integrationtest/.env
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:13523/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*",
-  #             "go*",
-  #             "libp2p*"
-  #           ]
-  #         }
-  #       ]
+  provider-3:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: provider
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/provider3:/key
+    networks:
+      - primev_net
+    ports:
+      - "8085:13523"
+    env_file:
+      - integrationtest/.env
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
-  # provider-emulator-3:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/provider/Dockerfile
-  #   restart: always
-  #   depends_on:
-  #     - provider-3
-  #   environment:
-  #     - PROVIDER_IP=provider-3:13524
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8086:8080"
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:8080/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*"
-  #           ]
-  #         }
-  #       ]
+  provider-emulator-3:
+    build:
+      context: .
+      dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
+    depends_on:
+      - provider-3
+    environment:
+      - PROVIDER_IP=provider-3:13524
+    networks:
+      - primev_net
+    ports:
+      - "8086:8080"
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   user-1:
     build:
@@ -339,191 +339,191 @@ services:
           }
         ]
 
-  # user-3:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/Dockerfile
-  #     args:
-  #       node_type: user
-  #   restart: always
-  #   depends_on:
-  #     - bootnode
-  #   volumes:
-  #     - ./integrationtest/keys/user3:/key
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8091:13523"
-  #   env_file:
-  #     - integrationtest/.env
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:13523/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*",
-  #             "go*",
-  #             "libp2p*"
-  #           ]
-  #         }
-  #       ]
+  user-3:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: user
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/user3:/key
+    networks:
+      - primev_net
+    ports:
+      - "8091:13523"
+    env_file:
+      - integrationtest/.env
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
-  # user-emulator-3:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/user/Dockerfile
-  #   restart: always
-  #   depends_on:
-  #     - user-3
-  #   env_file:
-  #     - integrationtest/.env
-  #   environment:
-  #     - USER_IP=user-3:13524
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8092:8080"
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:8080/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*"
-  #           ]
-  #         }
-  #       ]
+  user-emulator-3:
+    build:
+      context: .
+      dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
+    depends_on:
+      - user-3
+    env_file:
+      - integrationtest/.env
+    environment:
+      - USER_IP=user-3:13524
+    networks:
+      - primev_net
+    ports:
+      - "8092:8080"
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
-  # user-4:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/Dockerfile
-  #     args:
-  #       node_type: user
-  #   restart: always
-  #   depends_on:
-  #     - bootnode
-  #   volumes:
-  #     - ./integrationtest/keys/user4:/key
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8093:13523"
-  #   env_file:
-  #     - integrationtest/.env
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:13523/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*",
-  #             "go*",
-  #             "libp2p*"
-  #           ]
-  #         }
-  #       ]
+  user-4:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: user
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/user4:/key
+    networks:
+      - primev_net
+    ports:
+      - "8093:13523"
+    env_file:
+      - integrationtest/.env
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
-  # user-emulator-4:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/user/Dockerfile
-  #   restart: always
-  #   depends_on:
-  #     - user-4
-  #   env_file:
-  #     - integrationtest/.env
-  #   environment:
-  #     - USER_IP=user-4:13524
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8094:8080"
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:8080/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*"
-  #           ]
-  #         }
-  #       ]
+  user-emulator-4:
+    build:
+      context: .
+      dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
+    depends_on:
+      - user-4
+    env_file:
+      - integrationtest/.env
+    environment:
+      - USER_IP=user-4:13524
+    networks:
+      - primev_net
+    ports:
+      - "8094:8080"
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
-  # user-5:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/Dockerfile
-  #     args:
-  #       node_type: user
-  #   restart: always
-  #   depends_on:
-  #     - bootnode
-  #   volumes:
-  #     - ./integrationtest/keys/user5:/key
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8095:13523"
-  #   env_file:
-  #     - integrationtest/.env
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:13523/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*",
-  #             "go*",
-  #             "libp2p*"
-  #           ]
-  #         }
-  #       ]
+  user-5:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: user
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/user5:/key
+    networks:
+      - primev_net
+    ports:
+      - "8095:13523"
+    env_file:
+      - integrationtest/.env
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
 
-  # user-emulator-5:
-  #   build:
-  #     context: .
-  #     dockerfile: ./integrationtest/user/Dockerfile
-  #   restart: always
-  #   depends_on:
-  #     - user-5
-  #   env_file:
-  #     - integrationtest/.env
-  #   environment:
-  #     - USER_IP=user-5:13524
-  #   networks:
-  #     - primev_net
-  #   ports:
-  #     - "8096:8080"
-  #   labels:
-  #     com.datadoghq.ad.check_names: '["openmetrics"]'
-  #     com.datadoghq.ad.init_configs: '[{}]'
-  #     com.datadoghq.ad.instances: |
-  #       [
-  #         {
-  #           "openmetrics_endpoint": "http://%%host%%:8080/metrics",
-  #           "namespace": "integrationtest",
-  #           "metrics": [
-  #             "mev_commit*"
-  #           ]
-  #         }
-  #       ]
+  user-emulator-5:
+    build:
+      context: .
+      dockerfile: ./integrationtest/user/Dockerfile
+    restart: always
+    depends_on:
+      - user-5
+    env_file:
+      - integrationtest/.env
+    environment:
+      - USER_IP=user-5:13524
+    networks:
+      - primev_net
+    ports:
+      - "8096:8080"
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
 
   funder:
     build:
@@ -533,23 +533,23 @@ services:
     networks:
       - primev_net
 
-  # datadog-agent:
-  #   image: gcr.io/datadoghq/agent:latest
-  #   restart: always
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - /proc/:/host/proc/:ro
-  #     - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-  #   environment:
-  #     - DD_API_KEY=${DD_KEY}
-  #     - DD_TAGS=env:test
-  #     - DD_SITE=datadoghq.com
-  #     - DD_LOGS_ENABLED=true
-  #     - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
-  #     - DD_CONTAINER_EXCLUDE="name:datadog-agent"
-  #   networks:
-  #     primev_net:
-  #       ipv4_address: 172.29.58.3
+  datadog-agent:
+    image: gcr.io/datadoghq/agent:latest
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    environment:
+      - DD_API_KEY=${DD_KEY}
+      - DD_TAGS=env:test
+      - DD_SITE=datadoghq.com
+      - DD_LOGS_ENABLED=true
+      - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+      - DD_CONTAINER_EXCLUDE="name:datadog-agent"
+    networks:
+      primev_net:
+        ipv4_address: 172.29.58.3
 
 networks:
   primev_net:

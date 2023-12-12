@@ -7,7 +7,7 @@ GETH_POA_PATH="$PRIMEV_DIR/go-ethereum"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="logmsg.0"
+MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
 
@@ -16,8 +16,8 @@ initialize_environment() {
     create_primev_dir
     create_docker_network
     clone_repos
-    checkout_branch
     update_repos
+    checkout_branch
 }
 
 # Function to create a Docker network
