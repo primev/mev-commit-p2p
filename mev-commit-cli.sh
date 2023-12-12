@@ -68,7 +68,6 @@ EOF
     make -C "$GETH_POA_PATH"/geth-poa up-prod-settlement
 }
 
-# starts the mev commit services 
  start_mev_commit() {
     local datadog_key=$1
     echo "Starting MEV-Commit..."
@@ -177,7 +176,7 @@ case "$1" in
         cleanup
         ;;
     *)
-        echo "Usage: $0 {start|update|cleanup|sl|start-integration-test} [rpc-url] [datadog-key]"
+        echo "Usage: $0 {start|update|cleanup|sl} [rpc-url] [datadog-key]"
         exit 1
 esac
 
