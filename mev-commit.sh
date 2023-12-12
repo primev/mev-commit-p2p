@@ -77,7 +77,8 @@ start_mev_commit() {
 deploy_contracts() {
     local rpc_url=${1:-$DEFAULT_RPC_URL}
     local chain_id=${2:-17864}  # Default chain ID
-    echo "Building and deploying Contracts with RPC URL: $rpc_url and Chain ID: $chain_id..."
+    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
+    echo "Building Contract Deployment Image..."
 
     # Path to the Dockerfile in the contracts repository
     DOCKERFILE_PATH="$CONTRACTS_PATH"
@@ -86,18 +87,19 @@ deploy_contracts() {
     git -C "$DOCKERFILE_PATH" pull
 
     # Build the Docker image for contract deployment
-    docker build -t contract-deployer \
-        --build-arg RPC_URL="$rpc_url" \
-        --build-arg PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-        --build-arg CHAIN_ID="$chain_id" \
-        "$DOCKERFILE_PATH"
+    docker build -t contract-deployer "$DOCKERFILE_PATH"
 
     # Wait for the Geth POA network to be up and running
     echo "Waiting for Geth POA network to be fully up..."
     sleep 10
 
     # Run the Docker container to deploy the contracts
-    docker run --rm --network "$DOCKER_NETWORK_NAME" contract-deployer
+    echo "Deploying Contracts with RPC URL: $rpc_url, Chain ID: $chain_id, and Private Key: [HIDDEN]"
+    docker run --rm --network "$DOCKER_NETWORK_NAME" \
+        -e RPC_URL="$rpc_url" \
+        -e CHAIN_ID="$chain_id" \
+        -e PRIVATE_KEY="$private_key" \
+        contract-deployer
 }
 
 
