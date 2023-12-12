@@ -56,7 +56,7 @@ start_settlement_layer() {
     git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     echo "Starting Settlement Layer..."
 
-    cat > "$GETH_POA_PATH/.env" <<EOF
+    cat > "$GETH_POA_PATH/geth-poa/.env" <<EOF
 CONTRACT_DEPLOYER_PRIVATE_KEY=0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f03d5830e2dd5b0ea
 NODE1_PRIVATE_KEY=0xe82a054e06f89598485134b4f2ce8a612ce7f7f7e14e650f9f20b30efddd0e57
 NODE2_PRIVATE_KEY=0xb17b77fe56797c1a6c236f628d25ede823496af371b3fec858a7a6beff07696b
@@ -154,6 +154,9 @@ cleanup() {
 
 # Main script 
 case "$1" in
+    sl)
+        start_settlement_layer "$datadog_key"
+        ;;
     start)
         initialize_environment
         rpc_url=${2:-$DEFAULT_RPC_URL}
