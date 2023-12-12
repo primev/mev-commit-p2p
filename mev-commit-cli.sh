@@ -36,9 +36,9 @@ create_primev_dir() {
 clone_repos() {
     echo "Cloning repositories under $PRIMEV_DIR..."
     # Clone only if the directory doesn't exist
-    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
-    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
-    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+    [ ! -d "$GETH_POA_PATH" ] && git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    [ ! -d "$CONTRACTS_PATH" ] && git clone git@github.com:primevprotocol/contracts.git "$CONTRACTS_PATH"
+    [ ! -d "$MEV_COMMIT_PATH" ] && git clone git@github.com:primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
 }
 
 # Function to pull latest changes for all repositories
@@ -53,7 +53,7 @@ update_repos() {
 start_settlement_layer() {
     local datadog_key=$1
 
-    git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     echo "Starting Settlement Layer..."
 
     cat > "$GETH_POA_PATH/geth-poa/.env" <<EOF
@@ -65,18 +65,12 @@ NEXT_PUBLIC_WALLET_CONNECT_ID=
 DD_KEY=${datadog_key}
 EOF
 
-    # Run settlement layer
-    # Set environment variables
-    export AGENT_BASE_IMAGE=nil
-    export L2_NODE_URL=nil
-    # Run Docker Compose
-    docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
 }
 
- start_mev_commit() {
+start_mev_commit() {
     local datadog_key=$1
     echo "Starting MEV-Commit..."
-    DD_KEY="$datadog_key" docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+    DD_KEY="$datadog_key" docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d --profile non-datadog
 }
 
 deploy_contracts() {
@@ -134,7 +128,7 @@ stop_services() {
 
 cleanup() {
     echo "Cleaning up..."
-
+    make -C "$GETH_POA_PATH" clean-dbs
     # Docker cleanup script
     echo "Stopping all Docker containers..."
     docker stop $(docker ps -aq)
@@ -181,7 +175,7 @@ case "$1" in
         cleanup
         ;;
     *)
-        echo "Usage: $0 {start|update|cleanup|sl} [rpc-url] [datadog-key]"
+        echo "Usage: $0 {start|update|cleanup} [rpc-url] [datadog-key]"
         exit 1
 esac
 
