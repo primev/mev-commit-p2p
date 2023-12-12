@@ -7,6 +7,9 @@ GETH_POA_PATH="$PRIMEV_DIR/go-ethereum"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
+MEV_COMMIT_BRANCH="main"
+GETH_POA_BRANCH="master"
+CONTRACTS_BRANCH="main"
 
 # Function to initialize the environment
 initialize_environment() {
@@ -14,6 +17,7 @@ initialize_environment() {
     create_docker_network
     clone_repos
     update_repos
+    checkout_branch
 }
 
 # Function to create a Docker network
@@ -39,6 +43,17 @@ clone_repos() {
     [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
     [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+}
+
+# Function to checkout a specific branch for all repositories
+# If no branch is specified, the default branch is used
+checkout_branch() {
+    echo "Checking out branch $MEV_COMMIT_BRANCH for mev-commit..."
+    git -C "$MEV_COMMIT_PATH" checkout "$MEV_COMMIT_BRANCH"
+    echo "Checking out branch $GETH_POA_BRANCH for go-ethereum..."
+    git -C "$GETH_POA_PATH" checkout "$GETH_POA_BRANCH"
+    echo "Checking out branch $CONTRACTS_BRANCH for contracts..."
+    git -C "$CONTRACTS_PATH" checkout "$CONTRACTS_BRANCH"
 }
 
 # Function to pull latest changes for all repositories
