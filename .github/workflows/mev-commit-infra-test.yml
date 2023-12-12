@@ -34,7 +34,7 @@ jobs:
 
     - name: Check Service Endpoints
       run: |
-        ips=("172.28.0.2" "172.28.0.3" "172.28.0.4") # Example IP addresses, adjust as needed
+        ips=("172.29.9.100" "172.29.9.101" "172.29.9.102") # Example IP addresses, adjust as needed
         
         for ip in "${ips[@]}"; do
           echo "Checking service at $ip"

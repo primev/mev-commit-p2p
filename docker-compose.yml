@@ -10,8 +10,8 @@ services:
     volumes:
       - bootnode-keys:/keys
     networks:
-      mev-net:
-        ipv4_address: 172.28.0.2
+      primev_net:
+        ipv4_address: 172.29.9.100
 
   provider:
     build:
@@ -24,7 +24,7 @@ services:
     volumes:
       - provider-keys:/keys
     networks:
-      - mev-net
+      - primev_net
 
   user:
     build:
@@ -37,7 +37,7 @@ services:
     volumes:
       - user-keys:/keys
     networks:
-      - mev-net
+      - primev_net
     ports:
       - "13523:13523"
       - "13524:13524"
@@ -48,8 +48,5 @@ volumes:
   user-keys:
 
 networks:
-  mev-net:
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/16
+  primev_net:
+    external: true
