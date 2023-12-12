@@ -530,6 +530,8 @@ services:
       context: ./integrationtest/foundry
     env_file:
       - integrationtest/.env
+    networks:
+      - primev_net
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest

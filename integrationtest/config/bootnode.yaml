@@ -4,7 +4,7 @@ p2p_port: 13522
 http_port: 13523
 rpc_port: 13524
 secret: hello
-log_fmt: text
+log_fmt: json
 log_level: debug
 user_registry_contract: <USER_REGISTRY>
 provider_registry_contract: <PROVIDER_REGISTRY>

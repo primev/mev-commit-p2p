@@ -4,7 +4,7 @@ p2p_port: 13522
 http_port: 13523
 rpc_port: 13524
 secret: hello
-log_fmt: text
+log_fmt: json
 log_level: debug
 expose_provider_api: true
 preconf_contract: <PRECONF_CONTRACT>
