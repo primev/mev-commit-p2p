@@ -80,6 +80,12 @@ NEXT_PUBLIC_WALLET_CONNECT_ID=
 DD_KEY=${datadog_key}
 EOF
 
+    export AGENT_BASE_IMAGE=nil
+    export L2_NODE_URL=nil
+
+    # Run Docker Compose
+    docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+
 }
 
 start_mev_commit() {
