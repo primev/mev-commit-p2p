@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	maxSentTxs uint64 = 128
+	maxSentTxs uint64 = 256
 )
 
 var (
@@ -70,7 +70,7 @@ type Result struct {
 func (t *txmonitor) watchLoop() {
 	defer close(t.waitDone)
 
-	queryTicker := time.NewTicker(1 * time.Second)
+	queryTicker := time.NewTicker(500 * time.Millisecond)
 	defer queryTicker.Stop()
 
 	defer func() {
@@ -96,19 +96,24 @@ func (t *txmonitor) watchLoop() {
 		case <-t.newTxAdded:
 			newTx = true
 		case <-queryTicker.C:
-			currentBlock, err := t.client.BlockNumber(t.baseCtx)
-			if err != nil {
-				t.logger.Error("failed to get block number", "err", err)
-				continue
-			}
-
-			if currentBlock <= lastBlock && !newTx {
-				continue
-			}
-
-			t.check(currentBlock)
-			lastBlock = currentBlock
 		}
+
+		if len(t.waitMap) == 0 {
+			continue
+		}
+
+		currentBlock, err := t.client.BlockNumber(t.baseCtx)
+		if err != nil {
+			t.logger.Error("failed to get block number", "err", err)
+			continue
+		}
+
+		if currentBlock <= lastBlock && !newTx {
+			continue
+		}
+
+		t.check(currentBlock)
+		lastBlock = currentBlock
 	}
 }
 
