@@ -40,9 +40,9 @@ create_primev_dir() {
 clone_repos() {
     echo "Cloning repositories under $PRIMEV_DIR..."
     # Clone only if the directory doesn't exist
-    [ ! -d "$GETH_POA_PATH" ] && git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
-    [ ! -d "$CONTRACTS_PATH" ] && git clone git@github.com:primevprotocol/contracts.git "$CONTRACTS_PATH"
-    [ ! -d "$MEV_COMMIT_PATH" ] && git clone git@github.com:primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com:primevprotocol/contracts.git "$CONTRACTS_PATH"
+    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com:primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
@@ -68,7 +68,7 @@ update_repos() {
 start_settlement_layer() {
     local datadog_key=$1
 
-    git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    git clone https://github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     echo "Starting Settlement Layer..."
 
     cat > "$GETH_POA_PATH/geth-poa/.env" <<EOF
