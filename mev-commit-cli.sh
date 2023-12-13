@@ -146,7 +146,6 @@ stop_services() {
 
 cleanup() {
     echo "Cleaning up..."
-    make -C "$GETH_POA_PATH" clean-dbs
     # Docker cleanup script
     echo "Stopping all Docker containers..."
     docker stop $(docker ps -aq)
