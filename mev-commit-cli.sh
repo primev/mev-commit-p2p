@@ -175,6 +175,7 @@ cleanup() {
 # Main script 
 case "$1" in
     sl)
+	initialize_environment
         start_settlement_layer "$datadog_key"
         ;;
     start)
