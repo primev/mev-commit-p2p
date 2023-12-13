@@ -178,6 +178,9 @@ case "$1" in
 	initialize_environment
         start_settlement_layer "$datadog_key"
         ;;
+    deploy_contracts)
+	deploy_contracts "$rpc_url"
+	;;
     start)
         initialize_environment
         rpc_url=${2:-$DEFAULT_RPC_URL}
