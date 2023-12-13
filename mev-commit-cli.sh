@@ -40,9 +40,9 @@ create_primev_dir() {
 clone_repos() {
     echo "Cloning repositories under $PRIMEV_DIR..."
     # Clone only if the directory doesn't exist
-    [ ! -d "$GETH_POA_PATH" ] && git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
-    [ ! -d "$CONTRACTS_PATH" ] && git clone git@github.com:primevprotocol/contracts.git "$CONTRACTS_PATH"
-    [ ! -d "$MEV_COMMIT_PATH" ] && git clone git@github.com:primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com:primevprotocol/contracts.git "$CONTRACTS_PATH"
+    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com:primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
@@ -72,7 +72,7 @@ start_settlement_layer() {
     local use_arm_image=${3:-"false"}
     local deploy_sepolia_bridge=${4:-"false"}
 
-    git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
+    git clone https://github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     echo "Starting Settlement Layer..."
 
     # Deployer private key should eventually be specified manually by user and funded on Sepolia.
