@@ -64,9 +64,13 @@ update_repos() {
     git -C "$MEV_COMMIT_PATH" pull
 }
 
-
 start_settlement_layer() {
     local datadog_key=$1
+    local wallet_connect_id=$2
+
+    # Optional arguments
+    local use_arm_image=${3:-"false"}
+    local deploy_sepolia_bridge=${4:-"false"}
 
     git clone git@github.com:primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     echo "Starting Settlement Layer..."
@@ -76,10 +80,23 @@ CONTRACT_DEPLOYER_PRIVATE_KEY=0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f
 NODE1_PRIVATE_KEY=0xe82a054e06f89598485134b4f2ce8a612ce7f7f7e14e650f9f20b30efddd0e57
 NODE2_PRIVATE_KEY=0xb17b77fe56797c1a6c236f628d25ede823496af371b3fec858a7a6beff07696b
 RELAYER_PRIVATE_KEY=0xa0d74f611ee519f3fd4a84236ee24b955df2a3f40632f404ca46e0b17f696df3
-NEXT_PUBLIC_WALLET_CONNECT_ID=
+NEXT_PUBLIC_WALLET_CONNECT_ID=${wallet_connect_id}
 DD_KEY=${datadog_key}
 EOF
 
+    if [ "$use_arm_image" = "true" ]; then
+        if [ "$deploy_sepolia_bridge" = "true" ]; then
+            make -C "$GETH_POA_PATH"/geth-poa up-dev-build
+        else
+            make -C "$GETH_POA_PATH"/geth-poa up-dev-settlement
+        fi
+    else
+        if [ "$deploy_sepolia_bridge" = "true" ]; then
+            make -C "$GETH_POA_PATH"/geth-poa up-prod-build
+        else
+            make -C "$GETH_POA_PATH"/geth-poa up-prod-settlement
+        fi
+    fi
 }
 
 start_mev_commit() {
