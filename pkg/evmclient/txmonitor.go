@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/big"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
@@ -14,21 +15,26 @@ import (
 )
 
 var (
+	maxSentTxs uint64 = 64
+)
+
+var (
 	ErrTxnCancelled  = errors.New("transaction was cancelled")
 	ErrMonitorClosed = errors.New("monitor was closed")
 )
 
 type txmonitor struct {
-	baseCtx    context.Context
-	baseCancel context.CancelFunc
-	owner      common.Address
-	mtx        sync.Mutex
-	waitMap    map[uint64]map[common.Hash][]chan Result
-	client     EVM
-	newTxAdded chan struct{}
-	waitDone   chan struct{}
-	logger     *slog.Logger
-	metrics    *metrics
+	baseCtx            context.Context
+	baseCancel         context.CancelFunc
+	owner              common.Address
+	mtx                sync.Mutex
+	waitMap            map[uint64]map[common.Hash][]chan Result
+	client             EVM
+	newTxAdded         chan struct{}
+	waitDone           chan struct{}
+	logger             *slog.Logger
+	metrics            *metrics
+	lastConfirmedNonce atomic.Uint64
 }
 
 func newTxMonitor(
@@ -156,6 +162,7 @@ func (t *txmonitor) check(newBlock uint64) {
 		return
 	}
 
+	t.lastConfirmedNonce.Store(lastNonce)
 	t.metrics.LastConfirmedNonce.Set(float64(lastNonce))
 
 	checkTxns := t.getOlderTxns(lastNonce)
@@ -184,7 +191,11 @@ func (t *txmonitor) check(newBlock uint64) {
 	}
 }
 
-func (t *txmonitor) WatchTx(txHash common.Hash, nonce uint64) (<-chan Result, error) {
+func (t *txmonitor) allowNonce(nonce uint64) bool {
+	return nonce <= t.lastConfirmedNonce.Load()+maxSentTxs
+}
+
+func (t *txmonitor) watchTx(txHash common.Hash, nonce uint64) (<-chan Result, error) {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 
