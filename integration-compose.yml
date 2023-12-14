@@ -21,6 +21,7 @@ services:
       - integrationtest/.env
     profiles:
       - non-datadog
+      - minimal_setup
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -56,6 +57,7 @@ services:
       - integrationtest/.env
     profiles:
       - non-datadog
+      - minimal_setup
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -87,6 +89,7 @@ services:
       - "8082:8080"
     profiles:
       - non-datadog
+      - minimal_setup
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -248,6 +251,7 @@ services:
       - integrationtest/.env
     profiles:
       - non-datadog
+      - minimal_setup
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -281,6 +285,7 @@ services:
       - "8088:8080"
     profiles:
       - non-datadog
+      - minimal_setup
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -568,6 +573,7 @@ services:
       - primev_net
     profiles:
       - non-datadog
+      - minimal_setup
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
@@ -586,6 +592,8 @@ services:
     networks:
       primev_net:
         ipv4_address: 172.29.58.3
+    profiles:
+      - datadog
 
 networks:
   primev_net:
