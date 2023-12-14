@@ -575,7 +575,7 @@ services:
       - non-datadog
       - minimal_setup
 
-    datadog-agent:
+  datadog-agent:
     image: gcr.io/datadoghq/agent:latest
     restart: always
     volumes:
