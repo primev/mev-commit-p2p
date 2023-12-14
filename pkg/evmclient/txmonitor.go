@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	maxSentTxs uint64 = 512
+	maxSentTxs uint64 = 1024
 )
 
 var (
