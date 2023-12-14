@@ -86,9 +86,8 @@ EOF
 }
 
 start_mev_commit_minimal() {
-    local datadog_key=$1
     echo "Starting MEV-Commit..."
-    DD_KEY="$datadog_key" docker compose --profile minimal_setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+    docker compose --profile minimal_setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
 
 
@@ -192,6 +191,14 @@ case "$1" in
         deploy_contracts "$rpc_url"
         start_mev_commit "$datadog_key"
         ;;
+    start-minimal)
+    initialize_environment
+    rpc_url=${2:-$DEFAULT_RPC_URL}
+    datadog_key=${3:-""}
+    start_settlement_layer "$datadog_key"
+    deploy_contracts "$rpc_url"
+    start_mev_commit_minimal
+    ;;
     stop)
         stop_services "$2"
         ;;
@@ -203,7 +210,7 @@ case "$1" in
         cleanup
         ;;
     *)
-        echo "Usage: $0 {start|update|cleanup} [rpc-url] [datadog-key]"
+        echo "Usage: $0 {start|start-minimal|update|cleanup} [rpc-url] [datadog-key]"
         exit 1
 esac
 
