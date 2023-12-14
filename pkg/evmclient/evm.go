@@ -7,11 +7,15 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // EVM is an interface for interacting with the Ethereum Virtual Machine. It includes
 // subset of the methods from the go-ethereum ethclient.Client interface.
 type EVM interface {
+	// Client returns the underlying RPC client.
+	Batcher() Batcher
 	// NetworkID returns the network ID associated with this client.
 	NetworkID(ctx context.Context) (*big.Int, error)
 	// BlockNumber returns the most recent block number
@@ -44,4 +48,24 @@ type EVM interface {
 	// mined yet. Note that the transaction may not be part of the canonical chain even if
 	// it's not pending.
 	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
+}
+
+type Batcher interface {
+	// BatchCallContext executes multiple Ethereum contract calls concurrently with the
+	// specified data as the input.
+	BatchCallContext(ctx context.Context, b []rpc.BatchElem) error
+}
+
+type evm struct {
+	*ethclient.Client
+}
+
+func WrapEthClient(client *ethclient.Client) EVM {
+	return &evm{
+		Client: client,
+	}
+}
+
+func (e *evm) Batcher() Batcher {
+	return e.Client.Client()
 }

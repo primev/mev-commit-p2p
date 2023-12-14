@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient/mockevm"
 	"github.com/primevprotocol/mev-commit/pkg/util"
@@ -102,11 +103,22 @@ func TestSendCall(t *testing.T) {
 				return nonce + 1, nil
 			},
 		),
-		mockevm.WithTransactionReceiptFunc(
-			func(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-				return &types.Receipt{
-					Status: 1,
-				}, nil
+		mockevm.WithBatcherFunc(
+			func(ctx context.Context, elems []rpc.BatchElem) error {
+				if len(elems) != 1 {
+					return fmt.Errorf("expected 1 batch elem, got %v", len(elems))
+				}
+				if elems[0].Method != "eth_getTransactionReceipt" {
+					return fmt.Errorf(
+						"expected method to be eth_getTransactionReceipt, got %v",
+						elems[0].Method,
+					)
+				}
+				if len(elems[0].Args) != 1 {
+					return fmt.Errorf("expected 1 arg, got %v", len(elems[0].Args))
+				}
+				elems[0].Result.(*types.Receipt).Status = 1
+				return nil
 			},
 		),
 		mockevm.WithCallContractFunc(
@@ -192,6 +204,7 @@ func TestCancel(t *testing.T) {
 	chainID := big.NewInt(1)
 	unblockMonitor := make(chan struct{})
 	successHash := common.HexToHash("0x123")
+	blkNum := uint64(1)
 
 	pk, err := crypto.GenerateKey()
 	if err != nil {
@@ -228,7 +241,8 @@ func TestCancel(t *testing.T) {
 			func(ctx context.Context) (uint64, error) {
 				select {
 				case <-unblockMonitor:
-					return 1, nil
+					defer func() { blkNum++ }()
+					return blkNum, nil
 				case <-ctx.Done():
 					return 0, ctx.Err()
 				}
@@ -239,14 +253,16 @@ func TestCancel(t *testing.T) {
 				return nonce + 1, nil
 			},
 		),
-		mockevm.WithTransactionReceiptFunc(
-			func(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-				if txHash != successHash {
-					return nil, ethereum.NotFound
+		mockevm.WithBatcherFunc(
+			func(ctx context.Context, elems []rpc.BatchElem) error {
+				for i, elem := range elems {
+					if elem.Args[0].(common.Hash) != successHash {
+						elems[i].Error = ethereum.NotFound
+					} else {
+						elems[i].Result.(*types.Receipt).Status = 1
+					}
 				}
-				return &types.Receipt{
-					Status: 1,
-				}, nil
+				return nil
 			},
 		),
 		mockevm.WithTransactionByHashFunc(

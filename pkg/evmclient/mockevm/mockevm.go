@@ -8,10 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
 type mockEvm struct {
 	networkID              *big.Int
+	batcherFunc            func() evmclient.Batcher
 	blockNumFunc           func(ctx context.Context) (uint64, error)
 	pendingNonceAtFunc     func(ctx context.Context, account common.Address) (uint64, error)
 	nonceAtFunc            func(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
@@ -25,6 +28,20 @@ type mockEvm struct {
 }
 
 type Option func(*mockEvm)
+
+type batchFunc func(context.Context, []rpc.BatchElem) error
+
+func (b batchFunc) BatchCallContext(ctx context.Context, batch []rpc.BatchElem) error {
+	return b(ctx, batch)
+}
+
+func WithBatcherFunc(batcherFunc func(context.Context, []rpc.BatchElem) error) Option {
+	return func(m *mockEvm) {
+		m.batcherFunc = func() evmclient.Batcher {
+			return batchFunc(batcherFunc)
+		}
+	}
+}
 
 func WithBlockNumFunc(blockNumFunc func(ctx context.Context) (uint64, error)) Option {
 	return func(m *mockEvm) {
@@ -96,6 +113,13 @@ func NewMockEvm(networkID uint64, opts ...Option) *mockEvm {
 }
 
 var ErrNotImplemented = errors.New("not implemented")
+
+func (m *mockEvm) Batcher() evmclient.Batcher {
+	if m.batcherFunc != nil {
+		return m.batcherFunc()
+	}
+	return nil
+}
 
 func (m *mockEvm) NetworkID(ctx context.Context) (*big.Int, error) {
 	return m.networkID, nil

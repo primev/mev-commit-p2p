@@ -12,10 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 var (
 	maxSentTxs uint64 = 512
+	batchSize  int    = 64
 )
 
 var (
@@ -109,10 +111,6 @@ func (t *txmonitor) watchLoop() {
 		case <-queryTicker.C:
 		}
 
-		if len(t.waitMap) == 0 {
-			continue
-		}
-
 		currentBlock, err := t.client.BlockNumber(t.baseCtx)
 		if err != nil {
 			t.logger.Error("failed to get block number", "err", err)
@@ -123,7 +121,11 @@ func (t *txmonitor) watchLoop() {
 			continue
 		}
 
-		lastNonce, err := t.client.NonceAt(t.baseCtx, t.owner, new(big.Int).SetUint64(currentBlock))
+		lastNonce, err := t.client.NonceAt(
+			t.baseCtx,
+			t.owner,
+			new(big.Int).SetUint64(currentBlock),
+		)
 		if err != nil {
 			t.logger.Error("failed to get nonce", "err", err)
 			continue
@@ -197,36 +199,73 @@ func (t *txmonitor) notify(
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 
+	waiters := 0
 	for _, c := range t.waitMap[nonce][txn] {
 		c <- res
+		waiters++
 		close(c)
 	}
 	delete(t.waitMap[nonce], txn)
+	if len(t.waitMap[nonce]) == 0 {
+		delete(t.waitMap, nonce)
+	}
 }
 
 func (t *txmonitor) check(newBlock uint64, lastNonce uint64) {
 	checkTxns := t.getOlderTxns(lastNonce)
+	nonceMap := make(map[common.Hash]uint64)
 
-	for nonce, txns := range checkTxns {
+	if len(checkTxns) == 0 {
+		return
+	}
+
+	txHashes := make([]common.Hash, 0, len(checkTxns))
+	for n, txns := range checkTxns {
 		for _, txn := range txns {
-			receipt, err := t.client.TransactionReceipt(t.baseCtx, txn)
-			if err != nil {
-				// If in future we move away from PoA, then we should check for
-				// check for reorgs of the blockchain here. Even though the txn
-				// is not found, it can still become part of the chain because of reorgs.
-				if errors.Is(err, ethereum.NotFound) {
-					t.notify(nonce, txn, Result{nil, ErrTxnCancelled})
+			txHashes = append(txHashes, txn)
+			nonceMap[txn] = n
+		}
+	}
+
+	for start := 0; start < len(txHashes); start += batchSize {
+		end := start + batchSize
+		if end > len(txHashes) {
+			end = len(txHashes)
+		}
+
+		// Prepare the batch
+		batch := make([]rpc.BatchElem, len(txHashes))
+		for i, hash := range txHashes[start:end] {
+			batch[i] = rpc.BatchElem{
+				Method: "eth_getTransactionReceipt",
+				Args:   []interface{}{hash},
+				Result: new(types.Receipt),
+			}
+		}
+
+		// Execute the batch request
+		err := t.client.Batcher().BatchCallContext(t.baseCtx, batch)
+		if err != nil {
+			t.logger.Error("failed to execute batch call", "err", err)
+			return
+		}
+
+		// Process the responses
+		for i, result := range batch {
+			tHash := txHashes[start+i]
+			nonce := nonceMap[tHash]
+			if result.Error != nil {
+				if errors.Is(result.Error, ethereum.NotFound) {
+					t.notify(nonce, tHash, Result{nil, ErrTxnCancelled})
 					continue
 				}
-				t.logger.Error("failed to get receipt", "err", err)
-				return
-			}
-
-			if receipt == nil {
+				t.logger.Error("failed to get receipt", "err", result.Error)
 				continue
 			}
-
-			t.notify(nonce, txn, Result{receipt, nil})
+			if result.Result == nil {
+				continue
+			}
+			t.notify(nonce, tHash, Result{result.Result.(*types.Receipt), nil})
 		}
 	}
 }

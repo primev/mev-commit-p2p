@@ -232,14 +232,17 @@ func (c *EvmClient) waitForTxn(txnHash common.Hash, nonce uint64) {
 
 		receipt := <-res
 		if receipt.Err != nil {
-			c.logger.Error("failed to get receipt", "err", receipt.Err)
-			return
-		}
-		switch receipt.Receipt.Status {
-		case types.ReceiptStatusSuccessful:
-			c.metrics.SuccessfulTxCount.Inc()
-		case types.ReceiptStatusFailed:
-			c.metrics.FailedTxCount.Inc()
+			c.logger.Warn("failed to get receipt", "err", receipt.Err)
+			if !errors.Is(err, ErrTxnCancelled) {
+				return
+			}
+		} else {
+			switch receipt.Receipt.Status {
+			case types.ReceiptStatusSuccessful:
+				c.metrics.SuccessfulTxCount.Inc()
+			case types.ReceiptStatusFailed:
+				c.metrics.FailedTxCount.Inc()
+			}
 		}
 		c.mtx.Lock()
 		delete(c.sentTxs, txnHash)
@@ -271,10 +274,10 @@ func (c *EvmClient) WaitForReceipt(
 
 	c.mtx.Lock()
 	d, ok := c.sentTxs[txHash]
+	c.mtx.Unlock()
 	if !ok {
 		return nil, fmt.Errorf("tx not found")
 	}
-	c.mtx.Unlock()
 
 	res, err := c.monitor.watchTx(txHash, d.nonce)
 	if err != nil {
