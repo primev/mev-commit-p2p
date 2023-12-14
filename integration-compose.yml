@@ -573,8 +573,9 @@ services:
       - primev_net
     profiles:
       - non-datadog
+      - minimal_setup
 
-  datadog-agent:
+    datadog-agent:
     image: gcr.io/datadoghq/agent:latest
     restart: always
     volumes:
@@ -591,7 +592,7 @@ services:
     networks:
       primev_net:
         ipv4_address: 172.29.58.3
-     profiles:
+    profiles:
       - datadog
 
 networks:
