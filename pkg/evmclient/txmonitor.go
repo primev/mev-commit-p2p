@@ -15,13 +15,18 @@ import (
 )
 
 var (
-	maxSentTxs uint64 = 1024
+	maxSentTxs uint64 = 512
 )
 
 var (
 	ErrTxnCancelled  = errors.New("transaction was cancelled")
 	ErrMonitorClosed = errors.New("monitor was closed")
 )
+
+type waitCheck struct {
+	nonce uint64
+	block uint64
+}
 
 type txmonitor struct {
 	baseCtx            context.Context
@@ -32,6 +37,8 @@ type txmonitor struct {
 	client             EVM
 	newTxAdded         chan struct{}
 	waitDone           chan struct{}
+	checkerDone        chan struct{}
+	blockUpdate        chan waitCheck
 	logger             *slog.Logger
 	metrics            *metrics
 	lastConfirmedNonce atomic.Uint64
@@ -48,17 +55,21 @@ func newTxMonitor(
 		m = newMetrics()
 	}
 	tm := &txmonitor{
-		baseCtx:    baseCtx,
-		baseCancel: baseCancel,
-		owner:      owner,
-		client:     client,
-		logger:     logger,
-		metrics:    m,
-		waitMap:    make(map[uint64]map[common.Hash][]chan Result),
-		newTxAdded: make(chan struct{}),
-		waitDone:   make(chan struct{}),
+		baseCtx:     baseCtx,
+		baseCancel:  baseCancel,
+		owner:       owner,
+		client:      client,
+		logger:      logger,
+		metrics:     m,
+		waitMap:     make(map[uint64]map[common.Hash][]chan Result),
+		newTxAdded:  make(chan struct{}),
+		waitDone:    make(chan struct{}),
+		checkerDone: make(chan struct{}),
+		blockUpdate: make(chan waitCheck),
 	}
 	go tm.watchLoop()
+	go tm.checkLoop()
+
 	return tm
 }
 
@@ -112,15 +123,48 @@ func (t *txmonitor) watchLoop() {
 			continue
 		}
 
-		t.check(currentBlock)
+		lastNonce, err := t.client.NonceAt(t.baseCtx, t.owner, new(big.Int).SetUint64(currentBlock))
+		if err != nil {
+			t.logger.Error("failed to get nonce", "err", err)
+			continue
+		}
+
+		t.lastConfirmedNonce.Store(lastNonce)
+		t.metrics.LastConfirmedNonce.Set(float64(lastNonce))
+
+		select {
+		case t.blockUpdate <- waitCheck{lastNonce, currentBlock}:
+		default:
+		}
 		lastBlock = currentBlock
+	}
+}
+
+func (t *txmonitor) checkLoop() {
+	defer close(t.checkerDone)
+
+	for {
+		select {
+		case <-t.baseCtx.Done():
+			return
+		case check := <-t.blockUpdate:
+			t.check(check.block, check.nonce)
+		}
 	}
 }
 
 func (t *txmonitor) Close() error {
 	t.baseCancel()
+	done := make(chan struct{})
+	go func() {
+		<-t.checkerDone
+		<-t.waitDone
+
+		close(done)
+	}()
+
 	select {
-	case <-t.waitDone:
+	case <-done:
 		return nil
 	case <-time.After(10 * time.Second):
 		return errors.New("failed to close txmonitor")
@@ -160,16 +204,7 @@ func (t *txmonitor) notify(
 	delete(t.waitMap[nonce], txn)
 }
 
-func (t *txmonitor) check(newBlock uint64) {
-	lastNonce, err := t.client.NonceAt(t.baseCtx, t.owner, new(big.Int).SetUint64(newBlock))
-	if err != nil {
-		t.logger.Error("failed to get nonce", "err", err)
-		return
-	}
-
-	t.lastConfirmedNonce.Store(lastNonce)
-	t.metrics.LastConfirmedNonce.Set(float64(lastNonce))
-
+func (t *txmonitor) check(newBlock uint64, lastNonce uint64) {
 	checkTxns := t.getOlderTxns(lastNonce)
 
 	for nonce, txns := range checkTxns {
