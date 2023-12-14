@@ -234,7 +234,7 @@ func (t *txmonitor) check(newBlock uint64, lastNonce uint64) {
 		}
 
 		// Prepare the batch
-		batch := make([]rpc.BatchElem, len(txHashes))
+		batch := make([]rpc.BatchElem, end-start)
 		for i, hash := range txHashes[start:end] {
 			batch[i] = rpc.BatchElem{
 				Method: "eth_getTransactionReceipt",
