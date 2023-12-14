@@ -85,10 +85,17 @@ EOF
 
 }
 
-start_mev_commit() {
+start_mev_commit_minimal() {
     local datadog_key=$1
     echo "Starting MEV-Commit..."
     DD_KEY="$datadog_key" docker compose --profile minimal_setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+}
+
+
+start_mev_commit() {
+    local datadog_key=$1
+    echo "Starting MEV-Commit..."
+    DD_KEY="$datadog_key" docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
 
 deploy_contracts() {
