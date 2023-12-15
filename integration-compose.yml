@@ -578,8 +578,6 @@ services:
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
     restart: always
-    profiles:
-      - agent
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
