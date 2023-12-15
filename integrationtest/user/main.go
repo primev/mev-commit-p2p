@@ -37,7 +37,7 @@ var (
 	)
 	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
 	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 10, "The number of parallel workers to run")
+	parallelWorkers = flag.Int("parallel-workers", 7, "The number of parallel workers to run")
 )
 
 var (
