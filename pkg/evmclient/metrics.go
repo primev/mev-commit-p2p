@@ -14,8 +14,10 @@ type metrics struct {
 	FailedTxCount             prometheus.Counter
 	NotFoundDuringCancelCount prometheus.Counter
 
-	LastUsedNonce      prometheus.Gauge
-	LastConfirmedNonce prometheus.Gauge
+	LastUsedNonce                  prometheus.Gauge
+	LastConfirmedNonce             prometheus.Gauge
+	CurrentBlockNumber             prometheus.Gauge
+	GetReceiptBatchOperationTimeMs prometheus.Gauge
 }
 
 func newMetrics() *metrics {
@@ -60,6 +62,16 @@ func newMetrics() *metrics {
 			Name:      "last_confirmed_nonce",
 			Help:      "Last confirmed nonce",
 		}),
+		CurrentBlockNumber: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: defaultMetricsNamespace,
+			Name:      "current_block_number",
+			Help:      "Current block number at which the node is checking",
+		}),
+		GetReceiptBatchOperationTimeMs: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: defaultMetricsNamespace,
+			Name:      "get_receipt_batch_operation_time_ms",
+			Help:      "Time taken to get receipts in a batch",
+		}),
 	}
 
 	return m
@@ -75,5 +87,7 @@ func (m *metrics) collectors() []prometheus.Collector {
 		m.NotFoundDuringCancelCount,
 		m.LastUsedNonce,
 		m.LastConfirmedNonce,
+		m.CurrentBlockNumber,
+		m.GetReceiptBatchOperationTimeMs,
 	}
 }

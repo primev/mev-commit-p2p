@@ -77,7 +77,12 @@ func main() {
 	logger := newLogger(*logLevel)
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(receivedPreconfs, sentBids)
+	registry.MustRegister(
+		receivedPreconfs,
+		sentBids,
+		sendBidSuccessDuration,
+		sendBidFailureDuration,
+	)
 
 	router := http.NewServeMux()
 	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))

@@ -121,6 +121,8 @@ func (t *txmonitor) watchLoop() {
 			continue
 		}
 
+		t.metrics.CurrentBlockNumber.Set(float64(currentBlock))
+
 		lastNonce, err := t.client.NonceAt(
 			t.baseCtx,
 			t.owner,
@@ -243,12 +245,14 @@ func (t *txmonitor) check(newBlock uint64, lastNonce uint64) {
 			}
 		}
 
+		opStart := time.Now()
 		// Execute the batch request
 		err := t.client.Batcher().BatchCallContext(t.baseCtx, batch)
 		if err != nil {
 			t.logger.Error("failed to execute batch call", "err", err)
 			return
 		}
+		t.metrics.GetReceiptBatchOperationTimeMs.Set(float64(time.Since(opStart).Milliseconds()))
 
 		// Process the responses
 		for i, result := range batch {
