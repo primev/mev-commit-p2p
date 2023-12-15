@@ -111,6 +111,7 @@ Contracts are deployed on the mev-commit chain to follow the state of bids and c
 * A pre-confirmation contract allows pre-confirmation commitments to bids from the p2p network to be tracked on-chain.
 * Two separate registry contracts exist to manage users and providers, where both parties must stake ETH to participate. Rewards and/or slashing are managed by these contracts. 
 * An oracle contract receives L1 payloads from the oracle service, to start it will receive data from L1 Testnet Sepolia, and transition to mainnet as we go from Testnet to Mainnet.
+* A whitelist contract allows certain other contracts to mint/burn native ether as a part of bridging with L1.
 
 ### Oracle service
 
