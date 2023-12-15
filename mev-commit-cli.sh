@@ -87,15 +87,26 @@ EOF
 
 start_mev_commit_minimal() {
     echo "Starting MEV-Commit..."
-    docker compose --profile minimal_setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+    docker compose --profile minimal-setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
 
 
 start_mev_commit() {
     local datadog_key=$1
+
     echo "Starting MEV-Commit..."
-    DD_KEY="$datadog_key" docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+
+    # Check if datadog_key is empty
+    if [ -z "$datadog_key" ]; then
+        echo "DD_KEY is empty, so no agents will be started."
+        # Run Docker Compose without --profile agent
+        docker compose --profile integration-test -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+    else
+        # Run Docker Compose with --profile agent
+        DD_KEY="$datadog_key" docker compose --profile integration-test --profile agent -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+    fi
 }
+
 
 deploy_contracts() {
     local rpc_url=${1:-$DEFAULT_RPC_URL}

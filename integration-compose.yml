@@ -20,8 +20,8 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -56,8 +56,8 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -88,8 +88,8 @@ services:
     ports:
       - "8082:8080"
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -122,7 +122,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -153,7 +153,7 @@ services:
     ports:
       - "8084:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -186,7 +186,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -217,7 +217,7 @@ services:
     ports:
       - "8086:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -250,8 +250,8 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -284,8 +284,8 @@ services:
     ports:
       - "8088:8080"
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -318,7 +318,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -351,7 +351,7 @@ services:
     ports:
       - "8090:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -384,7 +384,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -417,7 +417,7 @@ services:
     ports:
       - "8092:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -450,7 +450,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -483,7 +483,7 @@ services:
     ports:
       - "8094:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -516,7 +516,7 @@ services:
     env_file:
       - integrationtest/.env
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -549,7 +549,7 @@ services:
     ports:
       - "8096:8080"
     profiles:
-      - non-datadog
+      - integration-test
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -572,12 +572,14 @@ services:
     networks:
       - primev_net
     profiles:
-      - non-datadog
-      - minimal_setup
+      - minimal-setup
+      - integration-test
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
     restart: always
+    profiles:
+      - agent
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /proc/:/host/proc/:ro
@@ -593,7 +595,7 @@ services:
       primev_net:
         ipv4_address: 172.29.58.3
     profiles:
-      - datadog
+      - agent
 
 networks:
   primev_net:
