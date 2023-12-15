@@ -37,7 +37,7 @@ var (
 	)
 	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
 	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 5, "The number of parallel workers to run")
+	parallelWorkers = flag.Int("parallel-workers", 7, "The number of parallel workers to run")
 )
 
 var (
@@ -53,15 +53,18 @@ var (
 		Name:      "total_sent_bids",
 		Help:      "Total number of bids sent to mev_commit nodes",
 	})
-	sendBidDuration = *prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Namespace: "mev_commit",
-			Subsystem: "user_emulator",
-			Name:      "send_bid_duration",
-			Help:      "Duration of method calls.",
-		},
-		[]string{"status", "no_of_preconfs"},
-	)
+	sendBidSuccessDuration = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "mev_commit",
+		Subsystem: "user_emulator",
+		Name:      "send_bid_success_duration",
+		Help:      "Duration of SendBid operation in ms.",
+	})
+	sendBidFailureDuration = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: "mev_commit",
+		Subsystem: "user_emulator",
+		Name:      "send_bid_failure_duration",
+		Help:      "Duration of failed SendBid operation in ms.",
+	})
 )
 
 func main() {
@@ -74,7 +77,12 @@ func main() {
 	logger := newLogger(*logLevel)
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(receivedPreconfs, sentBids)
+	registry.MustRegister(
+		receivedPreconfs,
+		sentBids,
+		sendBidSuccessDuration,
+		sendBidFailureDuration,
+	)
 
 	router := http.NewServeMux()
 	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
@@ -222,20 +230,14 @@ func sendBid(
 		}
 		if err != nil {
 			logger.Error("failed receiving preconf", "error", err)
-			sendBidDuration.WithLabelValues(
-				"error",
-				fmt.Sprintf("%d", preConfCount),
-			).Observe(time.Since(start).Seconds())
+			sendBidFailureDuration.Set(float64(time.Since(start).Milliseconds()))
 			return err
 		}
 		receivedPreconfs.Inc()
 		preConfCount++
 	}
 
-	sendBidDuration.WithLabelValues(
-		"success",
-		fmt.Sprintf("%d", preConfCount),
-	).Observe(time.Since(start).Seconds())
+	sendBidSuccessDuration.Set(float64(time.Since(start).Milliseconds()))
 	return nil
 }
 

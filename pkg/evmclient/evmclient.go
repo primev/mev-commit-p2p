@@ -17,10 +17,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-var (
-	maxSentTxs = 64
-)
-
 type TxRequest struct {
 	To        *common.Address
 	CallData  []byte
@@ -189,13 +185,13 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 
 	c.metrics.AttemptedTxCount.Inc()
 
-	if len(c.sentTxs) >= maxSentTxs {
-		return common.Hash{}, fmt.Errorf("too many pending transactions")
-	}
-
 	nonce, err := c.getNonce(ctx)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("failed to get nonce: %w", err)
+	}
+
+	if !c.monitor.allowNonce(nonce) {
+		return common.Hash{}, fmt.Errorf("too many pending transactions")
 	}
 
 	txnData, err := c.newTx(ctx, tx, nonce)
@@ -228,7 +224,7 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 
 func (c *EvmClient) waitForTxn(txnHash common.Hash, nonce uint64) {
 	go func() {
-		res, err := c.monitor.WatchTx(txnHash, nonce)
+		res, err := c.monitor.watchTx(txnHash, nonce)
 		if err != nil {
 			c.logger.Error("failed to watch tx", "err", err)
 			return
@@ -236,14 +232,17 @@ func (c *EvmClient) waitForTxn(txnHash common.Hash, nonce uint64) {
 
 		receipt := <-res
 		if receipt.Err != nil {
-			c.logger.Error("failed to get receipt", "err", receipt.Err)
-			return
-		}
-		switch receipt.Receipt.Status {
-		case types.ReceiptStatusSuccessful:
-			c.metrics.SuccessfulTxCount.Inc()
-		case types.ReceiptStatusFailed:
-			c.metrics.FailedTxCount.Inc()
+			c.logger.Warn("failed to get receipt", "err", receipt.Err)
+			if !errors.Is(err, ErrTxnCancelled) {
+				return
+			}
+		} else {
+			switch receipt.Receipt.Status {
+			case types.ReceiptStatusSuccessful:
+				c.metrics.SuccessfulTxCount.Inc()
+			case types.ReceiptStatusFailed:
+				c.metrics.FailedTxCount.Inc()
+			}
 		}
 		c.mtx.Lock()
 		delete(c.sentTxs, txnHash)
@@ -275,12 +274,12 @@ func (c *EvmClient) WaitForReceipt(
 
 	c.mtx.Lock()
 	d, ok := c.sentTxs[txHash]
+	c.mtx.Unlock()
 	if !ok {
 		return nil, fmt.Errorf("tx not found")
 	}
-	c.mtx.Unlock()
 
-	res, err := c.monitor.WatchTx(txHash, d.nonce)
+	res, err := c.monitor.watchTx(txHash, d.nonce)
 	if err != nil {
 		return nil, fmt.Errorf("failed to watch tx: %w", err)
 	}

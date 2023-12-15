@@ -80,7 +80,7 @@ func NewNode(opts *Options) (*Node, error) {
 	evmClient, err := evmclient.New(
 		ownerEthAddress,
 		opts.PrivKey,
-		contractRPC,
+		evmclient.WrapEthClient(contractRPC),
 		opts.Logger.With("component", "evmclient"),
 	)
 	if err != nil {
