@@ -11,6 +11,11 @@ MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
 
+# Default values for optional arguments
+rpc_url=$DEFAULT_RPC_URL
+datadog_key=""
+command=""
+
 # Function to initialize the environment
 initialize_environment() {
     create_primev_dir
@@ -63,7 +68,6 @@ update_repos() {
     git -C "$CONTRACTS_PATH" pull
     git -C "$MEV_COMMIT_PATH" pull
 }
-
 
 start_settlement_layer() {
     local datadog_key=$1
@@ -185,31 +189,86 @@ cleanup() {
     echo "Docker cleanup complete."
 }
 
-# Main script 
-case "$1" in
+# Function to display help
+show_help() {
+    echo "Usage: $0 [options] [command]"
+    echo ""
+    echo "Commands:"
+    echo "  sl                     Start the settlement layer"
+    echo "  deploy_contracts       Deploy contracts"
+    echo "  start                  Start the environment"
+    echo "  start-minimal          Start the minimal environment"
+    echo "  stop                   Stop services"
+    echo "  update                 Update repositories"
+    echo "  cleanup                Cleanup Docker"
+    echo ""
+    echo "Options:"
+    echo "  -h, --help             Show this help message"
+    echo "  --rpc-url URL          Set the RPC URL"
+    echo "  --datadog-key KEY      Set the Datadog key"
+    echo ""
+}
+
+# Parse command line options
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        --rpc-url)
+            rpc_url="$2"
+            shift 2
+            ;;
+        --datadog-key)
+            datadog_key="$2"
+            shift 2
+            ;;
+        sl|deploy_contracts|start|start-minimal|stop|update|cleanup)
+            if [[ -z "$command" ]]; then
+                command="$1"
+            else
+                echo "Multiple commands specified. Please use only one command."
+                exit 1
+            fi
+            shift
+            ;;
+        *)
+            echo "Invalid option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# Check if a command has been specified
+if [[ -z "$command" ]]; then
+    echo "No command specified."
+    show_help
+    exit 1
+fi
+
+# Main script logic based on the command variable
+case "$command" in
     sl)
-	initialize_environment
+        initialize_environment
         start_settlement_layer "$datadog_key"
         ;;
     deploy_contracts)
-	deploy_contracts "$rpc_url"
-	;;
+        deploy_contracts "$rpc_url"
+        ;;
     start)
         initialize_environment
-        rpc_url=${2:-$DEFAULT_RPC_URL}
-        datadog_key=${3:-""}
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
         start_mev_commit "$datadog_key"
         ;;
     start-minimal)
-    initialize_environment
-    rpc_url=${2:-$DEFAULT_RPC_URL}
-    datadog_key=${3:-""}
-    start_settlement_layer "$datadog_key"
-    deploy_contracts "$rpc_url"
-    start_mev_commit_minimal
-    ;;
+        initialize_environment
+        start_settlement_layer "$datadog_key"
+        deploy_contracts "$rpc_url"
+        start_mev_commit_minimal
+        ;;
     stop)
         stop_services "$2"
         ;;
@@ -221,8 +280,11 @@ case "$1" in
         cleanup
         ;;
     *)
-        echo "Usage: $0 {start|start-minimal|update|cleanup} [rpc-url] [datadog-key]"
+        echo "Invalid command: $command"
+        show_help
         exit 1
+        ;;
 esac
 
 exit 0
+
