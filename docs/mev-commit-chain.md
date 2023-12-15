@@ -108,7 +108,7 @@ Future experimentation will help identify the maximize the number of signers tha
 
 Contracts are deployed on the mev-commit chain to follow the state of bids and commitments, and invoke rewards or slashing as needed. Contracts are designed as follows:
 
-* A pre-confirmation contract allows pre-confirmation commitments to bids from the p2p network to be tracked/updated on-chain.
+* A pre-confirmation contract allows pre-confirmation commitments to bids from the p2p network to be tracked on-chain.
 * Two separate registry contracts exist to manage users and providers, where both parties must stake ETH to participate. Rewards and/or slashing are managed by these contracts. 
 * An oracle contract receives L1 payloads from the oracle service, to start it will receive data from L1 Testnet Sepolia, and transition to mainnet as we go from Testnet to Mainnet.
 
