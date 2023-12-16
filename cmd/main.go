@@ -173,7 +173,7 @@ func start(c *cli.Context) error {
 	if strings.HasPrefix(privKeyFile, "~/") {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			return fmt.Errorf("failed to get bidder home directory: %w", err)
+			return fmt.Errorf("failed to get user home directory: %w", err)
 		}
 
 		privKeyFile = filepath.Join(homeDir, privKeyFile[2:])
