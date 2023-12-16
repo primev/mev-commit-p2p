@@ -14,7 +14,7 @@ import (
 )
 
 var bidderRegistryABI = func() abi.ABI {
-	abi, err := abi.JSON(strings.NewReader(contractsabi.BidderRegistryJson))
+	abi, err := abi.JSON(strings.NewReader(contractsabi.UserRegistryJson))
 	if err != nil {
 		panic(err)
 	}

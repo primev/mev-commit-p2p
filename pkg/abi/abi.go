@@ -614,7 +614,7 @@ var PreConfJson = `
       },
       {
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       },
       {
@@ -728,7 +728,7 @@ var PreConfJson = `
           },
           {
             "internalType": "address",
-            "name": "user",
+            "name": "bidder",
             "type": "address"
           },
           {
@@ -791,7 +791,7 @@ var PreConfJson = `
           },
           {
             "internalType": "address",
-            "name": "user",
+            "name": "bidder",
             "type": "address"
           },
           {
@@ -1241,7 +1241,7 @@ var PreConfJson = `
 ]
 `
 
-var BidderRegistryJson = `
+var UserRegistryJson = `
 [
   {
     "inputs": [
