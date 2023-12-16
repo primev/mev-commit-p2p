@@ -52,7 +52,7 @@ message StakeRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Stake request"
-      description: "Stake bidder in the bidder registry."
+      description: "Stake bidder in the bidder provider_registry."
       required: ["stake"]
     }
     example: "{\"amount\": \"1000000000000000000\" }"
@@ -64,7 +64,7 @@ message StakeResponse {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Stake response"
-      description: "Get staked amount for bidder in the bidder registry."
+      description: "Get staked amount for bidder in the bidder provider_registry."
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };

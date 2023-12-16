@@ -47,7 +47,7 @@ type topologyResponse struct {
 func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 	logger := d.logger.With("method", "handleTopology")
 	providers := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
-	users := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBidder})
+	bidders := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBidder})
 
 	topoResp := topologyResponse{
 		Self:           d.p2p.Self(),
@@ -61,12 +61,12 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 		}
 		topoResp.ConnectedPeers["providers"] = connectedProviders
 	}
-	if len(users) > 0 {
-		connectedUsers := make([]common.Address, len(users))
-		for idx, user := range users {
-			connectedUsers[idx] = user.EthAddress
+	if len(bidders) > 0 {
+		connectedBidders := make([]common.Address, len(bidders))
+		for idx, bidder := range bidders {
+			connectedBidders[idx] = bidder.EthAddress
 		}
-		topoResp.ConnectedPeers["users"] = connectedUsers
+		topoResp.ConnectedPeers["bidders"] = connectedBidders
 	}
 
 	err := apiserver.WriteResponse(w, http.StatusOK, topoResp)

@@ -72,7 +72,7 @@ message StakeRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Stake request"
-      description: "Stake provider in the provider registry."
+      description: "Stake provider in the provider provider_registry."
       required: ["stake"]
     }
     example: "{\"amount\": \"1000000000000000000\" }"
@@ -84,7 +84,7 @@ message StakeResponse {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Stake response"
-      description: "Get staked amount for provider in the provider registry."
+      description: "Get staked amount for provider in the provider provider_registry."
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };
@@ -97,7 +97,7 @@ message Bid {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Bid message"
-      description: "Signed bid message from users to the provider."
+      description: "Signed bid message from bidders to the provider."
       required: ["txHash", "bidAmount", "blockNumber", "bidDigest"]
     }
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bidAmount\": 1000000000000000000, \"blockNumber\": 123456, \"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
@@ -148,7 +148,7 @@ message PendingTxnsResponse {
     }
   };
   repeated TransactionInfo pending_txns = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "List of pending transactions in the provider registry."
+    description: "List of pending transactions in the provider provider_registry."
   }];
 };
 
@@ -177,7 +177,7 @@ message CancelReq {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Cancel request"
-      description: "Cancel transaction request message from users to the provider."
+      description: "Cancel transaction request message from bidders to the provider."
       required: ["txHash"]
     }
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"

@@ -26,7 +26,7 @@ type Preconfirmation struct {
 	signer       signer.Signer
 	topo         Topology
 	streamer     p2p.Streamer
-	us           UserStore
+	us           BidderStore
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
 	logger       *slog.Logger
@@ -36,8 +36,8 @@ type Topology interface {
 	GetPeers(topology.Query) []p2p.Peer
 }
 
-type UserStore interface {
-	CheckUserRegistered(context.Context, common.Address) bool
+type BidderStore interface {
+	CheckBidderRegistered(context.Context, common.Address) bool
 }
 
 type BidProcessor interface {
@@ -48,7 +48,7 @@ func New(
 	topo Topology,
 	streamer p2p.Streamer,
 	signer signer.Signer,
-	us UserStore,
+	us BidderStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	logger *slog.Logger,
@@ -168,7 +168,7 @@ func (p *Preconfirmation) SendBid(
 	return preConfirmations, nil
 }
 
-var ErrInvalidUserTypeForBid = errors.New("invalid bidder type for bid")
+var ErrInvalidBidderTypeForBid = errors.New("invalid bidder type for bid")
 
 // handlebid is the function that is called when a bid is received
 // It is meant to be used by the provider exclusively to read the bid value from the bidder.
@@ -178,7 +178,7 @@ func (p *Preconfirmation) handleBid(
 	stream p2p.Stream,
 ) error {
 	if peer.Type != p2p.PeerTypeBidder {
-		return ErrInvalidUserTypeForBid
+		return ErrInvalidBidderTypeForBid
 	}
 
 	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
@@ -194,7 +194,7 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	if p.us.CheckUserRegistered(ctx, *ethAddress) {
+	if p.us.CheckBidderRegistered(ctx, *ethAddress) {
 		// try to enqueue for 5 seconds
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

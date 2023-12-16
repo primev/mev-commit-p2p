@@ -8,7 +8,7 @@ log_fmt: json
 log_level: debug
 expose_provider_api: true
 preconf_contract: <PRECONF_CONTRACT>
-user_registry_contract: <USER_REGISTRY>
+bidder_registry_contract: <BIDDER_REGISTRY>
 provider_registry_contract: <PROVIDER_REGISTRY>
 rpc_endpoint: <RPC_URL>
 bootnodes:

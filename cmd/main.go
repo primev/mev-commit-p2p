@@ -106,7 +106,7 @@ type config struct {
 	ExposeProviderAPI        bool     `yaml:"expose_provider_api" json:"expose_provider_api"`
 	PreconfContract          string   `yaml:"preconf_contract" json:"preconf_contract"`
 	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
-	UserRegistryContract     string   `yaml:"user_registry_contract" json:"user_registry_contract"`
+	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
 	RPCEndpoint              string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
 }
 
@@ -196,7 +196,7 @@ func start(c *cli.Context) error {
 		ExposeProviderAPI:        cfg.ExposeProviderAPI,
 		PreconfContract:          cfg.PreconfContract,
 		ProviderRegistryContract: cfg.ProviderRegistryContract,
-		UserRegistryContract:     cfg.UserRegistryContract,
+		BidderRegistryContract:   cfg.BidderRegistryContract,
 		RPCEndpoint:              cfg.RPCEndpoint,
 	})
 	if err != nil {

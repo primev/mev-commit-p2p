@@ -19,7 +19,7 @@ const (
 	DenyBadRegisterCall
 	DenyBlockedPeer
 	DenyNotEnoughStake
-	DenyUserToUser
+	DenyBidderToBidder
 	Accept
 )
 
@@ -29,7 +29,7 @@ const (
 //	DenyBadRegisterCall:    "DenyBadRegisterCall",
 //	DenyBlockedPeer:        "DenyBlockedPeer",
 //	DenyNotEnoughStake:     "DenyNotEnoughStake",
-//	DenyUserToUser: "DenyUserToUser",
+//	DenyBidderToBidder: "DenyBidderToBidder",
 //	Accept:                 "Allow",
 //}
 
@@ -108,7 +108,7 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 	// possible s<>s connection
 	// ! s<>s connection
 	if (cg.selfType == p2p.PeerTypeBidder) && !enoughStake {
-		return DenyUserToUser
+		return DenyBidderToBidder
 	}
 
 	// Reject potential s<>s connections and accept the remaining requests,

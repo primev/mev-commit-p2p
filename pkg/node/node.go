@@ -17,9 +17,9 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
+	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
-	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
-	userregistrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/userregistry"
+	provider_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
@@ -49,7 +49,7 @@ type Options struct {
 	ExposeProviderAPI        bool
 	PreconfContract          string
 	ProviderRegistryContract string
-	UserRegistryContract     string
+	BidderRegistryContract   string
 	RPCEndpoint              string
 }
 
@@ -90,17 +90,17 @@ func NewNode(opts *Options) (*Node, error) {
 
 	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
 
-	userRegistryContractAddr := common.HexToAddress(opts.UserRegistryContract)
+	bidderRegistryContractAddr := common.HexToAddress(opts.BidderRegistryContract)
 
-	userRegistry := userregistrycontract.New(
-		userRegistryContractAddr,
+	bidderRegistry := bidder_registrycontract.New(
+		bidderRegistryContractAddr,
 		evmClient,
-		opts.Logger.With("component", "userregistry"),
+		opts.Logger.With("component", "bidderregistry"),
 	)
 
 	providerRegistryContractAddr := common.HexToAddress(opts.ProviderRegistryContract)
 
-	providerRegistry := registrycontract.New(
+	providerRegistry := provider_registrycontract.New(
 		providerRegistryContractAddr,
 		evmClient,
 		opts.Logger.With("component", "providerregistry"),
@@ -176,7 +176,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfSigner,
-				userRegistry,
+				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
@@ -189,7 +189,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfSigner,
-				userRegistry,
+				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
@@ -198,7 +198,7 @@ func NewNode(opts *Options) (*Node, error) {
 			bidderAPI := bidderapi.NewService(
 				preconfProto,
 				ownerEthAddress,
-				userRegistry,
+				bidderRegistry,
 				opts.Logger.With("component", "bidderapi"),
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)

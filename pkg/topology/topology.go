@@ -28,7 +28,7 @@ type Announcer interface {
 type topology struct {
 	mu          sync.RWMutex
 	providers   map[common.Address]p2p.Peer
-	users       map[common.Address]p2p.Peer
+	bidders       map[common.Address]p2p.Peer
 	logger      *slog.Logger
 	addressbook p2p.Addressbook
 	announcer   Announcer
@@ -37,7 +37,7 @@ type topology struct {
 func New(a p2p.Addressbook, logger *slog.Logger) *topology {
 	return &topology{
 		providers:   make(map[common.Address]p2p.Peer),
-		users:       make(map[common.Address]p2p.Peer),
+		bidders:       make(map[common.Address]p2p.Peer),
 		addressbook: a,
 		logger:      logger,
 	}
@@ -77,7 +77,7 @@ func (t *topology) Connected(p p2p.Peer) {
 		}
 
 		if p.Type == p2p.PeerTypeProvider {
-			t.logger.Info("provider connected broadcasting to previous users", "peer", p)
+			t.logger.Info("provider connected broadcasting to previous bidders", "peer", p)
 			// If the peer is a provider, we want to broadcast to the bidder peers
 			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeBidder})
 			providerUnderlay, err := t.addressbook.GetPeerInfo(p)
@@ -108,7 +108,7 @@ func (t *topology) add(p p2p.Peer) {
 	case p2p.PeerTypeProvider:
 		t.providers[p.EthAddress] = p
 	case p2p.PeerTypeBidder:
-		t.users[p.EthAddress] = p
+		t.bidders[p.EthAddress] = p
 	}
 }
 
@@ -122,7 +122,7 @@ func (t *topology) Disconnected(p p2p.Peer) {
 	case p2p.PeerTypeProvider:
 		delete(t.providers, p.EthAddress)
 	case p2p.PeerTypeBidder:
-		delete(t.users, p.EthAddress)
+		delete(t.bidders, p.EthAddress)
 	}
 }
 
@@ -144,7 +144,7 @@ func (t *topology) GetPeers(q Query) []p2p.Peer {
 			peers = append(peers, p)
 		}
 	case p2p.PeerTypeBidder:
-		for _, p := range t.users {
+		for _, p := range t.bidders {
 			peers = append(peers, p)
 		}
 	}
@@ -160,7 +160,7 @@ func (t *topology) IsConnected(addr common.Address) bool {
 		return true
 	}
 
-	if _, ok := t.users[addr]; ok {
+	if _, ok := t.bidders[addr]; ok {
 		return true
 	}
 

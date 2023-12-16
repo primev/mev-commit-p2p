@@ -1,16 +1,16 @@
 # API clients
 
-The mev-commit node provides two key APIs. The execution providers need to use the **Provider API** whereas the users need to use the **User API** based on their role in the network.
+The mev-commit node provides two key APIs. The execution providers need to use the **Provider API** whereas the bidders need to use the **Bidder API** based on their role in the network.
 
 ## Providers
 
-Execution providers will use the `provider` role of the mev-commit software to run their nodes. This will allow users to send bids to them to include in the blocks that they build. They will use the **Provider RPC API** to receive signed bids that are being propogated in the network. Once they get a bid, they need to communicate with the mev-commit node whether the bid has been **Accepted** or **Rejected**. If accepted, the mev-commit node will send a signed pre-confirmation to the users.
+Execution providers will use the `provider` role of the mev-commit software to run their nodes. This will allow bidders to send bids to them to include in the blocks that they build. They will use the **Provider RPC API** to receive signed bids that are being propogated in the network. Once they get a bid, they need to communicate with the mev-commit node whether the bid has been **Accepted** or **Rejected**. If accepted, the mev-commit node will send a signed pre-confirmation to the bidders.
 
 The API is implemented using gRPC framework. This allows two types of operations:
 
 ### RPC API
 
-Users can find the protobuf file in the [repository](https://github.com/primevprotocol/mev-commit/blob/main/rpc/providerapi/v1/providerapi.proto). This can be used to generate the client for the RPC in the language of your choice. The go client is already generated in the repository. For other languagues, please follow the instructions in the [grpc documentation](https://grpc.io/docs/languages/) to generate them.
+Bidders can find the protobuf file in the [repository](https://github.com/primevprotocol/mev-commit/blob/main/rpc/providerapi/v1/providerapi.proto). This can be used to generate the client for the RPC in the language of your choice. The go client is already generated in the repository. For other languagues, please follow the instructions in the [grpc documentation](https://grpc.io/docs/languages/) to generate them.
 
 There are two main APIs
 ```proto
@@ -49,15 +49,15 @@ The same API is also available on the HTTP port configured on the node. Please g
 
 An [example client](https://github.com/primevprotocol/mev-commit/tree/main/examples/provideremulator) is implemented in the repository. This is mainly to demostrate how to write the client integrated in the provider's environment. The client blindly accepts each bid that it receives, however the provider needs to implement custom logic here to make the decision.
 
-## Users
+## Bidders
 
-Users will use the `user` role of the mev-commit software to run their nodes. With this role, the node provides the **User API** to submit bids to the network. The mev-commit node will sign the bid before it sends it to different providers that are accepting bids. On the response, users will get pre-confirmations from the providers if the bid is accepted. This is a streaming response and users are expected to keep the connection alive till all the preconfirmations are received by the node.
+Bidders will use the `bidder` role of the mev-commit software to run their nodes. With this role, the node provides the **Bidder API** to submit bids to the network. The mev-commit node will sign the bid before it sends it to different providers that are accepting bids. On the response, bidders will get pre-confirmations from the providers if the bid is accepted. This is a streaming response and bidders are expected to keep the connection alive till all the preconfirmations are received by the node.
 
 The API is implemented using gRPC framework. This allows two types of operations:
 
 ### RPC API
 
-Users can find the protobuf file in the [repository](https://github.com/primevprotocol/mev-commit/blob/main/rpc/userapi/v1/userapi.proto). This can be used to generate the client for the RPC in the language of your choice. The go client is already generated in the repository. For other languagues, please follow the instructions in the [grpc documentation](https://grpc.io/docs/languages/) to generate them.
+Bidders can find the protobuf file in the [repository](https://github.com/primevprotocol/mev-commit/blob/main/rpc/bidderapi/v1/bidderapi.proto). This can be used to generate the client for the RPC in the language of your choice. The go client is already generated in the repository. For other languagues, please follow the instructions in the [grpc documentation](https://grpc.io/docs/languages/) to generate them.
 
 The API available is:
 ```proto
@@ -85,8 +85,8 @@ message PreConfirmation {
 
 ### HTTP API
 
-The same API is also available on the HTTP port configured on the node. Please go through the [API docs](https://mev-commit-docs.s3.amazonaws.com/user.html) to understand the usage.
+The same API is also available on the HTTP port configured on the node. Please go through the [API docs](https://mev-commit-docs.s3.amazonaws.com/bidder.html) to understand the usage.
 
-An [example CLI application](https://github.com/primevprotocol/mev-commit/tree/main/examples/usercli) is implemented in the repository. This is mainly to demostrate how to integrate with the RPC API.
+An [example CLI application](https://github.com/primevprotocol/mev-commit/tree/main/examples/biddercli) is implemented in the repository. This is mainly to demostrate how to integrate with the RPC API.
 
 

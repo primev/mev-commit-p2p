@@ -2,7 +2,7 @@
 
 ## Using the CLI
 
-mev-commit software is a CLI program that needs to be run by the users in their own environments. The CLI has two commands mainly. You can run the main command with `-h`/`--help` option to see the available commands.
+mev-commit software is a CLI program that needs to be run by the bidders in their own environments. The CLI has two commands mainly. You can run the main command with `-h`/`--help` option to see the available commands.
 
 ```
 ❯ mev-commit -h
@@ -25,7 +25,7 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ```
 
-Users can use any existing ECDSA private key or create one using the `create-key` command. This key is used to derive the ethereum address of the node taking part in the network.
+Bidders can use any existing ECDSA private key or create one using the `create-key` command. This key is used to derive the ethereum address of the node taking part in the network.
 
 ```
 ❯ mev-commit create-key -h
@@ -39,7 +39,7 @@ OPTIONS:
    --help, -h  show help
 ```
 
-In order to run a node, users need to create a configuration file in the YAML format. Example config files can be found in the [config](https://github.com/primevprotocol/mev-commit/tree/main/config) folder. The important options are defined below:
+In order to run a node, bidders need to create a configuration file in the YAML format. Example config files can be found in the [config](https://github.com/primevprotocol/mev-commit/tree/main/config) folder. The important options are defined below:
 
 ```yaml
 # Path to private key file.
@@ -74,7 +74,7 @@ bootnodes:
 expose_provider_api: false
 ```
 
-Place this config file in some folder. It is advised to create a new `.mev-commit` folder in the home directory and place it there. Once this is done, users can start the node using the `start` command.
+Place this config file in some folder. It is advised to create a new `.mev-commit` folder in the home directory and place it there. Once this is done, bidders can start the node using the `start` command.
 
 ```
 ❯ mev-commit start -h
@@ -91,4 +91,4 @@ OPTIONS:
 
 ## Docker
 
-Optionally users can use the docker images to run the client in their docker environment. You need to make sure the node is able to communicate with provider/user nodes.
+Optionally bidders can use the docker images to run the client in their docker environment. You need to make sure the node is able to communicate with provider/bidder nodes.

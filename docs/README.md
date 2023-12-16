@@ -4,9 +4,9 @@
 Introducing mev-commit, a peer-to-peer (P2P) networking software that serves as a conduit for real-time communication with execution providers. mev-commit enables MEV actors to join and utilize a P2P network for the exchange of execution bids and commitments, enriching the transaction execution experience by allowing for granular specification of execution needs and receiving real-time commitments.
 
 ## Actors
-The roles of actors within this p2p ecosystem are defined with respect to other actors. A list of possible actors is given below. A good way to interpret them is to observe a given actors' relative placement in the diagram shown below. For example, an MEV Searcher (Transaction Originator) is a user to a Sequencer, and however, that same sequencer can be a user to a block builder. Thus, it's best to think of the roles of actors from the perspective of the MEV Supply Chain. To the left of the diagram are users who source MEV; and to the right of the diagram, are asset holders that help users actualize their MEV. These asset holders are providers in the p2p ecosystem. 
+The roles of actors within this p2p ecosystem are defined with respect to other actors. A list of possible actors is given below. A good way to interpret them is to observe a given actors' relative placement in the diagram shown below. For example, an MEV Searcher (Transaction Originator) is a bidder to a Sequencer, and however, that same sequencer can be a bidder to a block builder. Thus, it's best to think of the roles of actors from the perspective of the MEV Supply Chain. To the left of the diagram are bidders who source MEV; and to the right of the diagram, are asset holders that help bidders actualize their MEV. These asset holders are providers in the p2p ecosystem. 
 
-Traditionally, information only moved to the right in this supply chain, from users to providers. With our P2P network, we're allowing information about how the MEV is actualized to flow from providers back to users, along with cryptographic commitments that strengthen the value of information exchange.
+Traditionally, information only moved to the right in this supply chain, from bidders to providers. With our P2P network, we're allowing information about how the MEV is actualized to flow from providers back to bidders, along with cryptographic commitments that strengthen the value of information exchange.
 
 ![](mev-supply-chain.png)
 
@@ -14,9 +14,9 @@ Traditionally, information only moved to the right in this supply chain, from us
 
 Providers of execution services (**Block builders, Rollup Sequencers)**
 
-**Users**
+**Bidders**
 
-Users of execution services (**MEV searchers, AA bundlers, L2s, and other blockspace consumers)**
+Bidders of execution services (**MEV searchers, AA bundlers, L2s, and other blockspace consumers)**
 
 ## Network Topology
 
@@ -24,7 +24,7 @@ The network topology we will be releasing is as follows:
 
 <img src="topology.png" alt="Topology" width="500" height="500"/>
 
-Users will connect to providers, each of these nodes will have access to a bootnode for network startup. Providers will also be able to run gateway nodes to allow users to send bids directly to an RPC endpoint under a provider URL.
+Bidders will connect to providers, each of these nodes will have access to a bootnode for network startup. Providers will also be able to run gateway nodes to allow bidders to send bids directly to an RPC endpoint under a provider URL.
 
 ## Bids and Privacy
 

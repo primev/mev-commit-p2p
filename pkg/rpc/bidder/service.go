@@ -1,4 +1,4 @@
-package userapi
+package bidderapi
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/userregistry"
+	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -91,7 +91,7 @@ func (s *Service) RegisterStake(
 	if !success {
 		return nil, ErrInvalidAmount
 	}
-	err := s.registryContract.RegisterUser(ctx, amount)
+	err := s.registryContract.RegisterBidder(ctx, amount)
 	if err != nil {
 		return nil, err
 	}

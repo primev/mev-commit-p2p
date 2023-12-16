@@ -361,7 +361,7 @@ var ProviderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "userAmount",
+    "name": "bidderAmount",
     "outputs": [
       {
         "internalType": "uint256",
@@ -400,7 +400,7 @@ var ProviderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "withdrawUserAmount",
+    "name": "withdrawBidderAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -423,7 +423,7 @@ var PreConfJson = `
       },
       {
         "internalType": "address",
-        "name": "_userRegistry",
+        "name": "_bidderRegistry",
         "type": "address"
       },
       {
@@ -1119,21 +1119,21 @@ var PreConfJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "newUserRegistry",
+        "name": "newBidderRegistry",
         "type": "address"
       }
     ],
-    "name": "updateUserRegistry",
+    "name": "updateBidderRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "userRegistry",
+    "name": "bidderRegistry",
     "outputs": [
       {
-        "internalType": "contract IUserRegistry",
+        "internalType": "contract IBidderRegistry",
         "name": "",
         "type": "address"
       }
@@ -1241,7 +1241,7 @@ var PreConfJson = `
 ]
 `
 
-var UserRegistryJson = `
+var BidderRegistryJson = `
 [
   {
     "inputs": [
@@ -1318,7 +1318,7 @@ var UserRegistryJson = `
         "type": "uint256"
       }
     ],
-    "name": "UserRegistered",
+    "name": "BidderRegistered",
     "type": "event"
   },
   {
@@ -1570,7 +1570,7 @@ var UserRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "userRegistered",
+    "name": "bidderRegistered",
     "outputs": [
       {
         "internalType": "bool",
@@ -1589,7 +1589,7 @@ var UserRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "userStakes",
+    "name": "bidderStakes",
     "outputs": [
       {
         "internalType": "uint256",

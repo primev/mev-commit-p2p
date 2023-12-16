@@ -26,7 +26,7 @@ services:
     networks:
       - primev_net
 
-  user:
+  bidder:
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,7 +45,7 @@ services:
 volumes:
   bootnode-keys:
   provider-keys:
-  user-keys:
+  bidder-keys:
 
 networks:
   primev_net:

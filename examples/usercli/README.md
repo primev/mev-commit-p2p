@@ -1,8 +1,8 @@
-# User CLI
-User CLI is a command-line tool used to interact with a gRPC user server.
+# Bidder CLI
+Bidder CLI is a command-line tool used to interact with a gRPC bidder server.
 
 ## Usage
-User CLI can be used with the following commands:
+Bidder CLI can be used with the following commands:
 
 ### 1. Send Bid
 Used to send a bid.
@@ -15,7 +15,7 @@ bidder-cli send-bid --txhash <transaction_hash> --amount <bid_amount> --block <b
 * `--block`: Block number.
 
 ### 2. Check Status
-Used to check the status of the gRPC user server.
+Used to check the status of the gRPC bidder server.
 
 ```bash
 bidder-cli status
@@ -37,7 +37,7 @@ log_fmt: "text"
 log_level: "info"
 ```
 
-* `server_address`: The address and port of the gRPC user server.
+* `server_address`: The address and port of the gRPC bidder server.
 * `log_fmt`: Log format (text or json).
 * `log_level`: Log level (debug, info, warn, error).
 

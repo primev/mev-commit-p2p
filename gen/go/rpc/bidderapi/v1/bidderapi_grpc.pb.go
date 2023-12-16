@@ -35,15 +35,15 @@ type BidderClient interface {
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (Bidder_SendBidClient, error)
 	// RegisterStake
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
+	// RegisterStake is called by the bidder to register its stake in the bidder provider_registry.
 	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
+	// GetStake is called by the bidder to get its stake in the bidder provider_registry.
 	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
+	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder provider_registry.
 	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 }
 
@@ -124,15 +124,15 @@ type BidderServer interface {
 	SendBid(*Bid, Bidder_SendBidServer) error
 	// RegisterStake
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
+	// RegisterStake is called by the bidder to register its stake in the bidder provider_registry.
 	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
+	// GetStake is called by the bidder to get its stake in the bidder provider_registry.
 	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
+	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder provider_registry.
 	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	mustEmbedUnimplementedBidderServer()
 }

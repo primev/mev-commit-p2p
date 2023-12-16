@@ -8,7 +8,7 @@ RUN cd integrationtest/bidder && \
 
 FROM alpine:latest
 
-COPY --from=builder /app/integrationtest/bidder/user-emulator /app/bidder-emulator
+COPY --from=builder /app/integrationtest/bidder/bidder-emulator /app/bidder-emulator
 COPY --from=builder /app/integrationtest/bidder/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
