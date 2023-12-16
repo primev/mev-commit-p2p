@@ -16,8 +16,8 @@ const (
 	PeerTypeBootnode PeerType = iota
 	// PeerTypeProvider is a provider node
 	PeerTypeProvider
-	// PeerTypeUser is a user node
-	PeerTypeUser
+	// PeerTypeBidder is a bidder node
+	PeerTypeBidder
 )
 
 func (pt PeerType) String() string {
@@ -26,8 +26,8 @@ func (pt PeerType) String() string {
 		return "bootnode"
 	case PeerTypeProvider:
 		return "provider"
-	case PeerTypeUser:
-		return "user"
+	case PeerTypeBidder:
+		return "bidder"
 	default:
 		return "unknown"
 	}
@@ -39,8 +39,8 @@ func FromString(str string) PeerType {
 		return PeerTypeBootnode
 	case "provider":
 		return PeerTypeProvider
-	case "user":
-		return PeerTypeUser
+	case "bidder":
+		return PeerTypeBidder
 	default:
 		return -1
 	}

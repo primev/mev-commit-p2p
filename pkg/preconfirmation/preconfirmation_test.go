@@ -98,7 +98,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		client := p2p.Peer{
 			EthAddress: common.HexToAddress("0x1"),
-			Type:       p2p.PeerTypeUser,
+			Type:       p2p.PeerTypeBidder,
 		}
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),

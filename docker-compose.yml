@@ -33,9 +33,9 @@ services:
     depends_on:
       - bootnode
     environment:
-      - NODE_TYPE=user
+      - NODE_TYPE=bidder
     volumes:
-      - user-keys:/keys
+      - bidder-keys:/keys
     networks:
       - primev_net
     ports:

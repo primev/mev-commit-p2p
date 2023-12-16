@@ -28,7 +28,7 @@ OPTIONS:
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
 
-# Type of peer. Options are provider and user.
+# Type of peer. Options are provider and bidder.
 peer_type: provider
 
 # Port used for P2P traffic. If not configured, 13522 is the default.

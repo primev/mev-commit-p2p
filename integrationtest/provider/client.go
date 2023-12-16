@@ -68,7 +68,7 @@ func (b *ProviderClient) CheckAndStake() error {
 	}
 
 	if stakedAmt.Cmp(big.NewInt(0)) > 0 {
-		b.logger.Error("user already staked")
+		b.logger.Error("bidder already staked")
 		return nil
 	}
 

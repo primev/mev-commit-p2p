@@ -331,7 +331,7 @@ var ProviderRegistryJson = `
       },
       {
         "internalType": "address payable",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       }
     ],
@@ -396,7 +396,7 @@ var ProviderRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       }
     ],
@@ -1270,7 +1270,7 @@ var UserRegistryJson = `
       {
         "indexed": true,
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       },
       {
@@ -1308,7 +1308,7 @@ var UserRegistryJson = `
       {
         "indexed": true,
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       },
       {
@@ -1329,7 +1329,7 @@ var UserRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       }
     ],
@@ -1491,7 +1491,7 @@ var UserRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       },
       {
@@ -1611,7 +1611,7 @@ var UserRegistryJson = `
     "inputs": [
       {
         "internalType": "address payable",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       }
     ],
@@ -1637,7 +1637,7 @@ var UserRegistryJson = `
     "inputs": [
       {
         "internalType": "address payable",
-        "name": "user",
+        "name": "bidder",
         "type": "address"
       }
     ],

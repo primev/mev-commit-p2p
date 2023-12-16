@@ -232,17 +232,17 @@ services:
           }
         ]
 
-  user-1:
+  bidder-1:
     build:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: user
+        node_type: bidder
     restart: always
     depends_on:
       - bootnode
     volumes:
-      - ./integrationtest/keys/user1:/key
+      - ./integrationtest/keys/bidder1:/key
     networks:
       - primev_net
     ports:
@@ -268,17 +268,17 @@ services:
           }
         ]
 
-  user-emulator-1:
+  bidder-emulator-1:
     build:
       context: .
-      dockerfile: ./integrationtest/user/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
-      - user-1
+      - bidder-1
     env_file:
       - integrationtest/.env
     environment:
-      - USER_IP=user-1:13524
+      - BIDDER_IP=bidder-1:13524
     networks:
       - primev_net
     ports:
@@ -300,17 +300,17 @@ services:
           }
         ]
 
-  user-2:
+  bidder-2:
     build:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: user
+        node_type: bidder
     restart: always
     depends_on:
       - bootnode
     volumes:
-      - ./integrationtest/keys/user2:/key
+      - ./integrationtest/keys/bidder2:/key
     networks:
       - primev_net
     ports:
@@ -335,17 +335,17 @@ services:
           }
         ]
 
-  user-emulator-2:
+  bidder-emulator-2:
     build:
       context: .
-      dockerfile: ./integrationtest/user/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
-      - user-2
+      - bidder-2
     env_file:
       - integrationtest/.env
     environment:
-      - USER_IP=user-2:13524
+      - BIDDER_IP=bidder-2:13524
     networks:
       - primev_net
     ports:
@@ -366,17 +366,17 @@ services:
           }
         ]
 
-  user-3:
+  bidder-3:
     build:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: user
+        node_type: bidder
     restart: always
     depends_on:
       - bootnode
     volumes:
-      - ./integrationtest/keys/user3:/key
+      - ./integrationtest/keys/bidder3:/key
     networks:
       - primev_net
     ports:
@@ -401,17 +401,17 @@ services:
           }
         ]
 
-  user-emulator-3:
+  bidder-emulator-3:
     build:
       context: .
-      dockerfile: ./integrationtest/user/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
-      - user-3
+      - bidder-3
     env_file:
       - integrationtest/.env
     environment:
-      - USER_IP=user-3:13524
+      - BIDDER_IP=bidder-3:13524
     networks:
       - primev_net
     ports:
@@ -432,17 +432,17 @@ services:
           }
         ]
 
-  user-4:
+  bidder-4:
     build:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: user
+        node_type: bidder
     restart: always
     depends_on:
       - bootnode
     volumes:
-      - ./integrationtest/keys/user4:/key
+      - ./integrationtest/keys/bidder4:/key
     networks:
       - primev_net
     ports:
@@ -467,17 +467,17 @@ services:
           }
         ]
 
-  user-emulator-4:
+  bidder-emulator-4:
     build:
       context: .
-      dockerfile: ./integrationtest/user/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
-      - user-4
+      - bidder-4
     env_file:
       - integrationtest/.env
     environment:
-      - USER_IP=user-4:13524
+      - BIDDER_IP=bidder-4:13524
     networks:
       - primev_net
     ports:
@@ -498,17 +498,17 @@ services:
           }
         ]
 
-  user-5:
+  bidder-5:
     build:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: user
+        node_type: bidder
     restart: always
     depends_on:
       - bootnode
     volumes:
-      - ./integrationtest/keys/user5:/key
+      - ./integrationtest/keys/bidder5:/key
     networks:
       - primev_net
     ports:
@@ -533,17 +533,17 @@ services:
           }
         ]
 
-  user-emulator-5:
+  bidder-emulator-5:
     build:
       context: .
-      dockerfile: ./integrationtest/user/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
-      - user-5
+      - bidder-5
     env_file:
       - integrationtest/.env
     environment:
-      - USER_IP=user-5:13524
+      - BIDDER_IP=bidder-5:13524
     networks:
       - primev_net
     ports:

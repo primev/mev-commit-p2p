@@ -8,8 +8,8 @@ RUN cd integrationtest/bidder && \
 
 FROM alpine:latest
 
-COPY --from=builder /app/integrationtest/user/user-emulator /app/user-emulator
-COPY --from=builder /app/integrationtest/user/entrypoint.sh /entrypoint.sh
+COPY --from=builder /app/integrationtest/bidder/user-emulator /app/bidder-emulator
+COPY --from=builder /app/integrationtest/bidder/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 EXPOSE 8080

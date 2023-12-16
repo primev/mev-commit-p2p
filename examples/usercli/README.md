@@ -8,7 +8,7 @@ User CLI can be used with the following commands:
 Used to send a bid.
 
 ```bash
-user-cli send-bid --txhash <transaction_hash> --amount <bid_amount> --block <block_number>
+bidder-cli send-bid --txhash <transaction_hash> --amount <bid_amount> --block <block_number>
 ```
 * `--txhash`: Transaction hash.
 * `--amount`: Bid amount.
@@ -18,14 +18,14 @@ user-cli send-bid --txhash <transaction_hash> --amount <bid_amount> --block <blo
 Used to check the status of the gRPC user server.
 
 ```bash
-user-cli status
+bidder-cli status
 ```
 
 ### 3. Send Random Bid
 Used to send a random bid.
 
 ```bash
-user-cli send-rand-bid
+bidder-cli send-rand-bid
 ```
 
 ## Configuration

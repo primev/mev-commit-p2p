@@ -192,7 +192,7 @@ func TestRegistryContract(t *testing.T) {
 
 		isRegistered := registryContract.CheckUserRegistered(context.Background(), address)
 		if !isRegistered {
-			t.Fatalf("expected user to be registered")
+			t.Fatalf("expected bidder to be registered")
 		}
 	})
 }

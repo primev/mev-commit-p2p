@@ -47,7 +47,7 @@ type topologyResponse struct {
 func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 	logger := d.logger.With("method", "handleTopology")
 	providers := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
-	users := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeUser})
+	users := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBidder})
 
 	topoResp := topologyResponse{
 		Self:           d.p2p.Self(),

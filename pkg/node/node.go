@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
-	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/registry"
@@ -27,8 +27,8 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	"github.com/primevprotocol/mev-commit/pkg/register"
+	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
-	userapi "github.com/primevprotocol/mev-commit/pkg/rpc/user"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
@@ -184,7 +184,7 @@ func NewNode(opts *Options) (*Node, error) {
 			// Only register handler for provider
 			p2pSvc.AddProtocol(preconfProto.Protocol())
 
-		case p2p.PeerTypeUser.String():
+		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
 				topo,
 				p2pSvc,
@@ -195,13 +195,13 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 
-			userAPI := userapi.NewService(
+			bidderAPI := bidderapi.NewService(
 				preconfProto,
 				ownerEthAddress,
 				userRegistry,
-				opts.Logger.With("component", "userapi"),
+				opts.Logger.With("component", "bidderapi"),
 			)
-			userapiv1.RegisterUserServer(grpcServer, userAPI)
+			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)
 		}
 
 		started := make(chan struct{})
@@ -240,10 +240,10 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.Error("failed to register provider handler", "err", err)
 				return nil, err
 			}
-		case p2p.PeerTypeUser.String():
-			err := userapiv1.RegisterUserHandler(bgCtx, gwMux, grpcConn)
+		case p2p.PeerTypeBidder.String():
+			err := bidderapiv1.RegisterBidderHandler(bgCtx, gwMux, grpcConn)
 			if err != nil {
-				opts.Logger.Error("failed to register user handler", "err", err)
+				opts.Logger.Error("failed to register bidder handler", "err", err)
 				return nil, err
 			}
 		}

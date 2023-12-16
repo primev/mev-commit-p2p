@@ -51,7 +51,7 @@ func (t *topology) Connected(p p2p.Peer) {
 	t.add(p)
 
 	if t.announcer != nil {
-		// Whether its a provider or user, we want to broadcast the provider peers
+		// Whether its a provider or bidder, we want to broadcast the provider peers
 		peersToBroadcast := t.GetPeers(Query{Type: p2p.PeerTypeProvider})
 		var underlays []p2p.PeerInfo
 		for _, peer := range peersToBroadcast {
@@ -78,8 +78,8 @@ func (t *topology) Connected(p p2p.Peer) {
 
 		if p.Type == p2p.PeerTypeProvider {
 			t.logger.Info("provider connected broadcasting to previous users", "peer", p)
-			// If the peer is a provider, we want to broadcast to the user peers
-			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeUser})
+			// If the peer is a provider, we want to broadcast to the bidder peers
+			peersToBroadcastTo := t.GetPeers(Query{Type: p2p.PeerTypeBidder})
 			providerUnderlay, err := t.addressbook.GetPeerInfo(p)
 			if err != nil {
 				t.logger.Error("failed to get peer info", "err", err, "peer", p)
@@ -107,7 +107,7 @@ func (t *topology) add(p p2p.Peer) {
 	switch p.Type {
 	case p2p.PeerTypeProvider:
 		t.providers[p.EthAddress] = p
-	case p2p.PeerTypeUser:
+	case p2p.PeerTypeBidder:
 		t.users[p.EthAddress] = p
 	}
 }
@@ -121,7 +121,7 @@ func (t *topology) Disconnected(p p2p.Peer) {
 	switch p.Type {
 	case p2p.PeerTypeProvider:
 		delete(t.providers, p.EthAddress)
-	case p2p.PeerTypeUser:
+	case p2p.PeerTypeBidder:
 		delete(t.users, p.EthAddress)
 	}
 }
@@ -143,7 +143,7 @@ func (t *topology) GetPeers(q Query) []p2p.Peer {
 		for _, p := range t.providers {
 			peers = append(peers, p)
 		}
-	case p2p.PeerTypeUser:
+	case p2p.PeerTypeBidder:
 		for _, p := range t.users {
 			peers = append(peers, p)
 		}

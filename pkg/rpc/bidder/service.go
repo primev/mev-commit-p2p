@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	"log/slog"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	userapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/userregistry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
@@ -17,7 +17,7 @@ import (
 )
 
 type Service struct {
-	userapiv1.UnimplementedUserServer
+	bidderapiv1.UnimplementedBidderServer
 	sender           PreconfSender
 	owner            common.Address
 	registryContract registrycontract.Interface
@@ -43,10 +43,10 @@ type PreconfSender interface {
 }
 
 func (s *Service) SendBid(
-	bid *userapiv1.Bid,
-	srv userapiv1.User_SendBidServer,
+	bid *bidderapiv1.Bid,
+	srv bidderapiv1.Bidder_SendBidServer,
 ) error {
-	// timeout to prevent hanging of user node if provider node is not responding
+	// timeout to prevent hanging of bidder node if provider node is not responding
 	ctx, cancel := context.WithTimeout(srv.Context(), 10*time.Second)
 	defer cancel()
 
@@ -62,14 +62,15 @@ func (s *Service) SendBid(
 	}
 
 	for resp := range respC {
-		err := srv.Send(&userapiv1.PreConfirmation{
-			TxHash:                   resp.Bid.TxHash,
-			Amount:                   resp.Bid.BidAmt.Int64(),
-			BlockNumber:              resp.Bid.BlockNumber.Int64(),
-			BidDigest:                hex.EncodeToString(resp.Bid.Digest),
-			BidSignature:             hex.EncodeToString(resp.Bid.Signature),
-			PreConfirmationDigest:    hex.EncodeToString(resp.Digest),
-			PreConfirmationSignature: hex.EncodeToString(resp.Signature),
+		b := resp.Bid
+		err := srv.Send(&bidderapiv1.Commitment{
+			TxHash:               b.TxHash,
+			BidAmount:            b.BidAmt.Int64(),
+			BlockNumber:          b.BlockNumber.Int64(),
+			ReceivedBidDigest:    hex.EncodeToString(b.Digest),
+			ReceivedBidSignature: hex.EncodeToString(b.Signature),
+			CommitmentDigest:     hex.EncodeToString(resp.Digest),
+			CommitmentSignature:  hex.EncodeToString(resp.Signature),
 		})
 		if err != nil {
 			s.logger.Error("error sending preConfirmation", "err", err)
@@ -84,8 +85,8 @@ var ErrInvalidAmount = errors.New("invalid amount for stake")
 
 func (s *Service) RegisterStake(
 	ctx context.Context,
-	stake *userapiv1.StakeRequest,
-) (*userapiv1.StakeResponse, error) {
+	stake *bidderapiv1.StakeRequest,
+) (*bidderapiv1.StakeResponse, error) {
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
 		return nil, ErrInvalidAmount
@@ -100,29 +101,29 @@ func (s *Service) RegisterStake(
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetStake(
 	ctx context.Context,
-	_ *userapiv1.EmptyMessage,
-) (*userapiv1.StakeResponse, error) {
+	_ *bidderapiv1.EmptyMessage,
+) (*bidderapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }
 
 func (s *Service) GetMinStake(
 	ctx context.Context,
-	_ *userapiv1.EmptyMessage,
-) (*userapiv1.StakeResponse, error) {
+	_ *bidderapiv1.EmptyMessage,
+) (*bidderapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetMinStake(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &userapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }

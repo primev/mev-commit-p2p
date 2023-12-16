@@ -37,7 +37,7 @@ func (c connectionAllowance) isDeny() bool {
 	return !(c == Accept || c == Undecided)
 }
 
-// make sure the connections are between provider<>provider, provider<>user!
+// make sure the connections are between provider<>provider, provider<>bidder!
 type ConnectionGater interface {
 	// InterceptPeerDial intercepts peer dialing
 	InterceptPeerDial(p peer.ID) (allow bool)
@@ -107,7 +107,7 @@ func (cg *connectionGater) checkPeerStake(p peer.ID) connectionAllowance {
 
 	// possible s<>s connection
 	// ! s<>s connection
-	if (cg.selfType == p2p.PeerTypeUser) && !enoughStake {
+	if (cg.selfType == p2p.PeerTypeBidder) && !enoughStake {
 		return DenyUserToUser
 	}
 

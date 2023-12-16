@@ -14,7 +14,7 @@ The topology of the network as seen by the mev-commit node can be obtained on th
       "/ip4/172.28.0.4/tcp/13522"
     ],
     "Ethereum Address": "0xB61545548948E9299Ce6eb4C01F2C31FcE6c9E83",
-    "Peer Type": "user",
+    "Peer Type": "bidder",
     "Underlay": "16Uiu2HAmNMdhYW6KdECZSNoCseM4cwKbV72BgCYZMz9SbMmxWScM"
   },
   "connected_peers": {

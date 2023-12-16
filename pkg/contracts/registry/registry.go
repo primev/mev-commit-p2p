@@ -28,7 +28,7 @@ type Interface interface {
 	GetStake(ctx context.Context, address common.Address) (*big.Int, error)
 	// GetMinStake returns the minimum stake required to register as a provider.
 	GetMinStake(ctx context.Context) (*big.Int, error)
-	// CheckUserRegistred returns true if user is registered
+	// CheckUserRegistred returns true if bidder is registered
 	CheckUserRegistered(ctx context.Context, address common.Address) bool
 }
 

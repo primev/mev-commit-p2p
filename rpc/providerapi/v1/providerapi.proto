@@ -103,17 +103,17 @@ message Bid {
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bidAmount\": 1000000000000000000, \"blockNumber\": 123456, \"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
     pattern: "[a-fA-F0-9]{40}"
   }];
   int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Amount of ETH that the user is willing to pay to the provider for including the transaction in the block."
+    description: "Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block."
   }];
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Max block number that the user wants to include the transaction in."
+    description: "Max block number that the bidder wants to include the transaction in."
   }];
   bytes bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Digest of the bid message signed by the user."
+    description: "Digest of the bid message signed by the bidder."
   }];
 };
 
@@ -127,7 +127,7 @@ message BidResponse {
     example: "{\"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\", \"status\": \"STATUS_ACCEPTED\"}"
   };
   bytes bid_digest = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Digest of the bid message signed by the user."
+    description: "Digest of the bid message signed by the bidder."
   }];
   enum Status {
     STATUS_UNSPECIFIED = 0;
@@ -162,7 +162,7 @@ message TransactionInfo {
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"nonce\": 1234, \"created\": \"2009-11-10 23:00:00 +0000 UTC m=+0.000000001\"}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the user wants to include in the block."
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
     pattern: "[a-fA-F0-9]{40}"
   }];
   int64 nonce = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
@@ -183,7 +183,7 @@ message CancelReq {
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the user wants to cancel."
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to cancel."
     pattern: "[a-fA-F0-9]{40}"
   }];
 };
@@ -198,7 +198,7 @@ message CancelResponse {
     example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"
   };
   string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the user wants to cancel."
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to cancel."
     pattern: "[a-fA-F0-9]{40}"
   }];
 };

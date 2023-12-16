@@ -77,7 +77,7 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 	}
 }
 
-// SendBid is meant to be called by the user to construct and send bids to the provider.
+// SendBid is meant to be called by the bidder to construct and send bids to the provider.
 // It takes the txHash, the bid amount in wei and the maximum valid block number.
 // It waits for preConfirmations from all providers and then returns.
 // It returns an error if the bid is not valid.
@@ -142,7 +142,7 @@ func (p *Preconfirmation) SendBid(
 
 			_ = providerStream.Close()
 
-			// Process preConfirmation as a user
+			// Process preConfirmation as a bidder
 			_, err = p.signer.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
 				logger.Error("verifying provider signature", "err", err)
@@ -168,16 +168,16 @@ func (p *Preconfirmation) SendBid(
 	return preConfirmations, nil
 }
 
-var ErrInvalidUserTypeForBid = errors.New("invalid user type for bid")
+var ErrInvalidUserTypeForBid = errors.New("invalid bidder type for bid")
 
 // handlebid is the function that is called when a bid is received
-// It is meant to be used by the provider exclusively to read the bid value from the user.
+// It is meant to be used by the provider exclusively to read the bid value from the bidder.
 func (p *Preconfirmation) handleBid(
 	ctx context.Context,
 	peer p2p.Peer,
 	stream p2p.Stream,
 ) error {
-	if peer.Type != p2p.PeerTypeUser {
+	if peer.Type != p2p.PeerTypeBidder {
 		return ErrInvalidUserTypeForBid
 	}
 

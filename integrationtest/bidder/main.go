@@ -17,7 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
+	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -43,25 +43,25 @@ var (
 var (
 	receivedPreconfs = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "mev_commit",
-		Subsystem: "user_emulator",
+		Subsystem: "bidder_emulator",
 		Name:      "total_received_preconfs",
 		Help:      "Total number of preconfs received from mev_commit nodes",
 	})
 	sentBids = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "mev_commit",
-		Subsystem: "user_emulator",
+		Subsystem: "bidder_emulator",
 		Name:      "total_sent_bids",
 		Help:      "Total number of bids sent to mev_commit nodes",
 	})
 	sendBidSuccessDuration = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "mev_commit",
-		Subsystem: "user_emulator",
+		Subsystem: "bidder_emulator",
 		Name:      "send_bid_success_duration",
 		Help:      "Duration of SendBid operation in ms.",
 	})
 	sendBidFailureDuration = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "mev_commit",
-		Subsystem: "user_emulator",
+		Subsystem: "bidder_emulator",
 		Name:      "send_bid_failure_duration",
 		Help:      "Duration of failed SendBid operation in ms.",
 	})
@@ -114,8 +114,8 @@ func main() {
 	}
 	defer conn.Close()
 
-	userClient := pb.NewUserClient(conn)
-	err = checkOrStake(userClient, logger)
+	bidderClient := pb.NewBidderClient(conn)
+	err = checkOrStake(bidderClient, logger)
 	if err != nil {
 		logger.Error("failed to check or stake", "err", err)
 		return
@@ -128,7 +128,7 @@ func main() {
 		go func() {
 			defer wg.Done()
 			for {
-				err = sendBid(userClient, logger, rpcClient)
+				err = sendBid(bidderClient, logger, rpcClient)
 				if err != nil {
 					logger.Error("failed to send bid", "err", err)
 				}
@@ -141,10 +141,10 @@ func main() {
 }
 
 func checkOrStake(
-	userClient pb.UserClient,
+	bidderClient pb.BidderClient,
 	logger *slog.Logger,
 ) error {
-	stakeAmt, err := userClient.GetStake(context.Background(), &pb.EmptyMessage{})
+	stakeAmt, err := bidderClient.GetStake(context.Background(), &pb.EmptyMessage{})
 	if err != nil {
 		logger.Error("failed to get stake amount", "err", err)
 		return err
@@ -163,7 +163,7 @@ func checkOrStake(
 		return nil
 	}
 
-	_, err = userClient.RegisterStake(context.Background(), &pb.StakeRequest{
+	_, err = bidderClient.RegisterStake(context.Background(), &pb.StakeRequest{
 		Amount: "10000000000000000000",
 	})
 	if err != nil {
@@ -177,7 +177,7 @@ func checkOrStake(
 }
 
 func sendBid(
-	userClient pb.UserClient,
+	bidderClient pb.BidderClient,
 	logger *slog.Logger,
 	rpcClient *ethclient.Client,
 ) error {
@@ -214,7 +214,7 @@ func sendBid(
 	logger.Info("sending bid", "bid", bid)
 
 	start := time.Now()
-	rcv, err := userClient.SendBid(context.Background(), bid)
+	rcv, err := bidderClient.SendBid(context.Background(), bid)
 	if err != nil {
 		logger.Error("failed to send bid", "err", err)
 		return err
