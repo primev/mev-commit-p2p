@@ -331,7 +331,7 @@ var ProviderRegistryJson = `
       },
       {
         "internalType": "address payable",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       }
     ],
@@ -396,7 +396,7 @@ var ProviderRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       }
     ],
@@ -614,7 +614,7 @@ var PreConfJson = `
       },
       {
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       },
       {
@@ -728,7 +728,7 @@ var PreConfJson = `
           },
           {
             "internalType": "address",
-            "name": "bidder",
+            "name": "user",
             "type": "address"
           },
           {
@@ -791,7 +791,7 @@ var PreConfJson = `
           },
           {
             "internalType": "address",
-            "name": "bidder",
+            "name": "user",
             "type": "address"
           },
           {
@@ -1270,7 +1270,7 @@ var BidderRegistryJson = `
       {
         "indexed": true,
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       },
       {
@@ -1308,7 +1308,7 @@ var BidderRegistryJson = `
       {
         "indexed": true,
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       },
       {
@@ -1329,7 +1329,7 @@ var BidderRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       }
     ],
@@ -1491,7 +1491,7 @@ var BidderRegistryJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       },
       {
@@ -1611,7 +1611,7 @@ var BidderRegistryJson = `
     "inputs": [
       {
         "internalType": "address payable",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       }
     ],
@@ -1637,7 +1637,7 @@ var BidderRegistryJson = `
     "inputs": [
       {
         "internalType": "address payable",
-        "name": "bidder",
+        "name": "user",
         "type": "address"
       }
     ],
