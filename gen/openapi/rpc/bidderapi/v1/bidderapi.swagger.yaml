@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: User API
+  title: Bidder API
   version: 1.0.0-alpha
   license:
     name: Business Source License 1.1
@@ -10,11 +10,11 @@ consumes:
 produces:
   - application/json
 paths:
-  /v1/user/bid:
+  /v1/bidder/bid:
     post:
       summary: SendBid
-      description: Send a bid to the user mev-commit node.
-      operationId: User_SendBid
+      description: Send a bid to the bidder mev-commit node.
+      operationId: Bidder_SendBid
       responses:
         "200":
           description: A successful response.(streaming responses)
@@ -22,26 +22,26 @@ paths:
             type: object
             properties:
               result:
-                $ref: '#/definitions/v1PreConfirmation'
+                $ref: '#/definitions/v1Commitment'
               error:
                 $ref: '#/definitions/googlerpcStatus'
-            title: Stream result of v1PreConfirmation
+            title: Stream result of v1Commitment
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
       parameters:
         - name: body
-          description: Unsigned bid message from users to the user mev-commit node.
+          description: Unsigned bid message from bidders to the bidder mev-commit node.
           in: body
           required: true
           schema:
             $ref: '#/definitions/rpcseacherapiv1Bid'
-  /v1/user/get_min_stake:
+  /v1/bidder/get_min_stake:
     get:
       summary: GetMinStake
-      description: GetMinStake is called by the user to get the minimum stake required to be in the user registry.
-      operationId: User_GetMinStake
+      description: GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
+      operationId: Bidder_GetMinStake
       responses:
         "200":
           description: A successful response.
@@ -51,11 +51,11 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
-  /v1/user/get_stake:
+  /v1/bidder/get_stake:
     get:
       summary: GetStake
-      description: GetStake is called by the user to get its stake in the user registry.
-      operationId: User_GetStake
+      description: GetStake is called by the bidder to get its stake in the bidder registry.
+      operationId: Bidder_GetStake
       responses:
         "200":
           description: A successful response.
@@ -65,11 +65,11 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
-  /v1/user/register_stake/{amount}:
+  /v1/bidder/register_stake/{amount}:
     post:
       summary: RegisterStake
-      description: RegisterStake is called by the user to register its stake in the user registry.
-      operationId: User_RegisterStake
+      description: RegisterStake is called by the bidder to register its stake in the bidder registry.
+      operationId: Bidder_RegisterStake
       responses:
         "200":
           description: A successful response.
@@ -113,17 +113,17 @@ definitions:
     properties:
       txHash:
         type: string
-        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
         pattern: '[a-fA-F0-9]{40}'
       amount:
         type: string
         format: int64
-        description: Amount of ETH that the user is willing to pay to the provider for including the transaction in the block.
+        description: Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block.
       blockNumber:
         type: string
         format: int64
-        description: Max block number that the user wants to include the transaction in.
-    description: Unsigned bid message from users to the user mev-commit node.
+        description: Max block number that the bidder wants to include the transaction in.
+    description: Unsigned bid message from bidders to the bidder mev-commit node.
     title: Bid message
     required:
       - txHash
@@ -136,32 +136,32 @@ definitions:
     properties:
       amount:
         type: string
-    description: Get staked amount for user in the user registry.
+    description: Get staked amount for bidder in the bidder registry.
     title: Stake response
-  v1PreConfirmation:
+  v1Commitment:
     type: object
     properties:
       txHash:
         type: string
-        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
         pattern: '[a-fA-F0-9]{40}'
-      amount:
+      bidAmount:
         type: string
         format: int64
-        description: Amount of ETH that the user has agreed to pay to the provider for including the transaction in the block.
+        description: Amount of ETH that the bidder has agreed to pay to the provider for including the transaction in the block.
       blockNumber:
         type: string
         format: int64
-        description: Max block number that the user wants to include the transaction in.
-      bidDigest:
+        description: Max block number that the bidder wants to include the transaction in.
+      receivedBidDigest:
         type: string
-        description: Hex string encoding of digest of the bid message signed by the user.
-      bidSignature:
+        description: Hex string encoding of digest of the bid message signed by the bidder.
+      receivedBidSignature:
         type: string
-        description: Hex string encoding of signature of the user that sent this bid.
-      preConfirmationDigest:
+        description: Hex string encoding of signature of the bidder that sent this bid.
+      commitmentDigest:
         type: string
-        description: Hex string encoding of digest of the pre-confirmation.
-      preConfirmationSignature:
+        description: Hex string encoding of digest of the commitment.
+      commitmentSignature:
         type: string
-        description: Hex string encoding of signature of the pre-confirmation signed by the provider confirming this transaction.
+        description: Hex string encoding of signature of the commitment signed by the provider confirming this transaction.

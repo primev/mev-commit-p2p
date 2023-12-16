@@ -3,8 +3,8 @@ FROM golang:1.21.1 AS builder
 WORKDIR /app
 COPY . .
 
-RUN cd integrationtest/user && \
-    CGO_ENABLED=0 GOOS=linux go build -o user-emulator main.go
+RUN cd integrationtest/bidder && \
+    CGO_ENABLED=0 GOOS=linux go build -o bidder-emulator main.go
 
 FROM alpine:latest
 

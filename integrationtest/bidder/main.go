@@ -159,7 +159,7 @@ func checkOrStake(
 	}
 
 	if stakedAmt.Cmp(big.NewInt(0)) > 0 {
-		logger.Error("user already staked")
+		logger.Error("bidder already staked")
 		return nil
 	}
 

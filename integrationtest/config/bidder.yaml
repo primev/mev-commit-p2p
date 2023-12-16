@@ -1,5 +1,5 @@
 priv_key_file: /key
-peer_type: user
+peer_type: bidder
 p2p_port: 13522
 http_port: 13523
 rpc_port: 13524

@@ -26,7 +26,7 @@ paths:
             $ref: '#/definitions/googlerpcStatus'
       parameters:
         - name: txHash
-          description: Hex string encoding of the hash of the transaction that the user wants to cancel.
+          description: Hex string encoding of the hash of the transaction that the bidder wants to cancel.
           in: path
           required: true
           type: string
@@ -166,20 +166,20 @@ definitions:
     properties:
       txHash:
         type: string
-        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
         pattern: '[a-fA-F0-9]{40}'
       bidAmount:
         type: string
         format: int64
-        description: Amount of ETH that the user is willing to pay to the provider for including the transaction in the block.
+        description: Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block.
       blockNumber:
         type: string
         format: int64
-        description: Max block number that the user wants to include the transaction in.
+        description: Max block number that the bidder wants to include the transaction in.
       bidDigest:
         type: string
         format: byte
-        description: Digest of the bid message signed by the user.
+        description: Digest of the bid message signed by the bidder.
     description: Signed bid message from users to the provider.
     title: Bid message
     required:
@@ -207,7 +207,7 @@ definitions:
       bidDigest:
         type: string
         format: byte
-        description: Digest of the bid message signed by the user.
+        description: Digest of the bid message signed by the bidder.
       status:
         $ref: '#/definitions/v1BidResponseStatus'
         description: Status of the bid.
@@ -228,7 +228,7 @@ definitions:
     properties:
       txHash:
         type: string
-        description: Hex string encoding of the hash of the transaction that the user wants to cancel.
+        description: Hex string encoding of the hash of the transaction that the bidder wants to cancel.
         pattern: '[a-fA-F0-9]{40}'
     description: Hash of the cancellation transaction request.
     title: Cancel response
@@ -256,7 +256,7 @@ definitions:
     properties:
       txHash:
         type: string
-        description: Hex string encoding of the hash of the transaction that the user wants to include in the block.
+        description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
         pattern: '[a-fA-F0-9]{40}'
       nonce:
         type: string
