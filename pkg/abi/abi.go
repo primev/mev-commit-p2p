@@ -361,7 +361,7 @@ var ProviderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "bidderAmount",
+    "name": "userAmount",
     "outputs": [
       {
         "internalType": "uint256",
@@ -400,7 +400,7 @@ var ProviderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "withdrawBidderAmount",
+    "name": "withdrawUserAmount",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -423,7 +423,7 @@ var PreConfJson = `
       },
       {
         "internalType": "address",
-        "name": "_bidderRegistry",
+        "name": "_userRegistry",
         "type": "address"
       },
       {
@@ -1119,21 +1119,21 @@ var PreConfJson = `
     "inputs": [
       {
         "internalType": "address",
-        "name": "newBidderRegistry",
+        "name": "newUserRegistry",
         "type": "address"
       }
     ],
-    "name": "updateBidderRegistry",
+    "name": "updateUserRegistry",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "bidderRegistry",
+    "name": "userRegistry",
     "outputs": [
       {
-        "internalType": "contract IBidderRegistry",
+        "internalType": "contract IUserRegistry",
         "name": "",
         "type": "address"
       }
@@ -1318,7 +1318,7 @@ var BidderRegistryJson = `
         "type": "uint256"
       }
     ],
-    "name": "BidderRegistered",
+    "name": "UserRegistered",
     "type": "event"
   },
   {
@@ -1570,7 +1570,7 @@ var BidderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "bidderRegistered",
+    "name": "userRegistered",
     "outputs": [
       {
         "internalType": "bool",
@@ -1589,7 +1589,7 @@ var BidderRegistryJson = `
         "type": "address"
       }
     ],
-    "name": "bidderStakes",
+    "name": "userStakes",
     "outputs": [
       {
         "internalType": "uint256",
