@@ -3,8 +3,9 @@ mev-commit is P2P software that creates a network of execution providers and bid
 
 ![](node-architecture.png)
 
-## Quick Build
+## Quick Build (For docker please skip this instruction)
 
+* Install [buf](https://buf.build/docs/installation)
 ```
 buf generate
 go build -o mev-commit ./cmd/main.go
