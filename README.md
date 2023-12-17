@@ -4,9 +4,11 @@ mev-commit is P2P software that creates a network of execution providers and bid
 ![](node-architecture.png)
 
 ## Quick Build
-We've included a build script to allow you to build the whole system locally for and run the integration-tests
-$ sudo chmod +x ./build.sh
-$ ./build.sh start localhost:8545 <DataDog-KEY>
+
+```
+buf generate
+go build -o mev-commit ./cmd/main.go
+```
 
 When prompted, read the values of where the Smart-contracts where deployed on the settlement layer and update the configurations in the integrationtest/config/...yml files.
 
