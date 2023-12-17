@@ -32,12 +32,12 @@ The response to the bidder API is a stream of commitments, an example response i
 ```javascript
 {
     "tx_hash": "transaction_hash15",
-    "amount": "1000",
+    "bid_amount": "1000",
     "block_number": "12345",
-    "bid_digest": "fb77987f64d8efaa93c659e4365e60ba7b1b3013ee12b4c988e3dbd87b76109d",
-    "bid_signature": "65cb64450be1c83e48a3de5565c07d10b69a75c6c463af01ffb20849e777861a3fd07e1415c83f31f1e05cc7b430b4073faf988b3b0a469148e02ccba9fd6d9901",
-    "pre_confirmation_digest": "0f25c2d8adc489d2db535865c70a47ab7eccbbc89ca95b705547c38811712111",
-    "pre_confirmation_signature": "4838b53968be8a4cd4bceee9a8299885546b7d184cfe6390dcb8afd37fec3c1b08f0ce03935afce5b11b9f425434a4b22d01cb4d4dd5f4e5894c699302dbb3ad01"
+    "received_bid_digest": "fb77987f64d8efaa93c659e4365e60ba7b1b3013ee12b4c988e3dbd87b76109d",
+    "received_bid_signature": "65cb64450be1c83e48a3de5565c07d10b69a75c6c463af01ffb20849e777861a3fd07e1415c83f31f1e05cc7b430b4073faf988b3b0a469148e02ccba9fd6d9901",
+    "commitment_digest": "0f25c2d8adc489d2db535865c70a47ab7eccbbc89ca95b705547c38811712111",
+    "commitment_signature": "4838b53968be8a4cd4bceee9a8299885546b7d184cfe6390dcb8afd37fec3c1b08f0ce03935afce5b11b9f425434a4b22d01cb4d4dd5f4e5894c699302dbb3ad01"
 }
 ```
 
