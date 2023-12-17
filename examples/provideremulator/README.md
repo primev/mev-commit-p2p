@@ -1,12 +1,12 @@
 # provider emulator
 
 This example demonstrates the provider-side workflows to interact with their mev-commit
-nodes. The mev-commit node will get bids from different users/providers through the
+nodes. The mev-commit node will get bids from different bidders/providers through the
 p2p protocols. The provider has to use the RPC API to start looking at these bids and then
 make decisions on whether to confirm these bids that it receives.
 
 The confirmed bids need to be sent back to the mev-commit node to send them back to the
-users. This is also done using a separate RPC request. The response is mapped to
+bidders. This is also done using a separate RPC request. The response is mapped to
 the bid hash that it receives.
 
 The typical workflow:

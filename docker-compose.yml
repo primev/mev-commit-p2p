@@ -26,16 +26,16 @@ services:
     networks:
       - primev_net
 
-  user:
+  bidder:
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
       - bootnode
     environment:
-      - NODE_TYPE=user
+      - NODE_TYPE=bidder
     volumes:
-      - user-keys:/keys
+      - bidder-keys:/keys
     networks:
       - primev_net
     ports:
@@ -45,7 +45,7 @@ services:
 volumes:
   bootnode-keys:
   provider-keys:
-  user-keys:
+  bidder-keys:
 
 networks:
   primev_net:

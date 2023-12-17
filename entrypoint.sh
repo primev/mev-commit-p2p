@@ -14,8 +14,8 @@ elif [ "$NODE_TYPE" = "provider" ]; then
     PRIV_KEY_FILE="${KEY_PATH}/provider"
     CONFIG_FILE="${CONFIG_PATH}/provider.yml"
 else
-    PRIV_KEY_FILE="${KEY_PATH}/user"
-    CONFIG_FILE="${CONFIG_PATH}/user.yml"
+    PRIV_KEY_FILE="${KEY_PATH}/bidder"
+    CONFIG_FILE="${CONFIG_PATH}/bidder.yml"
 fi
 
 # Generate the private key based on node type only if it doesn't exist yet

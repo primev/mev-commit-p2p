@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
+	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,8 +39,8 @@ var (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "user-cli"
-	app.Usage = "A CLI tool for interacting with a gRPC user server"
+	app.Name = "bidder-cli"
+	app.Usage = "A CLI tool for interacting with a gRPC bidder server"
 	app.Version = "1.0.0"
 
 	var (
@@ -80,7 +80,7 @@ func main() {
 	app.Commands = []*cli.Command{
 		{
 			Name:  "send-bid",
-			Usage: "Send a bid to the gRPC user server",
+			Usage: "Send a bid to the gRPC bidder server",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:        "txhash",
@@ -110,7 +110,7 @@ func main() {
 				}
 				defer conn.Close()
 
-				client := pb.NewUserClient(conn)
+				client := pb.NewBidderClient(conn)
 
 				bid := &pb.Bid{
 					TxHash:      txHash,
@@ -136,10 +136,10 @@ func main() {
 		{
 			// NOTE: (@iowar) By sending an empty Bid request, the status of the RPC
 			// server is being checked. Instead, a ping request can be defined within
-			// the user proto or a better solution can be found. Seeking the team's
+			// the bidder proto or a better solution can be found. Seeking the team's
 			// opinion on this
 			Name:  "status",
-			Usage: "Check the status of the gRPC user server",
+			Usage: "Check the status of the gRPC bidder server",
 			Action: func(c *cli.Context) error {
 				creds := insecure.NewCredentials()
 				conn, err := grpc.Dial(cfg.ServerAddress, grpc.WithTransportCredentials(creds))
@@ -148,24 +148,24 @@ func main() {
 				}
 				defer conn.Close()
 
-				client := pb.NewUserClient(conn)
+				client := pb.NewBidderClient(conn)
 
 				ctx, cancel := context.WithTimeout(context.Background(), time.Second*7)
 				defer cancel()
 
 				_, err = client.SendBid(ctx, &pb.Bid{})
 				if err != nil {
-					logger.Info("gRPC user server is not reachable", "server", cfg.ServerAddress)
+					logger.Info("gRPC bidder server is not reachable", "server", cfg.ServerAddress)
 					return nil
 				}
 
-				logger.Info("gRPC user server is up and running", "server", cfg.ServerAddress)
+				logger.Info("gRPC bidder server is up and running", "server", cfg.ServerAddress)
 				return nil
 			},
 		},
 		{
 			Name:  "send-rand-bid",
-			Usage: "Send a random bid to the gRPC user server",
+			Usage: "Send a random bid to the gRPC bidder server",
 			Action: func(c *cli.Context) error {
 				randSource := rand.NewSource(time.Now().UnixNano())
 				randGenerator := rand.New(randSource)
@@ -181,7 +181,7 @@ func main() {
 				}
 				defer conn.Close()
 
-				client := pb.NewUserClient(conn)
+				client := pb.NewBidderClient(conn)
 
 				bid := &pb.Bid{
 					TxHash:      txHash,

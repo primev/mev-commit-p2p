@@ -25,9 +25,9 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 	return []p2p.Peer{t.peer}
 }
 
-type testUserStore struct{}
+type testBidderStore struct{}
 
-func (t *testUserStore) CheckUserRegistered(_ context.Context, _ common.Address) bool {
+func (t *testBidderStore) CheckBidderRegistered(_ context.Context, _ common.Address) bool {
 	return true
 }
 
@@ -98,7 +98,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		client := p2p.Peer{
 			EthAddress: common.HexToAddress("0x1"),
-			Type:       p2p.PeerTypeUser,
+			Type:       p2p.PeerTypeBidder,
 		}
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
@@ -124,7 +124,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 		)
 
 		topo := &testTopo{server}
-		us := &testUserStore{}
+		us := &testBidderStore{}
 		proc := &testProcessor{
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}

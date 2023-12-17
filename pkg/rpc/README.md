@@ -2,11 +2,11 @@
 
 ## Overview
 There's two key RPC APIs this software provides:
-- User API
+- Bidder API
 - Execution Provider API
 
-## User API
-- This is the api that takes bids into the mev-commit node that is emulating a user. 
+## Bidder API
+- This is the api that takes bids into the mev-commit node that is emulating a bidder. 
 - The SendBid RPC endpoint will subseqently propegate the Bid after it is signed, to the mev-commit P2P network.
 
 The format for the request payload is as follows:
@@ -28,7 +28,7 @@ Which is the following in JSON Format:
 }
 ```
 
-The response to the user API is a stream of commitments, an example response is shown below:
+The response to the bidder API is a stream of commitments, an example response is shown below:
 ```javascript
 {
     "tx_hash": "transaction_hash15",

@@ -1,5 +1,5 @@
 # mev-commit
-mev-commit is P2P software that creates a network of execution providers and users. Users can broadcast bids to providers and receive commitments from them. A high throughput POA EVM chain settles the bids at the end of a block slot.
+mev-commit is P2P software that creates a network of execution providers and bidders. Bidders can broadcast bids to providers and receive commitments from them. A high throughput POA EVM chain settles the bids at the end of a block slot.
 
 ![](node-architecture.png)
 
@@ -11,7 +11,7 @@ $ ./build.sh start localhost:8545 <DataDog-KEY>
 When prompted, read the values of where the Smart-contracts where deployed on the settlement layer and update the configurations in the integrationtest/config/...yml files.
 
 ## Quickstart
-- An ECDSA private key is required to create an ethereum address for the node as well as to use for the P2P network. Users can add an existing key or create a new key using the `create-key` command.
+- An ECDSA private key is required to create an ethereum address for the node as well as to use for the P2P network. Bidders can add an existing key or create a new key using the `create-key` command.
 ```
 NAME:
    mev-commit create-key - Create a new ECDSA private key and save it to a file
@@ -28,7 +28,7 @@ OPTIONS:
 # Path to private key file.
 priv_key_file: ~/.mev-commit/keys/nodekey
 
-# Type of peer. Options are provider and user.
+# Type of peer. Options are provider and bidder.
 peer_type: provider
 
 # Port used for P2P traffic. If not configured, 13522 is the default.
@@ -114,10 +114,10 @@ To simplify the deployment process, you may utilize Docker to create an isolated
   docker-compose down
   ```
 
-## APIs for Users & Execution Providers
-[Link to Documentation on User and Execution provider API](./pkg/rpc/README.md)
+## APIs for Bidders & Execution Providers
+[Link to Documentation on Bidder and Execution provider API](./pkg/rpc/README.md)
 - This includes: 
-   - the payload for the User API
+   - the payload for the Bidder API
    - The required setup for execution providers to process bids into commitments in their personal infra.
 
 

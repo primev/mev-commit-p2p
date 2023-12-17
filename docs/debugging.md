@@ -1,6 +1,6 @@
 # Debugging
 
-The mev-commit node is still in active development. As a result there is some debugging instrumentation available on the node. In the normal use-cases, the users might not need this, but they can always use this to get more information on the inner-workings of the node. These tools can be accessed on the HTTP API endpoint.
+The mev-commit node is still in active development. As a result there is some debugging instrumentation available on the node. In the normal use-cases, the bidders might not need this, but they can always use this to get more information on the inner-workings of the node. These tools can be accessed on the HTTP API endpoint.
 
 ## Network topology
 
@@ -14,7 +14,7 @@ The topology of the network as seen by the mev-commit node can be obtained on th
       "/ip4/172.28.0.4/tcp/13522"
     ],
     "Ethereum Address": "0xB61545548948E9299Ce6eb4C01F2C31FcE6c9E83",
-    "Peer Type": "user",
+    "Peer Type": "bidder",
     "Underlay": "16Uiu2HAmNMdhYW6KdECZSNoCseM4cwKbV72BgCYZMz9SbMmxWScM"
   },
   "connected_peers": {
@@ -31,4 +31,4 @@ The node also emits a bunch of prometheus metrics. These can be potentially used
 
 ## Pprof endpoints
 
-The pprof endpoints are also accessible on the node on the `/debug/pprof` endpoint. These are mainly used to observe how the node is performing for eg. the memory, CPU usage on the nodes. These are useful only for users who already know how to use them. Explaining them is beyond the scope of this documentation.
+The pprof endpoints are also accessible on the node on the `/debug/pprof` endpoint. These are mainly used to observe how the node is performing for eg. the memory, CPU usage on the nodes. These are useful only for bidders who already know how to use them. Explaining them is beyond the scope of this documentation.

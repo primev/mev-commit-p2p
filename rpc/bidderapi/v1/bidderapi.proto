@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package rpc.bidderapi.v1;
+
+option go_package = "github.com/primevprotocol/mev-commit/rpc/bidderapi/v1;bidderapiv1";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/api/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Bidder API";
+    version: "1.0.0-alpha";
+    license: {
+      name: "Business Source License 1.1";
+      url: "https://github.com/primevprotocol/mev-commit/blob/main/LICENSE";
+    };
+  };
+};
+
+service Bidder {
+  // SendBid
+  //
+  // Send a bid to the bidder mev-commit node.
+  rpc SendBid(Bid) returns (stream Commitment) {
+    option (google.api.http) = {
+      post: "/v1/bidder/bid"
+      body: "*"
+    };
+  }
+  // RegisterStake
+  //
+  // RegisterStake is called by the bidder to register its stake in the bidder registry.
+  rpc RegisterStake(StakeRequest) returns (StakeResponse) {
+    option (google.api.http) = {post: "/v1/bidder/register_stake/{amount}"};
+  }
+  // GetStake
+  //
+  // GetStake is called by the bidder to get its stake in the bidder registry.
+  rpc GetStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/bidder/get_stake"};
+  }
+  // GetMinStake
+  //
+  // GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
+  rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
+    option (google.api.http) = {get: "/v1/bidder/get_min_stake"};
+  }
+}
+
+message StakeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake request"
+      description: "Stake bidder in the bidder provider_registry."
+      required: ["stake"]
+    }
+    example: "{\"amount\": \"1000000000000000000\" }"
+  };
+  string amount = 1;
+};
+
+message StakeResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Stake response"
+      description: "Get staked amount for bidder in the bidder provider_registry."
+    }
+    example: "{\"amount\": \"1000000000000000000\" }"
+  };
+  string amount = 1;
+};
+
+message EmptyMessage {};
+
+message Bid {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Bid message"
+      description: "Unsigned bid message from bidders to the bidder mev-commit node."
+      required: ["txHash", "amount", "blockNumber"]
+    }
+    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"amount\": 1000000000000000000, \"blockNumber\": 123456}"
+  };
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block."
+  }];
+  int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max block number that the bidder wants to include the transaction in."
+  }];
+};
+
+message Commitment {
+  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+  int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH that the bidder has agreed to pay to the provider for including the transaction in the block."
+  }];
+  int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max block number that the bidder wants to include the transaction in."
+  }];
+  string received_bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of digest of the bid message signed by the bidder."
+  }];
+  string received_bid_signature = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of signature of the bidder that sent this bid."
+  }];
+  string commitment_digest = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of digest of the commitment."
+  }];
+  string commitment_signature = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of signature of the commitment signed by the provider confirming this transaction."
+  }];
+};

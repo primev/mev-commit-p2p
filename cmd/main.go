@@ -106,7 +106,7 @@ type config struct {
 	ExposeProviderAPI        bool     `yaml:"expose_provider_api" json:"expose_provider_api"`
 	PreconfContract          string   `yaml:"preconf_contract" json:"preconf_contract"`
 	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
-	UserRegistryContract     string   `yaml:"user_registry_contract" json:"user_registry_contract"`
+	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
 	RPCEndpoint              string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
 }
 
@@ -196,7 +196,7 @@ func start(c *cli.Context) error {
 		ExposeProviderAPI:        cfg.ExposeProviderAPI,
 		PreconfContract:          cfg.PreconfContract,
 		ProviderRegistryContract: cfg.ProviderRegistryContract,
-		UserRegistryContract:     cfg.UserRegistryContract,
+		BidderRegistryContract:   cfg.BidderRegistryContract,
 		RPCEndpoint:              cfg.RPCEndpoint,
 	})
 	if err != nil {
@@ -246,11 +246,11 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 
 	switch logFmt {
 	case "text":
-		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{Level: level})
+		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
 	case "none":
 		fallthrough
 	case "json":
-		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{Level: level})
+		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
 	default:
 		return nil, fmt.Errorf("invalid log format: %s", logFmt)
 	}
