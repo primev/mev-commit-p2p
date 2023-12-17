@@ -165,7 +165,7 @@ func RegisterBidderHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/RegisterStake", runtime.WithHTTPPathPattern("/v1/bidder/register_stake/{amount}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/RegisterStake", runtime.WithHTTPPathPattern("/v1/bidder/register_stake/{amount}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -190,7 +190,7 @@ func RegisterBidderHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/GetStake", runtime.WithHTTPPathPattern("/v1/bidder/get_stake"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/GetStake", runtime.WithHTTPPathPattern("/v1/bidder/get_stake"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -215,7 +215,7 @@ func RegisterBidderHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/GetMinStake", runtime.WithHTTPPathPattern("/v1/bidder/get_min_stake"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/GetMinStake", runtime.WithHTTPPathPattern("/v1/bidder/get_min_stake"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -279,7 +279,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/SendBid", runtime.WithHTTPPathPattern("/v1/bidder/bid"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/SendBid", runtime.WithHTTPPathPattern("/v1/bidder/bid"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -301,7 +301,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/RegisterStake", runtime.WithHTTPPathPattern("/v1/bidder/register_stake/{amount}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/RegisterStake", runtime.WithHTTPPathPattern("/v1/bidder/register_stake/{amount}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -323,7 +323,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/GetStake", runtime.WithHTTPPathPattern("/v1/bidder/get_stake"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/GetStake", runtime.WithHTTPPathPattern("/v1/bidder/get_stake"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -345,7 +345,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.seacherapi.v1.Bidder/GetMinStake", runtime.WithHTTPPathPattern("/v1/bidder/get_min_stake"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/GetMinStake", runtime.WithHTTPPathPattern("/v1/bidder/get_min_stake"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return

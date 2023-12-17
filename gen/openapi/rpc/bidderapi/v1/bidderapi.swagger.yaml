@@ -36,17 +36,17 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/rpcseacherapiv1Bid'
+            $ref: '#/definitions/rpcbidderapiv1Bid'
   /v1/bidder/get_min_stake:
     get:
       summary: GetMinStake
-      description: GetMinStake is called by the bidder to get the minimum stake required to be in the bidder provider_registry.
+      description: GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
       operationId: Bidder_GetMinStake
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -54,13 +54,13 @@ paths:
   /v1/bidder/get_stake:
     get:
       summary: GetStake
-      description: GetStake is called by the bidder to get its stake in the bidder provider_registry.
+      description: GetStake is called by the bidder to get its stake in the bidder registry.
       operationId: Bidder_GetStake
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -68,13 +68,13 @@ paths:
   /v1/bidder/register_stake/{amount}:
     post:
       summary: RegisterStake
-      description: RegisterStake is called by the bidder to register its stake in the bidder provider_registry.
+      description: RegisterStake is called by the bidder to register its stake in the bidder registry.
       operationId: Bidder_RegisterStake
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcseacherapiv1StakeResponse'
+            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -104,7 +104,7 @@ definitions:
       '@type':
         type: string
     additionalProperties: {}
-  rpcseacherapiv1Bid:
+  rpcbidderapiv1Bid:
     type: object
     example:
       amount: 1e+18
@@ -129,7 +129,7 @@ definitions:
       - txHash
       - amount
       - blockNumber
-  rpcseacherapiv1StakeResponse:
+  rpcbidderapiv1StakeResponse:
     type: object
     example:
       amount: "1000000000000000000"

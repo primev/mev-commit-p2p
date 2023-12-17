@@ -33,7 +33,7 @@ paths:
   /v1/provider/get_min_stake:
     get:
       summary: GetMinStake
-      description: GetMinStake is called by the provider to get the minimum stake required to be in the provider provider_registry.
+      description: GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
       operationId: Provider_GetMinStake
       responses:
         "200":
@@ -61,7 +61,7 @@ paths:
   /v1/provider/get_stake:
     get:
       summary: GetStake
-      description: GetStake is called by the provider to get its stake in the provider provider_registry.
+      description: GetStake is called by the provider to get its stake in the provider registry.
       operationId: Provider_GetStake
       responses:
         "200":
@@ -97,7 +97,7 @@ paths:
   /v1/provider/register_stake/{amount}:
     post:
       summary: RegisterStake
-      description: RegisterStake is called by the provider to register its stake in the provider provider_registry.
+      description: RegisterStake is called by the provider to register its stake in the provider registry.
       operationId: Provider_RegisterStake
       responses:
         "200":

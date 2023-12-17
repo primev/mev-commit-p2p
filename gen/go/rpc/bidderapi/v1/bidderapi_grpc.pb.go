@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Bidder_SendBid_FullMethodName       = "/rpc.seacherapi.v1.Bidder/SendBid"
-	Bidder_RegisterStake_FullMethodName = "/rpc.seacherapi.v1.Bidder/RegisterStake"
-	Bidder_GetStake_FullMethodName      = "/rpc.seacherapi.v1.Bidder/GetStake"
-	Bidder_GetMinStake_FullMethodName   = "/rpc.seacherapi.v1.Bidder/GetMinStake"
+	Bidder_SendBid_FullMethodName       = "/rpc.bidderapi.v1.Bidder/SendBid"
+	Bidder_RegisterStake_FullMethodName = "/rpc.bidderapi.v1.Bidder/RegisterStake"
+	Bidder_GetStake_FullMethodName      = "/rpc.bidderapi.v1.Bidder/GetStake"
+	Bidder_GetMinStake_FullMethodName   = "/rpc.bidderapi.v1.Bidder/GetMinStake"
 )
 
 // BidderClient is the client API for Bidder service.
@@ -35,15 +35,15 @@ type BidderClient interface {
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (Bidder_SendBidClient, error)
 	// RegisterStake
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder provider_registry.
+	// RegisterStake is called by the bidder to register its stake in the bidder registry.
 	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the bidder to get its stake in the bidder provider_registry.
+	// GetStake is called by the bidder to get its stake in the bidder registry.
 	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder provider_registry.
+	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
 	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 }
 
@@ -124,15 +124,15 @@ type BidderServer interface {
 	SendBid(*Bid, Bidder_SendBidServer) error
 	// RegisterStake
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder provider_registry.
+	// RegisterStake is called by the bidder to register its stake in the bidder registry.
 	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the bidder to get its stake in the bidder provider_registry.
+	// GetStake is called by the bidder to get its stake in the bidder registry.
 	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder provider_registry.
+	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
 	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	mustEmbedUnimplementedBidderServer()
 }
@@ -245,7 +245,7 @@ func _Bidder_GetMinStake_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Bidder_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "rpc.seacherapi.v1.Bidder",
+	ServiceName: "rpc.bidderapi.v1.Bidder",
 	HandlerType: (*BidderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

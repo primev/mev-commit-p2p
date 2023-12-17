@@ -44,15 +44,15 @@ type ProviderClient interface {
 	SendProcessedBids(ctx context.Context, opts ...grpc.CallOption) (Provider_SendProcessedBidsClient, error)
 	// RegisterStake
 	//
-	// RegisterStake is called by the provider to register its stake in the provider provider_registry.
+	// RegisterStake is called by the provider to register its stake in the provider registry.
 	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the provider to get its stake in the provider provider_registry.
+	// GetStake is called by the provider to get its stake in the provider registry.
 	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the provider to get the minimum stake required to be in the provider provider_registry.
+	// GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
 	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 	// GetPendingTxns
 	//
@@ -199,15 +199,15 @@ type ProviderServer interface {
 	SendProcessedBids(Provider_SendProcessedBidsServer) error
 	// RegisterStake
 	//
-	// RegisterStake is called by the provider to register its stake in the provider provider_registry.
+	// RegisterStake is called by the provider to register its stake in the provider registry.
 	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
 	// GetStake
 	//
-	// GetStake is called by the provider to get its stake in the provider provider_registry.
+	// GetStake is called by the provider to get its stake in the provider registry.
 	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	// GetMinStake
 	//
-	// GetMinStake is called by the provider to get the minimum stake required to be in the provider provider_registry.
+	// GetMinStake is called by the provider to get the minimum stake required to be in the provider registry.
 	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	// GetPendingTxns
 	//
