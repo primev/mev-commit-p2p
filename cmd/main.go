@@ -246,11 +246,11 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 
 	switch logFmt {
 	case "text":
-		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{Level: level})
+		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
 	case "none":
 		fallthrough
 	case "json":
-		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{Level: level})
+		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
 	default:
 		return nil, fmt.Errorf("invalid log format: %s", logFmt)
 	}
