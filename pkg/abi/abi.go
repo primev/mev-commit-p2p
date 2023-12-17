@@ -1241,7 +1241,7 @@ var PreConfJson = `
 ]
 `
 
-var UserRegistryJson = `
+var BidderRegistryJson = `
 [
   {
     "inputs": [
