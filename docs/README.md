@@ -28,17 +28,18 @@ Bidders will connect to providers, each of these nodes will have access to a boo
 
 ## Bids and Privacy
 
-mev-commit is inherently pseudonymous, allowing any Ethereum address to submit a bid for transaction execution, including bids for transactions that belong to others. Bids use the transaction hash identifier for universal provider pickup and are visible to network actors. Bids are processed by both network providers and Primev chain validators, ensuring verifiable commitments and seamless reward settlements.
+mev-commit is inherently pseudonymous, allowing any Ethereum address to submit a bid for transaction execution, including bids for transactions that belong to others. Bids use the transaction hash identifier for universal provider pickup and are visible to network actors. Bids are processed by both network providers and mev-commit chain nodes, ensuring verifiable commitments and seamless reward settlements.
 
 ## Commitments and Privacy
 
 Commitments are commitment signatures from providers in response to bids. mev-commit provides a standard commitment method and a private commitment method for providers to choose from. Private commitments are encrypted and can only be read by the bidder until after the block slot ends and they’re revealed. Providers can also maintain their pseudonymity with commitments, using alternate addresses to obfuscate their identity as known block provider or sequencers.
 
-For more on commitment privacy
+## mev-commit chain
 
-## Settlement Layer
+Bids and commitments will settle on a specialized EVM sidechain ran with go-ethereum’s Clique proof-of-authoriy (POA) consensus mechanism. Initially operated by Primev entities, the mev-commit chain handles fund settlements, rewards, and slashing. Over time we plan to authorize entities from around the MEV ecosystem to join the POA block signer set. The end goal is to enable a federated mev-commit chain where various actors from the system are assuming the block producer role in turns. Note the mev-commit chain is entirely separate from the Ethereum mainnet blockspace, and is optimized for significantly higher throughput.
 
-Bids and commitments will settle on a specialized Ethereum fork based on the OP stack. Initially centralized, the settlement layer operates as a high-throughput chain to expedite the settlement process. As governance processes are initiated, this chain will become a federated rollup to providers on the network to assume the Sequencer role in turns. A rollup sequencer maintains the state of bids and commitments, acting as a network peer and handles fund settlements, rewards, or slashes.
+
+For more information, see [mev-commit chain details](mev-commit-chain.md).
 
 ## Network Flows
 
