@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	cryptorand "crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
@@ -15,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/userapi/v1"
 	"github.com/prometheus/client_golang/prometheus"
@@ -37,7 +35,7 @@ var (
 	)
 	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
 	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 5, "The number of parallel workers to run")
+	parallelWorkers = flag.Int("parallel-workers", 1, "The number of parallel workers to run")
 )
 
 var (
@@ -119,17 +117,80 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			bc := BlockCache{}
 			for {
-				err = sendBid(userClient, logger, rpcClient)
+				block, blkNum, err := bc.RetreivedBlock(rpcClient)
 				if err != nil {
-					logger.Error("failed to send bid", "err", err)
+					logger.Error("failed to get block", "err", err)
+				} else {
+					for j := 0; j < len(block); j++ {
+						err = sendBid(userClient, logger, rpcClient, block[j], int64(blkNum))
+						if err != nil {
+							logger.Error("failed to send bid", "err", err)
+						}
+						time.Sleep(10 * time.Millisecond)
+					}
+					// for _, txn := range block {
+					// 	err = sendBid(userClient, logger, rpcClient, txn, int64(blkNum))
+					// 	if err != nil {
+					// 		logger.Error("failed to send bid", "err", err)
+					// 	}
+					// 	time.Sleep(50 * time.Millisecond)
+					// }
 				}
-				time.Sleep(1 * time.Second)
 			}
 		}()
 	}
 
 	wg.Wait()
+}
+
+type BlockCache struct {
+	lastRetreived time.Time
+	lastBlockTxns []string
+	blkNum        int64
+}
+
+func (b BlockCache) RetreivedBlock(rpcClient *ethclient.Client) ([]string, int64, error) {
+	// now := time.Now()
+	// if now.Sub(b.lastRetreived) < 13*time.Second {
+	// 	return b.lastBlockTxns, b.blkNum, nil
+	// 	// b.lastBlockTxns = []string{}
+	// 	// // Generate Random txnhashes
+	// 	// for i := 0; i < 100; i++ {
+	// 	// 	txHash := crypto.Keccak256Hash(
+	// 	// 		append(
+	// 	// 			[]byte(now.String()),
+	// 	// 			append(
+	// 	// 				[]byte(fmt.Sprintf("%d", i)),
+	// 	// 				[]byte(fmt.Sprintf("%d", b.blkNum))...,
+	// 	// 			)...,
+	// 	// 		),
+	// 	// 	)
+	// 	// 	b.lastBlockTxns = append(b.lastBlockTxns, txHash.Hex())
+	// 	// }
+	// 	// return b.lastBlockTxns, b.blkNum, nil
+	// }
+
+	blkNum, err := rpcClient.BlockNumber(context.Background())
+	if err != nil {
+		return nil, -1, err
+	}
+	fullBlock, err := rpcClient.BlockByNumber(context.Background(), big.NewInt(int64(blkNum)))
+	if err != nil {
+		return nil, -1, err
+	}
+
+	lastBlockTxns := []string{}
+	txns := fullBlock.Transactions()
+	for _, txn := range txns {
+		lastBlockTxns = append(lastBlockTxns, txn.Hash().Hex())
+	}
+
+	b.lastBlockTxns = lastBlockTxns
+	// b.lastRetreived = now
+
+	return b.lastBlockTxns, int64(blkNum), nil
 }
 
 func checkOrStake(
@@ -172,35 +233,16 @@ func sendBid(
 	userClient pb.UserClient,
 	logger *slog.Logger,
 	rpcClient *ethclient.Client,
+	txnHash string,
+	blkNum int64,
 ) error {
-	blkNum, err := rpcClient.BlockNumber(context.Background())
-	if err != nil {
-		logger.Error("failed to get block number", "err", err)
-		return err
-	}
-
-	randBytes := make([]byte, 32)
-	_, err = cryptorand.Read(randBytes)
-	if err != nil {
-		return err
-	}
 	amount := rand.Int63n(200000)
 	amount += 100000
-	// try to keep txn hash unique
-	txHash := crypto.Keccak256Hash(
-		append(
-			randBytes,
-			append(
-				[]byte(fmt.Sprintf("%d", amount)),
-				[]byte(fmt.Sprintf("%d", blkNum))...,
-			)...,
-		),
-	)
 
 	bid := &pb.Bid{
-		TxHash:      txHash.Hex(),
+		TxHash:      txnHash,
 		Amount:      amount,
-		BlockNumber: int64(blkNum) + 5,
+		BlockNumber: int64(blkNum),
 	}
 
 	logger.Info("sending bid", "bid", bid)

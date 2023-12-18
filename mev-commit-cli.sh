@@ -7,7 +7,7 @@ GETH_POA_PATH="$PRIMEV_DIR/go-ethereum"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="main"
+MEV_COMMIT_BRANCH="ckaritk/reduce-setup-size-to-minimal"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
 
