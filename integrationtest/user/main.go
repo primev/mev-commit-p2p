@@ -128,7 +128,7 @@ func main() {
 						if err != nil {
 							logger.Error("failed to send bid", "err", err)
 						}
-						time.Sleep(10 * time.Millisecond)
+						time.Sleep(25 * time.Millisecond)
 					}
 					// for _, txn := range block {
 					// 	err = sendBid(userClient, logger, rpcClient, txn, int64(blkNum))
