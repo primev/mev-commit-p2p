@@ -26,7 +26,6 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
-	"github.com/primevprotocol/mev-commit/pkg/register"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -46,7 +45,6 @@ type Options struct {
 	HTTPPort                 int
 	RPCPort                  int
 	Bootnodes                []string
-	ExposeProviderAPI        bool
 	PreconfContract          string
 	ProviderRegistryContract string
 	BidderRegistryContract   string
@@ -58,13 +56,6 @@ type Node struct {
 }
 
 func NewNode(opts *Options) (*Node, error) {
-	reg := register.New()
-
-	minStake, err := reg.GetMinimumStake()
-	if err != nil {
-		return nil, err
-	}
-
 	nd := &Node{
 		closers: make([]io.Closer, 0),
 	}
@@ -110,8 +101,7 @@ func NewNode(opts *Options) (*Node, error) {
 		PrivKey:        opts.PrivKey,
 		Secret:         opts.Secret,
 		PeerType:       peerType,
-		Register:       reg,
-		MinimumStake:   minStake,
+		Register:       providerRegistry,
 		Logger:         opts.Logger.With("component", "p2p"),
 		ListenPort:     opts.P2PPort,
 		MetricsReg:     srv.MetricsRegistry(),
@@ -153,16 +143,14 @@ func NewNode(opts *Options) (*Node, error) {
 
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
-			if opts.ExposeProviderAPI {
-				providerAPI := providerapi.NewService(
-					opts.Logger.With("component", "providerapi"),
-					providerRegistry,
-					ownerEthAddress,
-					evmClient,
-				)
-				providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
-				bidProcessor = providerAPI
-			}
+			providerAPI := providerapi.NewService(
+				opts.Logger.With("component", "providerapi"),
+				providerRegistry,
+				ownerEthAddress,
+				evmClient,
+			)
+			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
+			bidProcessor = providerAPI
 
 			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
 

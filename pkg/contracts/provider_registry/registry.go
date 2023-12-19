@@ -28,8 +28,8 @@ type Interface interface {
 	GetStake(ctx context.Context, address common.Address) (*big.Int, error)
 	// GetMinStake returns the minimum stake required to register as a provider.
 	GetMinStake(ctx context.Context) (*big.Int, error)
-	// CheckBidderRegistred returns true if bidder is registered
-	CheckBidderRegistered(ctx context.Context, address common.Address) bool
+	// CheckProviderRegistered returns true if provider is registered
+	CheckProviderRegistered(ctx context.Context, address common.Address) bool
 }
 
 type registryContract struct {
@@ -138,7 +138,7 @@ func (r *registryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *registryContract) CheckBidderRegistered(
+func (r *registryContract) CheckProviderRegistered(
 	ctx context.Context,
 	address common.Address,
 ) bool {

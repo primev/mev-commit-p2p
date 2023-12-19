@@ -103,7 +103,6 @@ type config struct {
 	LogFmt                   string   `yaml:"log_fmt" json:"log_fmt"`
 	LogLevel                 string   `yaml:"log_level" json:"log_level"`
 	Bootnodes                []string `yaml:"bootnodes" json:"bootnodes"`
-	ExposeProviderAPI        bool     `yaml:"expose_provider_api" json:"expose_provider_api"`
 	PreconfContract          string   `yaml:"preconf_contract" json:"preconf_contract"`
 	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
 	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
@@ -193,7 +192,6 @@ func start(c *cli.Context) error {
 		RPCPort:                  cfg.RPCPort,
 		Logger:                   logger,
 		Bootnodes:                cfg.Bootnodes,
-		ExposeProviderAPI:        cfg.ExposeProviderAPI,
 		PreconfContract:          cfg.PreconfContract,
 		ProviderRegistryContract: cfg.ProviderRegistryContract,
 		BidderRegistryContract:   cfg.BidderRegistryContract,

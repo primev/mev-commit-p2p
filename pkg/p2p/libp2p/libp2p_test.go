@@ -5,18 +5,26 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"math/big"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
-	registermock "github.com/primevprotocol/mev-commit/pkg/register/mock"
 )
+
+type testRegistry struct{}
+
+func (t *testRegistry) CheckProviderRegistered(
+	_ context.Context,
+	_ common.Address,
+) bool {
+	return true
+}
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()
@@ -36,13 +44,12 @@ func newTestService(t *testing.T) *libp2p.Service {
 	}
 
 	svc, err := libp2p.New(&libp2p.Options{
-		PrivKey:      privKey,
-		Secret:       "test",
-		ListenPort:   0,
-		PeerType:     p2p.PeerTypeProvider,
-		Register:     registermock.New(10),
-		MinimumStake: big.NewInt(5),
-		Logger:       newTestLogger(t, os.Stdout),
+		PrivKey:    privKey,
+		Secret:     "test",
+		ListenPort: 0,
+		PeerType:   p2p.PeerTypeProvider,
+		Register:   &testRegistry{},
+		Logger:     newTestLogger(t, os.Stdout),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -212,12 +219,11 @@ func TestBootstrap(t *testing.T) {
 	}
 
 	testDefaultOptions := libp2p.Options{
-		Secret:       "test",
-		ListenPort:   0,
-		PeerType:     p2p.PeerTypeProvider,
-		Register:     registermock.New(10),
-		MinimumStake: big.NewInt(5),
-		Logger:       newTestLogger(t, os.Stdout),
+		Secret:     "test",
+		ListenPort: 0,
+		PeerType:   p2p.PeerTypeProvider,
+		Register:   &testRegistry{},
+		Logger:     newTestLogger(t, os.Stdout),
 	}
 
 	privKey, err := crypto.GenerateKey()

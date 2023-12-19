@@ -3,9 +3,10 @@ package libp2p
 import (
 	"context"
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"log/slog"
-	"math/big"
+	"sync"
 	"time"
 
 	madns "github.com/multiformats/go-multiaddr-dns"
@@ -24,7 +25,6 @@ import (
 	connmgr "github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p/internal/handshake"
-	"github.com/primevprotocol/mev-commit/pkg/register"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -44,14 +44,19 @@ type Service struct {
 	notifier      p2p.Notifier
 	hsSvc         *handshake.Service
 	metrics       *metrics
+	blockMap      map[peer.ID]blockInfo
+	blockMu       sync.Mutex
+}
+
+type ProviderRegistry interface {
+	CheckProviderRegistered(ctx context.Context, ethAddress common.Address) bool
 }
 
 type Options struct {
 	PrivKey        *ecdsa.PrivateKey
 	Secret         string
 	PeerType       p2p.PeerType
-	Register       register.Register
-	MinimumStake   *big.Int
+	Register       handshake.ProviderRegistry
 	ListenPort     int
 	Logger         *slog.Logger
 	MetricsReg     *prometheus.Registry
@@ -97,12 +102,7 @@ func New(opts *Options) (*Service, error) {
 		return nil, err
 	}
 
-	conngtr := newConnectionGater(
-		opts.Register,
-		opts.PeerType,
-		opts.MinimumStake,
-		metrics,
-	)
+	conngtr := newGater(opts.Logger)
 
 	host, err := libp2p.New(
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
@@ -137,7 +137,6 @@ func New(opts *Options) (*Service, error) {
 		opts.Secret,
 		signer.New(),
 		opts.Register,
-		opts.MinimumStake,
 		GetEthAddressFromPeerID,
 	)
 	if err != nil {
@@ -158,6 +157,7 @@ func New(opts *Options) (*Service, error) {
 		metrics:       metrics,
 	}
 	s.peers.setDisconnector(s)
+	conngtr.setBlocker(s)
 
 	host.Network().Notify(s.peers)
 
@@ -186,7 +186,16 @@ func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 	if err != nil {
 		s.logger.Error("error handling handshake", "err", err)
 		_ = streamlibp2p.Reset()
+		_ = s.host.Network().ClosePeer(peerID)
 		s.metrics.FailedIncomingHandshakeCount.Inc()
+		switch {
+		case errors.Is(err, handshake.ErrSignatureVerificationFailed):
+			s.blockPeer(peerID, 0, "signature verification failed")
+		case errors.Is(err, handshake.ErrObservedAddressMismatch):
+			s.blockPeer(peerID, 0, "address mismatch during handshake")
+		case errors.Is(err, handshake.ErrInsufficientStake):
+			s.blockPeer(peerID, 5*time.Minute, "insufficient stake")
+		}
 		return
 	}
 
@@ -301,6 +310,14 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 	if err != nil {
 		_ = s.host.Network().ClosePeer(addrInfo.ID)
 		s.metrics.FailedOutgoingHandshakeCount.Inc()
+		switch {
+		case errors.Is(err, handshake.ErrSignatureVerificationFailed):
+			s.blockPeer(addrInfo.ID, 0, "signature verification failed")
+		case errors.Is(err, handshake.ErrObservedAddressMismatch):
+			s.blockPeer(addrInfo.ID, 0, "address mismatch during handshake")
+		case errors.Is(err, handshake.ErrInsufficientStake):
+			s.blockPeer(addrInfo.ID, 5*time.Minute, "insufficient stake")
+		}
 		return p2p.Peer{}, err
 	}
 

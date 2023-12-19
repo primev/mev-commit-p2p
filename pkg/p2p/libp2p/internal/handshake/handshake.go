@@ -5,14 +5,12 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	"github.com/primevprotocol/mev-commit/pkg/register"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 )
 
@@ -22,6 +20,16 @@ const (
 	StreamName      = "handshake"
 )
 
+var (
+	ErrSignatureVerificationFailed = errors.New("signature verification failed")
+	ErrObservedAddressMismatch     = errors.New("observed address mismatch")
+	ErrInsufficientStake           = errors.New("insufficient stake")
+)
+
+type ProviderRegistry interface {
+	CheckProviderRegistered(context.Context, common.Address) bool
+}
+
 // Handshake is the handshake protocol
 type Service struct {
 	privKey       *ecdsa.PrivateKey
@@ -29,8 +37,7 @@ type Service struct {
 	peerType      p2p.PeerType
 	passcode      string
 	signer        signer.Signer
-	register      register.Register
-	minimumStake  *big.Int
+	register      ProviderRegistry
 	handshakeReq  *HandshakeReq
 	getEthAddress func(core.PeerID) (common.Address, error)
 }
@@ -41,8 +48,7 @@ func New(
 	peerType p2p.PeerType,
 	passcode string,
 	signer signer.Signer,
-	register register.Register,
-	minimumStake *big.Int,
+	register ProviderRegistry,
 	getEthAddress func(core.PeerID) (common.Address, error),
 ) (*Service, error) {
 	s := &Service{
@@ -52,7 +58,6 @@ func New(
 		passcode:      passcode,
 		signer:        signer,
 		register:      register,
-		minimumStake:  minimumStake,
 		getEthAddress: getEthAddress,
 	}
 
@@ -91,11 +96,11 @@ func (h *Service) verifyReq(
 
 	verified, ethAddress, err := h.signer.Verify(req.Sig, unsignedData)
 	if err != nil {
-		return common.Address{}, err
+		return common.Address{}, errors.Join(err, ErrSignatureVerificationFailed)
 	}
 
 	if !verified {
-		return common.Address{}, errors.New("signature verification failed")
+		return common.Address{}, ErrSignatureVerificationFailed
 	}
 
 	observedEthAddress, err := h.getEthAddress(peerID)
@@ -104,17 +109,12 @@ func (h *Service) verifyReq(
 	}
 
 	if !bytes.Equal(observedEthAddress.Bytes(), ethAddress.Bytes()) {
-		return common.Address{}, errors.New("observed address mismatch")
+		return common.Address{}, ErrObservedAddressMismatch
 	}
 
 	if req.PeerType == p2p.PeerTypeProvider.String() {
-		stake, err := h.register.GetStake(ethAddress)
-		if err != nil {
-			return common.Address{}, err
-		}
-
-		if stake.Cmp(h.minimumStake) < 0 {
-			return common.Address{}, errors.New("stake insufficient")
+		if !h.register.CheckProviderRegistered(context.Background(), ethAddress) {
+			return common.Address{}, ErrInsufficientStake
 		}
 	}
 

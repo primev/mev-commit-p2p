@@ -95,12 +95,21 @@ type Service interface {
 	Connect(ctx context.Context, info []byte) (Peer, error)
 	Streamer
 	Addressbook
+	// Peers blocklisted by libp2p. Currently no external service needs the blocklist
+	// so we don't expose it.
+	BlockedPeers() []BlockedPeerInfo
 	io.Closer
 }
 
 type Notifier interface {
 	Connected(Peer)
 	Disconnected(Peer)
+}
+
+type BlockedPeerInfo struct {
+	Peer     common.Address
+	Reason   string
+	Duration string
 }
 
 func NewStreamName(protocol, version, stream string) string {
