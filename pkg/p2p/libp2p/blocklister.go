@@ -54,7 +54,7 @@ func (s *Service) BlockedPeers() []p2p.BlockedPeerInfo {
 			if info.duration == 0 {
 				durString = "Forever"
 			} else {
-				durString = info.start.Add(info.duration).Sub(time.Now()).String()
+				durString = time.Until(info.start.Add(info.duration)).String()
 			}
 			res = append(res, p2p.BlockedPeerInfo{
 				Peer:     ethAddr,
