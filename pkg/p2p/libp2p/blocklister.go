@@ -8,8 +8,9 @@ import (
 )
 
 type blockInfo struct {
-	reason string
-	until  time.Time
+	reason   string
+	start    time.Time
+	duration time.Duration
 }
 
 func (s *Service) blockPeer(peer core.PeerID, dur time.Duration, reason string) {
@@ -17,8 +18,9 @@ func (s *Service) blockPeer(peer core.PeerID, dur time.Duration, reason string) 
 	defer s.blockMu.Unlock()
 
 	s.blockMap[peer] = blockInfo{
-		reason: reason,
-		until:  time.Now().Add(dur),
+		reason:   reason,
+		start:    time.Now(),
+		duration: dur,
 	}
 }
 
@@ -30,7 +32,7 @@ func (s *Service) isBlocked(peer core.PeerID) bool {
 	if !ok {
 		return false
 	}
-	if time.Now().After(info.until) {
+	if time.Now().After(info.start.Add(info.duration)) && info.duration != 0 {
 		delete(s.blockMap, peer)
 		return false
 	}
@@ -43,14 +45,16 @@ func (s *Service) BlockedPeers() []p2p.BlockedPeerInfo {
 
 	var res []p2p.BlockedPeerInfo
 	for id, info := range s.blockMap {
-		if time.Now().After(info.until) {
+		if time.Now().Before(info.start.Add(info.duration)) || info.duration == 0 {
 			ethAddr, err := GetEthAddressFromPeerID(id)
 			if err != nil {
 				continue
 			}
-			durString := info.until.Sub(time.Now()).String()
-			if durString == "0s" {
+			var durString string
+			if info.duration == 0 {
 				durString = "Forever"
+			} else {
+				durString = info.start.Add(info.duration).Sub(time.Now()).String()
 			}
 			res = append(res, p2p.BlockedPeerInfo{
 				Peer:     ethAddr,
