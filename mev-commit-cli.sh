@@ -95,6 +95,22 @@ start_mev_commit_minimal() {
 }
 
 
+start_mev_commit_e2e() {
+    local datadog_key=$1
+
+    echo "Starting MEV-Commit..."
+
+    # Check if datadog_key is empty
+    if [ -z "$datadog_key" ]; then
+        echo "DD_KEY is empty, so no agents will be started."
+        # Run Docker Compose without --profile agent
+        docker compose --profile main -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    else
+        # Run Docker Compose with --profile agent
+        DD_KEY="$datadog_key" docker compose --profile main --profile agent -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    fi
+}
+
 start_mev_commit() {
     local datadog_key=$1
 
@@ -208,6 +224,7 @@ show_help() {
     echo "  deploy_contracts       Deploy contracts"
     echo "  start                  Start the environment"
     echo "  start-minimal          Start the minimal environment"
+    echo "  start-e2e              Start the minimal environment for oracle with live bids from Infura"
     echo "  stop                   Stop services"
     echo "  update                 Update repositories"
     echo "  cleanup                Cleanup Docker"
@@ -234,7 +251,7 @@ while [[ "$#" -gt 0 ]]; do
             datadog_key="$2"
             shift 2
             ;;
-        sl|deploy_contracts|start|start-minimal|stop|update|cleanup)
+        sl|deploy_contracts|start|start-minimal|start-e2e|stop|update|cleanup)
             if [[ -z "$command" ]]; then
                 command="$1"
             else
@@ -272,6 +289,10 @@ case "$command" in
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
         start_mev_commit "$datadog_key"
+        ;;
+    start-e2e)
+        initialize_environment
+        start_mev_commit_e2e
         ;;
     start-minimal)
         initialize_environment
