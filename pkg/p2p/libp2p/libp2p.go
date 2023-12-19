@@ -155,6 +155,7 @@ func New(opts *Options) (*Service, error) {
 		hsSvc:         hsSvc,
 		logger:        opts.Logger,
 		metrics:       metrics,
+		blockMap:      make(map[peer.ID]blockInfo),
 	}
 	s.peers.setDisconnector(s)
 	conngtr.setBlocker(s)
