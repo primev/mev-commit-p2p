@@ -106,7 +106,7 @@ services:
       context: .
       dockerfile: ./integrationtest/Dockerfile
       args:
-        node_type: bidder
+        node_type: real-bidder
     restart: always
     depends_on:
       - bootnode
@@ -139,7 +139,7 @@ services:
   bidder-emulator-1:
     build:
       context: .
-      dockerfile: integrationtest/real-bidder/Dockerfile
+      dockerfile: integrationtest/bidder/Dockerfile
     restart: always
     depends_on:
       - bidder-1

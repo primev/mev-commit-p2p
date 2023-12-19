@@ -7,9 +7,9 @@ GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="main"
+MEV_COMMIT_BRANCH="ckartik/oracle-testing"
 GETH_POA_BRANCH="master"
-CONTRACTS_BRANCH="main"
+CONTRACTS_BRANCH="ckaritk/update-user-to-bidder"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
@@ -292,6 +292,8 @@ case "$command" in
         ;;
     start-e2e)
         initialize_environment
+        start_settlement_layer "$datadog_key"
+        deploy_contracts "$rpc_url"
         start_mev_commit_e2e
         ;;
     start-minimal)
