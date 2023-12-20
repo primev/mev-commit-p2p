@@ -132,12 +132,14 @@ deploy_contracts() {
     sleep 10
 
     # Deploy create2 proxy from alpine container
-    docker run --rm -v \
-        "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh:/deploy_create2.sh" \
+    chmod +x "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh"
+    docker run \
+        --rm \
+        --network "$DOCKER_NETWORK_NAME" \
+        -v "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh:/deploy_create2.sh" \
         alpine /bin/sh -c \
         "apk add --no-cache curl jq \
-        && chmod +x /deploy_create2.sh \
-        && /deploy_create2.sh http://localhost:8545"
+        && /deploy_create2.sh http://sl-bootnode:8545"
 
     # Run the Docker container to deploy the contracts
     echo "Deploying Contracts with RPC URL: $rpc_url, Chain ID: $chain_id, and Private Key: [HIDDEN]"
