@@ -5,6 +5,7 @@ go 1.21.1
 require (
 	github.com/ethereum/go-ethereum v1.13.5
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/libp2p/go-libp2p v0.31.0
 	github.com/libp2p/go-msgio v0.3.0
 	github.com/multiformats/go-multiaddr v0.12.0
@@ -15,6 +16,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	golang.org/x/crypto v0.16.0
 	golang.org/x/sync v0.5.0
+	golang.org/x/time v0.3.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0

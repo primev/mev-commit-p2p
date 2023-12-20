@@ -42,6 +42,7 @@ type debugapi struct {
 type topologyResponse struct {
 	Self           map[string]interface{}      `json:"self"`
 	ConnectedPeers map[string][]common.Address `json:"connected_peers"`
+	BlockedPeers   []p2p.BlockedPeerInfo       `json:"blocked_peers"`
 }
 
 func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +69,8 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 		}
 		topoResp.ConnectedPeers["bidders"] = connectedBidders
 	}
+
+	topoResp.BlockedPeers = d.p2p.BlockedPeers()
 
 	err := apiserver.WriteResponse(w, http.StatusOK, topoResp)
 	if err != nil {

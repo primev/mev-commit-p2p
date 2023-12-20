@@ -5,8 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"errors"
-	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,12 +16,11 @@ import (
 
 type testRegister struct{}
 
-func (t *testRegister) GetStake(_ common.Address) (*big.Int, error) {
-	return big.NewInt(5), nil
-}
-
-func (t *testRegister) GetMinimumStake() (*big.Int, error) {
-	return nil, errors.New("not implemented")
+func (t *testRegister) CheckProviderRegistered(
+	_ context.Context,
+	_ common.Address,
+) bool {
+	return true
 }
 
 type testSigner struct {
@@ -59,7 +56,6 @@ func TestHandshake(t *testing.T) {
 			"test",
 			&testSigner{address: common.HexToAddress("0x2")},
 			&testRegister{},
-			big.NewInt(4),
 			func(p core.PeerID) (common.Address, error) {
 				return common.HexToAddress("0x2"), nil
 			},
@@ -75,7 +71,6 @@ func TestHandshake(t *testing.T) {
 			"test",
 			&testSigner{address: common.HexToAddress("0x1")},
 			&testRegister{},
-			big.NewInt(4),
 			func(p core.PeerID) (common.Address, error) {
 				return common.HexToAddress("0x1"), nil
 			},

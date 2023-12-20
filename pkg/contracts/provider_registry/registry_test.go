@@ -164,7 +164,7 @@ func TestRegistryContract(t *testing.T) {
 		}
 	})
 
-	t.Run("CheckBidderRegistered", func(t *testing.T) {
+	t.Run("CheckProviderRegistered", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
@@ -190,7 +190,7 @@ func TestRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		isRegistered := registryContract.CheckBidderRegistered(context.Background(), address)
+		isRegistered := registryContract.CheckProviderRegistered(context.Background(), address)
 		if !isRegistered {
 			t.Fatalf("expected bidder to be registered")
 		}
