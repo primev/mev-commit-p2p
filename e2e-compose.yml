@@ -186,7 +186,7 @@ services:
       - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
     environment:
       - DD_API_KEY=${DD_KEY}
-      - DD_TAGS=env:test
+      - DD_TAGS=env:e2e
       - DD_SITE=datadoghq.com
       - DD_LOGS_ENABLED=true
       - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true

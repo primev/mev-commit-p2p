@@ -7,9 +7,9 @@ GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="ckartik/oracle-testing"
+MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
-CONTRACTS_BRANCH="ckaritk/update-user-to-bidder"
+CONTRACTS_BRANCH="main"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
