@@ -6,10 +6,12 @@ PRIMEV_DIR="$HOME/.primev"
 GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
+ORACLE_PATH="$PRIMEV_DIR/mev-oracle"
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="main"
+MEV_COMMIT_BRANCH="ckartik/oracle-testing"
 GETH_POA_BRANCH="master"
-CONTRACTS_BRANCH="main"
+CONTRACTS_BRANCH="ckaritk/update-user-to-bidder"
+ORACLE_BRANCH="ckartik/nit-improvements"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
@@ -48,6 +50,7 @@ clone_repos() {
     [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
     [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/mev-oracle.git "$ORACLE_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
@@ -59,6 +62,8 @@ checkout_branch() {
     git -C "$GETH_POA_PATH" checkout "$GETH_POA_BRANCH"
     echo "Checking out branch $CONTRACTS_BRANCH for contracts..."
     git -C "$CONTRACTS_PATH" checkout "$CONTRACTS_BRANCH"
+    echo "Checking out branch $ORACLE_BRANCH for oracle..."
+    git -C "$ORACLE_PATH" checkout "$ORACLE_BRANCH"
 }
 
 # Function to pull latest changes for all repositories
@@ -67,6 +72,7 @@ update_repos() {
     git -C "$GETH_POA_PATH" pull
     git -C "$CONTRACTS_PATH" pull
     git -C "$MEV_COMMIT_PATH" pull
+    git -C "$ORACLE_PATH" pull
 }
 
 start_settlement_layer() {
@@ -166,6 +172,22 @@ deploy_contracts() {
         contract-deployer
 }
 
+start_oracle(){
+     local sepolia_key=$1
+
+    cat > "$ORACLE_PATH/.env" <<EOF
+L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
+STARTING_BLOCK=4913736
+INTEGREATION_TEST=true
+DB_HOST=localhost
+POSTGRES_PASSWORD=oracle_pass
+EOF
+
+    # Run Docker Compose
+    docker compose -f "$ORACLE_PATH/docker-compose.yml" up -d --build
+
+}
+
 
 stop_services() {
     service=$1
@@ -251,6 +273,10 @@ while [[ "$#" -gt 0 ]]; do
             datadog_key="$2"
             shift 2
             ;;
+        --sepolia-key)
+            sepolia_key="$2"
+            shift 2
+            ;;
         sl|deploy_contracts|start|start-minimal|start-e2e|stop|update|cleanup)
             if [[ -z "$command" ]]; then
                 command="$1"
@@ -295,6 +321,8 @@ case "$command" in
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
         start_mev_commit_e2e
+        sleep 5
+        start_oracle
         ;;
     start-minimal)
         initialize_environment
