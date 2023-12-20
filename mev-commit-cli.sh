@@ -177,7 +177,7 @@ start_oracle(){
 
     cat > "$ORACLE_PATH/.env" <<EOF
 L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
-STARTING_BLOCK=4913736
+STARTING_BLOCK=4926115
 INTEGREATION_TEST=true
 DB_HOST=localhost
 POSTGRES_PASSWORD=oracle_pass
@@ -321,8 +321,8 @@ case "$command" in
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
         start_mev_commit_e2e
-        sleep 5
-        start_oracle
+        sleep 12
+        start_oracle "$sepolia_key"
         ;;
     start-minimal)
         initialize_environment

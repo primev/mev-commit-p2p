@@ -33,9 +33,8 @@ var (
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
-	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
-	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 1, "The number of parallel workers to run")
+	logLevel = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
+	httpPort = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
 )
 
 var (
