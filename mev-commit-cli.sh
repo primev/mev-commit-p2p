@@ -11,7 +11,7 @@ DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="ckartik/oracle-testing"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="ckaritk/update-user-to-bidder"
-ORACLE_BRANCH="ckartik/nit-improvements"
+ORACLE_BRANCH="main"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
