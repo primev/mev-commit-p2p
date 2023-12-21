@@ -3,7 +3,7 @@
 # Default RPC URL and Paths
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
-GETH_POA_PATH="$PRIMEV_DIR/mev-commi-sl"
+GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 DOCKER_NETWORK_NAME="primev_net"
