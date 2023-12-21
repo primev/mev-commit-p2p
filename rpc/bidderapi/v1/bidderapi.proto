@@ -28,50 +28,7 @@ service Bidder {
       body: "*"
     };
   }
-  // RegisterStake
-  //
-  // RegisterStake is called by the bidder to register its stake in the bidder registry.
-  rpc RegisterStake(StakeRequest) returns (StakeResponse) {
-    option (google.api.http) = {post: "/v1/bidder/register_stake/{amount}"};
-  }
-  // GetStake
-  //
-  // GetStake is called by the bidder to get its stake in the bidder registry.
-  rpc GetStake(EmptyMessage) returns (StakeResponse) {
-    option (google.api.http) = {get: "/v1/bidder/get_stake"};
-  }
-  // GetMinStake
-  //
-  // GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-  rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
-    option (google.api.http) = {get: "/v1/bidder/get_min_stake"};
-  }
 }
-
-message StakeRequest {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "Stake request"
-      description: "Stake bidder in the bidder provider_registry."
-      required: ["stake"]
-    }
-    example: "{\"amount\": \"1000000000000000000\" }"
-  };
-  string amount = 1;
-};
-
-message StakeResponse {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-      title: "Stake response"
-      description: "Get staked amount for bidder in the bidder provider_registry."
-    }
-    example: "{\"amount\": \"1000000000000000000\" }"
-  };
-  string amount = 1;
-};
-
-message EmptyMessage {};
 
 message Bid {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {

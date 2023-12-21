@@ -3,14 +3,12 @@ package bidderapi
 import (
 	"context"
 	"encoding/hex"
-	"errors"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	"log/slog"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,23 +16,17 @@ import (
 
 type Service struct {
 	bidderapiv1.UnimplementedBidderServer
-	sender           PreconfSender
-	owner            common.Address
-	registryContract registrycontract.Interface
-	logger           *slog.Logger
+	sender PreconfSender
+	logger *slog.Logger
 }
 
 func NewService(
 	sender PreconfSender,
-	owner common.Address,
-	registryContract registrycontract.Interface,
 	logger *slog.Logger,
 ) *Service {
 	return &Service{
-		sender:           sender,
-		owner:            owner,
-		registryContract: registryContract,
-		logger:           logger,
+		sender: sender,
+		logger: logger,
 	}
 }
 
@@ -79,51 +71,4 @@ func (s *Service) SendBid(
 	}
 
 	return nil
-}
-
-var ErrInvalidAmount = errors.New("invalid amount for stake")
-
-func (s *Service) RegisterStake(
-	ctx context.Context,
-	stake *bidderapiv1.StakeRequest,
-) (*bidderapiv1.StakeResponse, error) {
-	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
-	if !success {
-		return nil, ErrInvalidAmount
-	}
-	err := s.registryContract.RegisterBidder(ctx, amount)
-	if err != nil {
-		return nil, err
-	}
-
-	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
-}
-
-func (s *Service) GetStake(
-	ctx context.Context,
-	_ *bidderapiv1.EmptyMessage,
-) (*bidderapiv1.StakeResponse, error) {
-	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
-	if err != nil {
-		return nil, err
-	}
-
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
-}
-
-func (s *Service) GetMinStake(
-	ctx context.Context,
-	_ *bidderapiv1.EmptyMessage,
-) (*bidderapiv1.StakeResponse, error) {
-	stakeAmount, err := s.registryContract.GetMinStake(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
 }

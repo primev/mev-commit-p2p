@@ -39,7 +39,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
+            $ref: '#/definitions/v1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -67,7 +67,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
+            $ref: '#/definitions/v1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -103,7 +103,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcproviderapiv1StakeResponse'
+            $ref: '#/definitions/v1StakeResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -124,7 +124,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcproviderapiv1EmptyMessage'
+            $ref: '#/definitions/v1EmptyMessage'
         default:
           description: An unexpected error response.
           schema:
@@ -187,17 +187,6 @@ definitions:
       - bidAmount
       - blockNumber
       - bidDigest
-  rpcproviderapiv1EmptyMessage:
-    type: object
-  rpcproviderapiv1StakeResponse:
-    type: object
-    example:
-      amount: "1000000000000000000"
-    properties:
-      amount:
-        type: string
-    description: Get staked amount for provider in the provider provider_registry.
-    title: Stake response
   v1BidResponse:
     type: object
     example:
@@ -234,6 +223,8 @@ definitions:
     title: Cancel response
     required:
       - txHash
+  v1EmptyMessage:
+    type: object
   v1PendingTxnsResponse:
     type: object
     properties:
@@ -247,6 +238,15 @@ definitions:
     title: Pending transactions list
     required:
       - pendingTxns
+  v1StakeResponse:
+    type: object
+    example:
+      amount: "1000000000000000000"
+    properties:
+      amount:
+        type: string
+    description: Get staked amount for provider in the provider provider_registry.
+    title: Stake response
   v1TransactionInfo:
     type: object
     example:

@@ -19,10 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Bidder_SendBid_FullMethodName       = "/rpc.bidderapi.v1.Bidder/SendBid"
-	Bidder_RegisterStake_FullMethodName = "/rpc.bidderapi.v1.Bidder/RegisterStake"
-	Bidder_GetStake_FullMethodName      = "/rpc.bidderapi.v1.Bidder/GetStake"
-	Bidder_GetMinStake_FullMethodName   = "/rpc.bidderapi.v1.Bidder/GetMinStake"
+	Bidder_SendBid_FullMethodName = "/rpc.bidderapi.v1.Bidder/SendBid"
 )
 
 // BidderClient is the client API for Bidder service.
@@ -33,18 +30,6 @@ type BidderClient interface {
 	//
 	// Send a bid to the bidder mev-commit node.
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (Bidder_SendBidClient, error)
-	// RegisterStake
-	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
-	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
-	// GetStake
-	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
-	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
-	// GetMinStake
-	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
 }
 
 type bidderClient struct {
@@ -87,33 +72,6 @@ func (x *bidderSendBidClient) Recv() (*Commitment, error) {
 	return m, nil
 }
 
-func (c *bidderClient) RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_RegisterStake_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *bidderClient) GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_GetStake_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *bidderClient) GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_GetMinStake_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // BidderServer is the server API for Bidder service.
 // All implementations must embed UnimplementedBidderServer
 // for forward compatibility
@@ -122,18 +80,6 @@ type BidderServer interface {
 	//
 	// Send a bid to the bidder mev-commit node.
 	SendBid(*Bid, Bidder_SendBidServer) error
-	// RegisterStake
-	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
-	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
-	// GetStake
-	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
-	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
-	// GetMinStake
-	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
 	mustEmbedUnimplementedBidderServer()
 }
 
@@ -143,15 +89,6 @@ type UnimplementedBidderServer struct {
 
 func (UnimplementedBidderServer) SendBid(*Bid, Bidder_SendBidServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendBid not implemented")
-}
-func (UnimplementedBidderServer) RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterStake not implemented")
-}
-func (UnimplementedBidderServer) GetStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStake not implemented")
-}
-func (UnimplementedBidderServer) GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMinStake not implemented")
 }
 func (UnimplementedBidderServer) mustEmbedUnimplementedBidderServer() {}
 
@@ -187,80 +124,13 @@ func (x *bidderSendBidServer) Send(m *Commitment) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Bidder_RegisterStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StakeRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BidderServer).RegisterStake(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Bidder_RegisterStake_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).RegisterStake(ctx, req.(*StakeRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Bidder_GetStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMessage)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BidderServer).GetStake(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Bidder_GetStake_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).GetStake(ctx, req.(*EmptyMessage))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Bidder_GetMinStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMessage)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BidderServer).GetMinStake(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Bidder_GetMinStake_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).GetMinStake(ctx, req.(*EmptyMessage))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // Bidder_ServiceDesc is the grpc.ServiceDesc for Bidder service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Bidder_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "rpc.bidderapi.v1.Bidder",
 	HandlerType: (*BidderServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "RegisterStake",
-			Handler:    _Bidder_RegisterStake_Handler,
-		},
-		{
-			MethodName: "GetStake",
-			Handler:    _Bidder_GetStake_Handler,
-		},
-		{
-			MethodName: "GetMinStake",
-			Handler:    _Bidder_GetMinStake_Handler,
-		},
-	},
+	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "SendBid",

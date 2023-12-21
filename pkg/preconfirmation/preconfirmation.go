@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -26,7 +25,6 @@ type Preconfirmation struct {
 	signer       signer.Signer
 	topo         Topology
 	streamer     p2p.Streamer
-	us           BidderStore
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
 	logger       *slog.Logger
@@ -34,10 +32,6 @@ type Preconfirmation struct {
 
 type Topology interface {
 	GetPeers(topology.Query) []p2p.Peer
-}
-
-type BidderStore interface {
-	CheckBidderRegistered(context.Context, common.Address) bool
 }
 
 type BidProcessor interface {
@@ -48,7 +42,6 @@ func New(
 	topo Topology,
 	streamer p2p.Streamer,
 	signer signer.Signer,
-	us BidderStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	logger *slog.Logger,
@@ -57,7 +50,6 @@ func New(
 		topo:         topo,
 		streamer:     streamer,
 		signer:       signer,
-		us:           us,
 		processer:    processor,
 		commitmentDA: commitmentDA,
 		logger:       logger,
@@ -189,47 +181,45 @@ func (p *Preconfirmation) handleBid(
 
 	p.logger.Info("received bid", "bid", bid)
 
-	ethAddress, err := p.signer.VerifyBid(bid)
+	_, err = p.signer.VerifyBid(bid)
 	if err != nil {
 		return err
 	}
 
-	if p.us.CheckBidderRegistered(ctx, *ethAddress) {
-		// try to enqueue for 5 seconds
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
+	// try to enqueue for 5 seconds
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-		statusC, err := p.processer.ProcessBid(ctx, bid)
-		if err != nil {
-			return err
-		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case status := <-statusC:
-			switch status {
-			case providerapiv1.BidResponse_STATUS_REJECTED:
-				return errors.New("bid rejected")
-			case providerapiv1.BidResponse_STATUS_ACCEPTED:
-				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
-				if err != nil {
-					return err
-				}
-				p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
-				err = p.commitmentDA.StoreCommitment(
-					ctx,
-					preConfirmation.Bid.BidAmt,
-					uint64(preConfirmation.Bid.BlockNumber.Int64()),
-					preConfirmation.Bid.TxHash,
-					preConfirmation.Bid.Signature,
-					preConfirmation.Signature,
-				)
-				if err != nil {
-					p.logger.Error("storing commitment", "err", err)
-					return err
-				}
-				return w.WriteMsg(ctx, preConfirmation)
+	statusC, err := p.processer.ProcessBid(ctx, bid)
+	if err != nil {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case status := <-statusC:
+		switch status {
+		case providerapiv1.BidResponse_STATUS_REJECTED:
+			return errors.New("bid rejected")
+		case providerapiv1.BidResponse_STATUS_ACCEPTED:
+			preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
+			if err != nil {
+				return err
 			}
+			p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
+			err = p.commitmentDA.StoreCommitment(
+				ctx,
+				preConfirmation.Bid.BidAmt,
+				uint64(preConfirmation.Bid.BlockNumber.Int64()),
+				preConfirmation.Bid.TxHash,
+				preConfirmation.Bid.Signature,
+				preConfirmation.Signature,
+			)
+			if err != nil {
+				p.logger.Error("storing commitment", "err", err)
+				return err
+			}
+			return w.WriteMsg(ctx, preConfirmation)
 		}
 	}
 

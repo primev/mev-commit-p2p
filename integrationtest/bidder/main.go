@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math/big"
 	"math/rand"
 	"net/http"
 	"os"
@@ -37,7 +36,7 @@ var (
 	)
 	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
 	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 7, "The number of parallel workers to run")
+	parallelWorkers = flag.Int("parallel-workers", 5, "The number of parallel workers to run")
 )
 
 var (
@@ -115,11 +114,6 @@ func main() {
 	defer conn.Close()
 
 	bidderClient := pb.NewBidderClient(conn)
-	err = checkOrStake(bidderClient, logger)
-	if err != nil {
-		logger.Error("failed to check or stake", "err", err)
-		return
-	}
 
 	wg := sync.WaitGroup{}
 
@@ -138,42 +132,6 @@ func main() {
 	}
 
 	wg.Wait()
-}
-
-func checkOrStake(
-	bidderClient pb.BidderClient,
-	logger *slog.Logger,
-) error {
-	stakeAmt, err := bidderClient.GetStake(context.Background(), &pb.EmptyMessage{})
-	if err != nil {
-		logger.Error("failed to get stake amount", "err", err)
-		return err
-	}
-
-	logger.Info("stake amount", "stake", stakeAmt.Amount)
-
-	stakedAmt, set := big.NewInt(0).SetString(stakeAmt.Amount, 10)
-	if !set {
-		logger.Error("failed to parse stake amount")
-		return errors.New("failed to parse stake amount")
-	}
-
-	if stakedAmt.Cmp(big.NewInt(0)) > 0 {
-		logger.Error("bidder already staked")
-		return nil
-	}
-
-	_, err = bidderClient.RegisterStake(context.Background(), &pb.StakeRequest{
-		Amount: "10000000000000000000",
-	})
-	if err != nil {
-		logger.Error("failed to register stake", "err", err)
-		return err
-	}
-
-	logger.Info("staked 10 ETH")
-
-	return nil
 }
 
 func sendBid(

@@ -25,12 +25,6 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 	return []p2p.Peer{t.peer}
 }
 
-type testBidderStore struct{}
-
-func (t *testBidderStore) CheckBidderRegistered(_ context.Context, _ common.Address) bool {
-	return true
-}
-
 type testSigner struct {
 	bid                   *preconfsigner.Bid
 	preConfirmation       *preconfsigner.PreConfirmation
@@ -124,7 +118,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 		)
 
 		topo := &testTopo{server}
-		us := &testBidderStore{}
 		proc := &testProcessor{
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}
@@ -139,7 +132,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 			topo,
 			svc,
 			signer,
-			us,
 			proc,
 			&testCommitmentDA{},
 			newTestLogger(t, os.Stdout),

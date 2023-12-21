@@ -6,6 +6,5 @@ rpc_port: 13524
 secret: hello
 log_fmt: json
 log_level: debug
-bidder_registry_contract: <BIDDER_REGISTRY>
 provider_registry_contract: <PROVIDER_REGISTRY>
 rpc_endpoint: <RPC_URL>

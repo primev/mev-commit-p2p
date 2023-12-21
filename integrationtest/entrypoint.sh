@@ -8,7 +8,6 @@ if [ "$NODE_TYPE" != "bootnode" ]; then
     sleep 10
 fi
 
-sed -i "s|<BIDDER_REGISTRY>|${BIDDER_REGISTRY}|" /config.yaml
 sed -i "s|<PROVIDER_REGISTRY>|${PROVIDER_REGISTRY}|" /config.yaml
 sed -i "s|<RPC_URL>|${RPC_URL}|" /config.yaml
 

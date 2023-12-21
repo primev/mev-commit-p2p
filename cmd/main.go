@@ -105,7 +105,6 @@ type config struct {
 	Bootnodes                []string `yaml:"bootnodes" json:"bootnodes"`
 	PreconfContract          string   `yaml:"preconf_contract" json:"preconf_contract"`
 	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
-	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
 	RPCEndpoint              string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
 }
 
@@ -194,7 +193,6 @@ func start(c *cli.Context) error {
 		Bootnodes:                cfg.Bootnodes,
 		PreconfContract:          cfg.PreconfContract,
 		ProviderRegistryContract: cfg.ProviderRegistryContract,
-		BidderRegistryContract:   cfg.BidderRegistryContract,
 		RPCEndpoint:              cfg.RPCEndpoint,
 	})
 	if err != nil {

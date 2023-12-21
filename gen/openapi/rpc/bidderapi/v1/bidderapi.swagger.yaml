@@ -37,53 +37,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/rpcbidderapiv1Bid'
-  /v1/bidder/get_min_stake:
-    get:
-      summary: GetMinStake
-      description: GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-      operationId: Bidder_GetMinStake
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/googlerpcStatus'
-  /v1/bidder/get_stake:
-    get:
-      summary: GetStake
-      description: GetStake is called by the bidder to get its stake in the bidder registry.
-      operationId: Bidder_GetStake
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/googlerpcStatus'
-  /v1/bidder/register_stake/{amount}:
-    post:
-      summary: RegisterStake
-      description: RegisterStake is called by the bidder to register its stake in the bidder registry.
-      operationId: Bidder_RegisterStake
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/googlerpcStatus'
-      parameters:
-        - name: amount
-          in: path
-          required: true
-          type: string
 definitions:
   googlerpcStatus:
     type: object
@@ -129,15 +82,6 @@ definitions:
       - txHash
       - amount
       - blockNumber
-  rpcbidderapiv1StakeResponse:
-    type: object
-    example:
-      amount: "1000000000000000000"
-    properties:
-      amount:
-        type: string
-    description: Get staked amount for bidder in the bidder provider_registry.
-    title: Stake response
   v1Commitment:
     type: object
     properties:
