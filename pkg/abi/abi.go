@@ -1244,411 +1244,411 @@ var PreConfJson = `
 var BidderRegistryJson = `
 [
   {
+    "type": "constructor",
     "inputs": [
       {
-        "internalType": "uint256",
         "name": "_minStake",
-        "type": "uint256"
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "internalType": "address",
         "name": "_feeRecipient",
-        "type": "address"
+        "type": "address",
+        "internalType": "address"
       },
       {
-        "internalType": "uint16",
         "name": "_feePercent",
-        "type": "uint16"
+        "type": "uint16",
+        "internalType": "uint16"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "stateMutability": "nonpayable"
   },
   {
-    "anonymous": false,
+    "type": "fallback",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "bidderRegistered",
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "name": "FundsRetrieved",
-    "type": "event"
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "anonymous": false,
+    "type": "function",
+    "name": "bidderStakes",
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
+        "name": "",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "name": "OwnershipTransferred",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
+    "outputs": [
       {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "stakedAmount",
-        "type": "uint256"
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "name": "UserRegistered",
-    "type": "event"
+    "stateMutability": "view"
   },
   {
-    "stateMutability": "payable",
-    "type": "fallback"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
+    "type": "function",
     "name": "checkStake",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "name": "bidder",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "feePercent",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "uint16",
         "name": "",
-        "type": "uint16"
+        "type": "uint16",
+        "internalType": "uint16"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "feeRecipient",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "address",
         "name": "",
-        "type": "address"
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "feeRecipientAmount",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "uint256",
         "name": "",
-        "type": "uint256"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "provider",
-        "type": "address"
-      }
-    ],
+    "type": "function",
     "name": "getProviderAmount",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "name": "provider",
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "minStake",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "uint256",
         "name": "",
-        "type": "uint256"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "owner",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "address",
         "name": "",
-        "type": "address"
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "preConfirmationsContract",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "address",
         "name": "",
-        "type": "address"
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "protocolFeeAmount",
+    "inputs": [],
     "outputs": [
       {
-        "internalType": "uint256",
         "name": "",
-        "type": "uint256"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "stateMutability": "view"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "type": "function",
     "name": "providerAmount",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "uint256",
         "name": "",
-        "type": "uint256"
+        "type": "address",
+        "internalType": "address"
       }
     ],
-    "stateMutability": "view",
-    "type": "function"
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "registerAndStake",
+    "inputs": [],
     "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
+    "stateMutability": "payable"
   },
   {
-    "inputs": [],
+    "type": "function",
     "name": "renounceOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amt",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address payable",
-        "name": "provider",
-        "type": "address"
-      }
-    ],
-    "name": "retrieveFunds",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint16",
-        "name": "newFeePercent",
-        "type": "uint16"
-      }
-    ],
-    "name": "setNewFeePercent",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newFeeRecipient",
-        "type": "address"
-      }
-    ],
-    "name": "setNewFeeRecipient",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "contractAddress",
-        "type": "address"
-      }
-    ],
-    "name": "setPreconfirmationsContract",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "userRegistered",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "userStakes",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "withdrawFeeRecipientAmount",
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "stateMutability": "nonpayable"
   },
   {
+    "type": "function",
+    "name": "retrieveFunds",
     "inputs": [
       {
-        "internalType": "address payable",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "withdrawProtocolFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+        "name": "bidder",
+        "type": "address",
+        "internalType": "address"
+      },
       {
-        "internalType": "address payable",
+        "name": "amt",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "provider",
-        "type": "address"
+        "type": "address",
+        "internalType": "address payable"
       }
     ],
-    "name": "withdrawProviderAmount",
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "stateMutability": "nonpayable"
   },
   {
+    "type": "function",
+    "name": "setNewFeePercent",
     "inputs": [
       {
-        "internalType": "address payable",
-        "name": "user",
-        "type": "address"
+        "name": "newFeePercent",
+        "type": "uint16",
+        "internalType": "uint16"
       }
     ],
-    "name": "withdrawStakedAmount",
     "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "stateMutability": "nonpayable"
   },
   {
-    "stateMutability": "payable",
-    "type": "receive"
+    "type": "function",
+    "name": "setNewFeeRecipient",
+    "inputs": [
+      {
+        "name": "newFeeRecipient",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setPreconfirmationsContract",
+    "inputs": [
+      {
+        "name": "contractAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawFeeRecipientAmount",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawProtocolFee",
+    "inputs": [
+      {
+        "name": "bidder",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawProviderAmount",
+    "inputs": [
+      {
+        "name": "provider",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "withdrawStakedAmount",
+    "inputs": [
+      {
+        "name": "bidder",
+        "type": "address",
+        "internalType": "address payable"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "BidderRegistered",
+    "inputs": [
+      {
+        "name": "bidder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "stakedAmount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "FundsRetrieved",
+    "inputs": [
+      {
+        "name": "bidder",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   }
 ]
 `
