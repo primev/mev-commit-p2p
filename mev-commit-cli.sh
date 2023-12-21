@@ -102,9 +102,39 @@ start_mev_commit_minimal() {
 
 
 start_mev_commit_e2e() {
-    local datadog_key=$1
-
+    local datadog_key=""
+    local sepolia_key=""
     echo "Starting MEV-Commit..."
+
+    # Loop through arguments and process them
+    for arg in "$@"
+    do
+        case $arg in
+            --datadog-key=*)
+            datadog_key="${arg#*=}"
+            shift # Remove --datadog-key= from processing
+            ;;
+            --sepolia-key=*)
+            sepolia_key="${arg#*=}"
+            shift # Remove --sepolia-key= from processing
+            ;;
+            *)
+            # Unknown option
+            ;;
+        esac
+    done
+    echo "Setting .env file ..."
+
+        # Create or overwrite the .env file
+    cat > "$MEV_COMMIT_PATH/integerationtest/.env" <<EOF
+BIDDER_REGISTRY=0x5FbDB2315678afecb367f032d93F642f64180aa3
+PROVIDER_REGISTRY=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+PRECONF_CONTRACT=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+RPC_URL=http://sl-bootnode:8545
+PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+L1_RPC_URL=https://sepolia.infura.io/v3/${sepolia_key}
+EOF
+
 
     # Check if datadog_key is empty
     if [ -z "$datadog_key" ]; then
@@ -320,7 +350,7 @@ case "$command" in
         initialize_environment
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
-        start_mev_commit_e2e
+        start_mev_commit_e2e "--sepolia-key=$sepolia_key"
         sleep 12
         start_oracle "$sepolia_key"
         ;;
