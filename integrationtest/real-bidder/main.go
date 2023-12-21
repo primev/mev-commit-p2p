@@ -116,7 +116,7 @@ func main() {
 		defer wg.Done()
 		for {
 			block, blkNum, err := RetreivedBlock(rpcClient)
-			if err != nil {
+			if err != nil || len(block) == 0 {
 				logger.Error("failed to get block", "err", err)
 			} else {
 				throtle := time.Duration(12000*time.Millisecond) / time.Duration(len(block))
