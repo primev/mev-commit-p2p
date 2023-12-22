@@ -212,12 +212,11 @@ STARTING_BLOCK=${starting_block_number}
 INTEGREATION_TEST=true
 DB_HOST=localhost
 POSTGRES_PASSWORD=oracle_pass
-DEPLOY_ENV=e2e
 DD_KEY=${datadog_key}
 EOF
 
     # Run Docker Compose
-    docker compose -f "$ORACLE_PATH/docker-compose.yml" up -d --build
+    DEPLOY_ENV=e2e DD_KEY="$datadog_key" docker compose -f "$ORACLE_PATH/docker-compose.yml" up -d --build
 
 }
 
