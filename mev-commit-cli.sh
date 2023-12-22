@@ -203,11 +203,12 @@ deploy_contracts() {
 }
 
 start_oracle(){
-     local sepolia_key=$1
+    local sepolia_key=$1
+    local starting_block_number=$2
 
     cat > "$ORACLE_PATH/.env" <<EOF
 L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
-STARTING_BLOCK=4926115
+STARTING_BLOCK=${starting_block_number}
 INTEGREATION_TEST=true
 DB_HOST=localhost
 POSTGRES_PASSWORD=oracle_pass
@@ -285,6 +286,8 @@ show_help() {
     echo "  -h, --help             Show this help message"
     echo "  --rpc-url URL          Set the RPC URL"
     echo "  --datadog-key KEY      Set the Datadog key"
+    echo "  --sepolia-key KEY      Set the Sepolia key"
+    echo "  --starting-block-number NUMBER      Set the starting block number for oracle"
     echo ""
 }
 
@@ -305,6 +308,10 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --sepolia-key)
             sepolia_key="$2"
+            shift 2
+            ;;
+        --starting-block-number)
+            starting_block_number="$2"
             shift 2
             ;;
         sl|deploy_contracts|start|start-minimal|start-e2e|stop|update|cleanup)
@@ -352,7 +359,7 @@ case "$command" in
         deploy_contracts "$rpc_url"
         start_mev_commit_e2e "--sepolia-key=$sepolia_key"
         sleep 12
-        start_oracle "$sepolia_key"
+        start_oracle "$sepolia_key" "$starting_block_number"
         ;;
     start-minimal)
         initialize_environment
