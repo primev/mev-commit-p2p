@@ -3,7 +3,7 @@
 # Default RPC URL and Paths
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
-GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
+GETH_POA_PATH="$PRIMEV_DIR/mev-commit-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
 ORACLE_PATH="$PRIMEV_DIR/mev-oracle"
@@ -205,13 +205,15 @@ deploy_contracts() {
 start_oracle(){
     local sepolia_key=$1
     local starting_block_number=$2
-
+    local datadog_key=$3
     cat > "$ORACLE_PATH/.env" <<EOF
 L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
 STARTING_BLOCK=${starting_block_number}
 INTEGREATION_TEST=true
 DB_HOST=localhost
 POSTGRES_PASSWORD=oracle_pass
+DEPLOY_ENV=e2e
+DD_KEY=${datadog_key}
 EOF
 
     # Run Docker Compose
@@ -357,9 +359,9 @@ case "$command" in
         initialize_environment
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
-        start_mev_commit_e2e "--sepolia-key=$sepolia_key"
+        start_mev_commit_e2e "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
         sleep 12
-        start_oracle "$sepolia_key" "$starting_block_number"
+        start_oracle "$sepolia_key" "$starting_block_number" "$datadog_key"
         ;;
     start-minimal)
         initialize_environment
