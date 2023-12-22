@@ -10,7 +10,7 @@ ORACLE_PATH="$PRIMEV_DIR/mev-oracle"
 DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="ckartik/oracle-testing"
 GETH_POA_BRANCH="master"
-CONTRACTS_BRANCH="ckaritk/update-user-to-bidder"
+CONTRACTS_BRANCH="main"
 ORACLE_BRANCH="main"
 
 # Default values for optional arguments
@@ -126,10 +126,10 @@ start_mev_commit_e2e() {
     echo "Setting .env file ..."
 
         # Create or overwrite the .env file
-    cat > "$MEV_COMMIT_PATH/integerationtest/.env" <<EOF
-BIDDER_REGISTRY=0x5FbDB2315678afecb367f032d93F642f64180aa3
-PROVIDER_REGISTRY=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-PRECONF_CONTRACT=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+    cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
+BIDDER_REGISTRY=0xe38B5a8C41f307646F395030992Aa008978E2699
+PROVIDER_REGISTRY=0x7fA45D14358B698Bd85a0a2B03720A6Fe4b566d7
+PRECONF_CONTRACT=0x8B0F623dCD54cA50CD154B3dDCbB8436E876b019
 RPC_URL=http://sl-bootnode:8545
 PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 L1_RPC_URL=https://sepolia.infura.io/v3/${sepolia_key}
