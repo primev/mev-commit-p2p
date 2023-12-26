@@ -1,6 +1,13 @@
 # mev-commit
 mev-commit is P2P software that creates a network of execution providers and bidders. Bidders can broadcast bids to providers and receive commitments from them. A high throughput POA EVM chain settles the bids at the end of a block slot.
 
+# mev-commit execution Requirements
+- Software: mev-commit client, curl
+- OS: 64-bit Linux, Mac OS X 10.14+, Windows 10+ 64-bit
+- CPU: 4+ cores @ 2.8+ GHz
+- Memory: 16GB+ RAM
+- Network: 1 GBit/sec broadband
+
 ![](node-architecture.png)
 
 ## Quick Build (For docker please skip this instruction)
