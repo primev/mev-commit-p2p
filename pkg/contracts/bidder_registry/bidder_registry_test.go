@@ -23,7 +23,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		txHash := common.HexToHash("abcdef")
 		amount := big.NewInt(1000000000000000000)
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("registerAndStake")
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("prepay")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +82,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("checkStake", address)
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("getAllowance", address)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -125,7 +125,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("minStake")
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("minAllowance")
 		if err != nil {
 			t.Fatal(err)
 		}
