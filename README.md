@@ -5,7 +5,7 @@ mev-commit is P2P software that creates a network of execution providers and bid
   - [mev-commit client](https://github.com/primevprotocol/mev-commit)
   - [mev-commit-geth](https://github.com/primevprotocol/mev-commit-geth)
   - [contracts](https://github.com/primevprotocol/contracts)
-  - [mev-oracle](https://github.com/primevprotocol/mev-oracle)
+  - [mev-commit-oracle](https://github.com/primevprotocol/mev-commit-oracle)
   - [hyperlane bridging software](https://github.com/primevprotocol/mev-commit-geth/tree/master/geth-poa)
   - curl
 
