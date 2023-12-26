@@ -3,10 +3,17 @@
 # Default RPC URL and Paths
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
-GETH_POA_PATH="$PRIMEV_DIR/mev-commit-geth"
-CONTRACTS_PATH="$PRIMEV_DIR/contracts"
-MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
-ORACLE_PATH="$PRIMEV_DIR/mev-commit-oracle"
+
+GETH_REPO_NAME="mev-commit-geth"
+CONTRACT_REPO_NAME="contracts"
+MEV_COMMIT_REPO_NAME="mev-commit"
+ORACLE_REPO_NAME="mev-commit-oracle"
+
+GETH_POA_PATH="$PRIMEV_DIR/$GETH_REPO_NAME"
+CONTRACTS_PATH="$PRIMEV_DIR/$CONTRACT_REPO_NAME"
+MEV_COMMIT_PATH="$PRIMEV_DIR/$MEV_COMMIT_REPO_NAME"
+ORACLE_PATH="$PRIMEV_DIR/$ORACLE_REPO_NAME"
+
 DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
@@ -47,10 +54,10 @@ create_primev_dir() {
 clone_repos() {
     echo "Cloning repositories under $PRIMEV_DIR..."
     # Clone only if the directory doesn't exist
-    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
-    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
-    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
-    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/mev-oracle.git "$ORACLE_PATH"
+    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/$GETH_REPO_NAME.git "$GETH_POA_PATH"
+    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/$CONTRACT_REPO_NAME.git "$CONTRACTS_PATH"
+    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/$MEV_COMMIT_REPO_NAME.git "$MEV_COMMIT_PATH"
+    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/$ORACLE_REPO_NAME.git "$ORACLE_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
