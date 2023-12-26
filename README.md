@@ -2,10 +2,11 @@
 mev-commit is P2P software that creates a network of execution providers and bidders. Bidders can broadcast bids to providers and receive commitments from them. A high throughput POA EVM chain settles the bids at the end of a block slot.
 
 # mev-commit software components
-  - mev-commit client
-  - mev-commit-geth(POA based chain)
-  - mev-oracle ()
-  - hyperlane bridging software
+  - [mev-commit client](https://github.com/primevprotocol/mev-commit)
+  - [mev-commit-geth](https://github.com/primevprotocol/mev-commit-geth)
+  - [contracts](https://github.com/primevprotocol/contracts)
+  - [mev-oracle](https://github.com/primevprotocol/mev-oracle)
+  - [hyperlane bridging software](https://github.com/primevprotocol/mev-commit-geth/tree/master/geth-poa)
   - curl
 
 # mev-commit execution requirements
