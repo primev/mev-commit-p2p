@@ -28,43 +28,43 @@ service Bidder {
       body: "*"
     };
   }
-  // RegisterStake
+  // PrepayAllowance
   //
-  // RegisterStake is called by the bidder to register its stake in the bidder registry.
-  rpc RegisterStake(StakeRequest) returns (StakeResponse) {
-    option (google.api.http) = {post: "/v1/bidder/register_stake/{amount}"};
+  // PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.
+  rpc PrepayAllowance(PrepayRequest) returns (PrepayResponse) {
+    option (google.api.http) = {post: "/v1/bidder/prepay/{amount}"};
   }
-  // GetStake
+  // GetAllowance
   //
-  // GetStake is called by the bidder to get its stake in the bidder registry.
-  rpc GetStake(EmptyMessage) returns (StakeResponse) {
-    option (google.api.http) = {get: "/v1/bidder/get_stake"};
+  // GetAllowance is called by the bidder to get its allowance in the bidder registry.
+  rpc GetAllowance(EmptyMessage) returns (PrepayResponse) {
+    option (google.api.http) = {get: "/v1/bidder/get_allowance"};
   }
-  // GetMinStake
+  // GetMinAllowance
   //
-  // GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-  rpc GetMinStake(EmptyMessage) returns (StakeResponse) {
-    option (google.api.http) = {get: "/v1/bidder/get_min_stake"};
+  // GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
+  rpc GetMinAllowance(EmptyMessage) returns (PrepayResponse) {
+    option (google.api.http) = {get: "/v1/bidder/get_min_allowance"};
   }
 }
 
-message StakeRequest {
+message PrepayRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      title: "Stake request"
-      description: "Stake bidder in the bidder provider_registry."
-      required: ["stake"]
+      title: "Prepay request"
+      description: "Prepayment for bids to be issued by the bidder."
+      required: ["amount"]
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };
   string amount = 1;
 };
 
-message StakeResponse {
+message PrepayResponse {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      title: "Stake response"
-      description: "Get staked amount for bidder in the bidder provider_registry."
+      title: "Prepay response"
+      description: "Get prepaid allowance for bidder in the bidder registry."
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };

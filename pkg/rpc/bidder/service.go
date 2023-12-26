@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	"log/slog"
 	"math/big"
 	"time"
+
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 
 	"github.com/ethereum/go-ethereum/common"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
@@ -83,47 +84,47 @@ func (s *Service) SendBid(
 
 var ErrInvalidAmount = errors.New("invalid amount for stake")
 
-func (s *Service) RegisterStake(
+func (s *Service) PrepayAllowance(
 	ctx context.Context,
-	stake *bidderapiv1.StakeRequest,
-) (*bidderapiv1.StakeResponse, error) {
+	stake *bidderapiv1.PrepayRequest,
+) (*bidderapiv1.PrepayResponse, error) {
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
 		return nil, ErrInvalidAmount
 	}
-	err := s.registryContract.RegisterBidder(ctx, amount)
+	err := s.registryContract.PrepayAllowance(ctx, amount)
 	if err != nil {
 		return nil, err
 	}
 
-	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }
 
-func (s *Service) GetStake(
+func (s *Service) GetAllowance(
 	ctx context.Context,
 	_ *bidderapiv1.EmptyMessage,
-) (*bidderapiv1.StakeResponse, error) {
-	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
+) (*bidderapiv1.PrepayResponse, error) {
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }
 
-func (s *Service) GetMinStake(
+func (s *Service) GetMinAllowance(
 	ctx context.Context,
 	_ *bidderapiv1.EmptyMessage,
-) (*bidderapiv1.StakeResponse, error) {
-	stakeAmount, err := s.registryContract.GetMinStake(ctx)
+) (*bidderapiv1.PrepayResponse, error) {
+	stakeAmount, err := s.registryContract.GetMinAllowance(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &bidderapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }

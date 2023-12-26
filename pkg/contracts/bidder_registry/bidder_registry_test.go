@@ -18,7 +18,7 @@ import (
 func TestBidderRegistryContract(t *testing.T) {
 	t.Parallel()
 
-	t.Run("RegisterBidder", func(t *testing.T) {
+	t.Run("PrepayAllowance", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		txHash := common.HexToHash("abcdef")
 		amount := big.NewInt(1000000000000000000)
@@ -71,13 +71,13 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		err = registryContract.RegisterBidder(context.Background(), amount)
+		err = registryContract.PrepayAllowance(context.Background(), amount)
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("GetStake", func(t *testing.T) {
+	t.Run("GetAllowance", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
@@ -111,7 +111,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		stakeAmt, err := registryContract.GetStake(context.Background(), address)
+		stakeAmt, err := registryContract.GetAllowance(context.Background(), address)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,7 +154,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		stakeAmt, err := registryContract.GetMinStake(context.Background())
+		stakeAmt, err := registryContract.GetMinAllowance(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,7 +164,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		}
 	})
 
-	t.Run("CheckBidderRegistered", func(t *testing.T) {
+	t.Run("CheckBidderAllowance", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
@@ -190,7 +190,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		isRegistered := registryContract.CheckBidderRegistered(context.Background(), address)
+		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address)
 		if !isRegistered {
 			t.Fatal("expected bidder to be registered")
 		}
