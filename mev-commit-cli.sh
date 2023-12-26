@@ -3,13 +3,15 @@
 # Default RPC URL and Paths
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
-GETH_POA_PATH="$PRIMEV_DIR/mev-commi-geth"
+GETH_POA_PATH="$PRIMEV_DIR/mev-commit-geth"
 CONTRACTS_PATH="$PRIMEV_DIR/contracts"
 MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
+ORACLE_PATH="$PRIMEV_DIR/mev-oracle"
 DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
+ORACLE_BRANCH="main"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
@@ -48,6 +50,7 @@ clone_repos() {
     [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
     [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
     [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
+    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/mev-oracle.git "$ORACLE_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
@@ -59,6 +62,8 @@ checkout_branch() {
     git -C "$GETH_POA_PATH" checkout "$GETH_POA_BRANCH"
     echo "Checking out branch $CONTRACTS_BRANCH for contracts..."
     git -C "$CONTRACTS_PATH" checkout "$CONTRACTS_BRANCH"
+    echo "Checking out branch $ORACLE_BRANCH for oracle..."
+    git -C "$ORACLE_PATH" checkout "$ORACLE_BRANCH"
 }
 
 # Function to pull latest changes for all repositories
@@ -67,6 +72,7 @@ update_repos() {
     git -C "$GETH_POA_PATH" pull
     git -C "$CONTRACTS_PATH" pull
     git -C "$MEV_COMMIT_PATH" pull
+    git -C "$ORACLE_PATH" pull
 }
 
 start_settlement_layer() {
@@ -94,6 +100,52 @@ start_mev_commit_minimal() {
     docker compose --profile minimal-setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
 
+
+start_mev_commit_e2e() {
+    local datadog_key=""
+    local sepolia_key=""
+    echo "Starting MEV-Commit..."
+
+    # Loop through arguments and process them
+    for arg in "$@"
+    do
+        case $arg in
+            --datadog-key=*)
+            datadog_key="${arg#*=}"
+            shift # Remove --datadog-key= from processing
+            ;;
+            --sepolia-key=*)
+            sepolia_key="${arg#*=}"
+            shift # Remove --sepolia-key= from processing
+            ;;
+            *)
+            # Unknown option
+            ;;
+        esac
+    done
+    echo "Setting .env file ..."
+
+        # Create or overwrite the .env file
+    cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
+BIDDER_REGISTRY=0xe38B5a8C41f307646F395030992Aa008978E2699
+PROVIDER_REGISTRY=0x7fA45D14358B698Bd85a0a2B03720A6Fe4b566d7
+PRECONF_CONTRACT=0x8B0F623dCD54cA50CD154B3dDCbB8436E876b019
+RPC_URL=http://sl-bootnode:8545
+PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+L1_RPC_URL=https://sepolia.infura.io/v3/${sepolia_key}
+EOF
+
+
+    # Check if datadog_key is empty
+    if [ -z "$datadog_key" ]; then
+        echo "DD_KEY is empty, so no agents will be started."
+        # Run Docker Compose without --profile agent
+        docker compose --profile main -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    else
+        # Run Docker Compose with --profile agent
+        DD_KEY="$datadog_key" docker compose --profile main --profile agent -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    fi
+}
 
 start_mev_commit() {
     local datadog_key=$1
@@ -148,6 +200,24 @@ deploy_contracts() {
         -e CHAIN_ID="$chain_id" \
         -e PRIVATE_KEY="$private_key" \
         contract-deployer
+}
+
+start_oracle(){
+    local sepolia_key=$1
+    local starting_block_number=$2
+    local datadog_key=$3
+    cat > "$ORACLE_PATH/.env" <<EOF
+L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
+STARTING_BLOCK=${starting_block_number}
+INTEGREATION_TEST=true
+DB_HOST=localhost
+POSTGRES_PASSWORD=oracle_pass
+DD_KEY=${datadog_key}
+EOF
+
+    # Run Docker Compose
+    DEPLOY_ENV=e2e DD_KEY="$datadog_key" docker compose -f "$ORACLE_PATH/docker-compose.yml" up -d --build
+
 }
 
 
@@ -208,6 +278,7 @@ show_help() {
     echo "  deploy_contracts       Deploy contracts"
     echo "  start                  Start the environment"
     echo "  start-minimal          Start the minimal environment"
+    echo "  start-e2e              Start the minimal environment for oracle with live bids from Infura"
     echo "  stop                   Stop services"
     echo "  update                 Update repositories"
     echo "  cleanup                Cleanup Docker"
@@ -216,6 +287,8 @@ show_help() {
     echo "  -h, --help             Show this help message"
     echo "  --rpc-url URL          Set the RPC URL"
     echo "  --datadog-key KEY      Set the Datadog key"
+    echo "  --sepolia-key KEY      Set the Sepolia key"
+    echo "  --starting-block-number NUMBER      Set the starting block number for oracle"
     echo ""
 }
 
@@ -234,7 +307,15 @@ while [[ "$#" -gt 0 ]]; do
             datadog_key="$2"
             shift 2
             ;;
-        sl|deploy_contracts|start|start-minimal|stop|update|cleanup)
+        --sepolia-key)
+            sepolia_key="$2"
+            shift 2
+            ;;
+        --starting-block-number)
+            starting_block_number="$2"
+            shift 2
+            ;;
+        sl|deploy_contracts|start|start-minimal|start-e2e|stop|update|cleanup)
             if [[ -z "$command" ]]; then
                 command="$1"
             else
@@ -272,6 +353,14 @@ case "$command" in
         start_settlement_layer "$datadog_key"
         deploy_contracts "$rpc_url"
         start_mev_commit "$datadog_key"
+        ;;
+    start-e2e)
+        initialize_environment
+        start_settlement_layer "$datadog_key"
+        deploy_contracts "$rpc_url"
+        start_mev_commit_e2e "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
+        sleep 12
+        start_oracle "$sepolia_key" "$starting_block_number" "$datadog_key"
         ;;
     start-minimal)
         initialize_environment
