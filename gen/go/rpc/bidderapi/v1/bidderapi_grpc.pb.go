@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Bidder_SendBid_FullMethodName       = "/rpc.bidderapi.v1.Bidder/SendBid"
-	Bidder_RegisterStake_FullMethodName = "/rpc.bidderapi.v1.Bidder/RegisterStake"
-	Bidder_GetStake_FullMethodName      = "/rpc.bidderapi.v1.Bidder/GetStake"
-	Bidder_GetMinStake_FullMethodName   = "/rpc.bidderapi.v1.Bidder/GetMinStake"
+	Bidder_SendBid_FullMethodName         = "/rpc.bidderapi.v1.Bidder/SendBid"
+	Bidder_PrepayAllowance_FullMethodName = "/rpc.bidderapi.v1.Bidder/PrepayAllowance"
+	Bidder_GetAllowance_FullMethodName    = "/rpc.bidderapi.v1.Bidder/GetAllowance"
+	Bidder_GetMinAllowance_FullMethodName = "/rpc.bidderapi.v1.Bidder/GetMinAllowance"
 )
 
 // BidderClient is the client API for Bidder service.
@@ -33,18 +33,18 @@ type BidderClient interface {
 	//
 	// Send a bid to the bidder mev-commit node.
 	SendBid(ctx context.Context, in *Bid, opts ...grpc.CallOption) (Bidder_SendBidClient, error)
-	// RegisterStake
+	// PrepayAllowance
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
-	RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error)
-	// GetStake
+	// PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.
+	PrepayAllowance(ctx context.Context, in *PrepayRequest, opts ...grpc.CallOption) (*PrepayResponse, error)
+	// GetAllowance
 	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
-	GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
-	// GetMinStake
+	// GetAllowance is called by the bidder to get its allowance in the bidder registry.
+	GetAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error)
+	// GetMinAllowance
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-	GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error)
+	// GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
+	GetMinAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error)
 }
 
 type bidderClient struct {
@@ -87,27 +87,27 @@ func (x *bidderSendBidClient) Recv() (*Commitment, error) {
 	return m, nil
 }
 
-func (c *bidderClient) RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_RegisterStake_FullMethodName, in, out, opts...)
+func (c *bidderClient) PrepayAllowance(ctx context.Context, in *PrepayRequest, opts ...grpc.CallOption) (*PrepayResponse, error) {
+	out := new(PrepayResponse)
+	err := c.cc.Invoke(ctx, Bidder_PrepayAllowance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *bidderClient) GetStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_GetStake_FullMethodName, in, out, opts...)
+func (c *bidderClient) GetAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error) {
+	out := new(PrepayResponse)
+	err := c.cc.Invoke(ctx, Bidder_GetAllowance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *bidderClient) GetMinStake(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*StakeResponse, error) {
-	out := new(StakeResponse)
-	err := c.cc.Invoke(ctx, Bidder_GetMinStake_FullMethodName, in, out, opts...)
+func (c *bidderClient) GetMinAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error) {
+	out := new(PrepayResponse)
+	err := c.cc.Invoke(ctx, Bidder_GetMinAllowance_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,18 +122,18 @@ type BidderServer interface {
 	//
 	// Send a bid to the bidder mev-commit node.
 	SendBid(*Bid, Bidder_SendBidServer) error
-	// RegisterStake
+	// PrepayAllowance
 	//
-	// RegisterStake is called by the bidder to register its stake in the bidder registry.
-	RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error)
-	// GetStake
+	// PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.
+	PrepayAllowance(context.Context, *PrepayRequest) (*PrepayResponse, error)
+	// GetAllowance
 	//
-	// GetStake is called by the bidder to get its stake in the bidder registry.
-	GetStake(context.Context, *EmptyMessage) (*StakeResponse, error)
-	// GetMinStake
+	// GetAllowance is called by the bidder to get its allowance in the bidder registry.
+	GetAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error)
+	// GetMinAllowance
 	//
-	// GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-	GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error)
+	// GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
+	GetMinAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error)
 	mustEmbedUnimplementedBidderServer()
 }
 
@@ -144,14 +144,14 @@ type UnimplementedBidderServer struct {
 func (UnimplementedBidderServer) SendBid(*Bid, Bidder_SendBidServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendBid not implemented")
 }
-func (UnimplementedBidderServer) RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RegisterStake not implemented")
+func (UnimplementedBidderServer) PrepayAllowance(context.Context, *PrepayRequest) (*PrepayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PrepayAllowance not implemented")
 }
-func (UnimplementedBidderServer) GetStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetStake not implemented")
+func (UnimplementedBidderServer) GetAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAllowance not implemented")
 }
-func (UnimplementedBidderServer) GetMinStake(context.Context, *EmptyMessage) (*StakeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetMinStake not implemented")
+func (UnimplementedBidderServer) GetMinAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMinAllowance not implemented")
 }
 func (UnimplementedBidderServer) mustEmbedUnimplementedBidderServer() {}
 
@@ -187,56 +187,56 @@ func (x *bidderSendBidServer) Send(m *Commitment) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Bidder_RegisterStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StakeRequest)
+func _Bidder_PrepayAllowance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PrepayRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BidderServer).RegisterStake(ctx, in)
+		return srv.(BidderServer).PrepayAllowance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Bidder_RegisterStake_FullMethodName,
+		FullMethod: Bidder_PrepayAllowance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).RegisterStake(ctx, req.(*StakeRequest))
+		return srv.(BidderServer).PrepayAllowance(ctx, req.(*PrepayRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Bidder_GetStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Bidder_GetAllowance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BidderServer).GetStake(ctx, in)
+		return srv.(BidderServer).GetAllowance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Bidder_GetStake_FullMethodName,
+		FullMethod: Bidder_GetAllowance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).GetStake(ctx, req.(*EmptyMessage))
+		return srv.(BidderServer).GetAllowance(ctx, req.(*EmptyMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Bidder_GetMinStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Bidder_GetMinAllowance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EmptyMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BidderServer).GetMinStake(ctx, in)
+		return srv.(BidderServer).GetMinAllowance(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Bidder_GetMinStake_FullMethodName,
+		FullMethod: Bidder_GetMinAllowance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).GetMinStake(ctx, req.(*EmptyMessage))
+		return srv.(BidderServer).GetMinAllowance(ctx, req.(*EmptyMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -249,16 +249,16 @@ var Bidder_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*BidderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RegisterStake",
-			Handler:    _Bidder_RegisterStake_Handler,
+			MethodName: "PrepayAllowance",
+			Handler:    _Bidder_PrepayAllowance_Handler,
 		},
 		{
-			MethodName: "GetStake",
-			Handler:    _Bidder_GetStake_Handler,
+			MethodName: "GetAllowance",
+			Handler:    _Bidder_GetAllowance_Handler,
 		},
 		{
-			MethodName: "GetMinStake",
-			Handler:    _Bidder_GetMinStake_Handler,
+			MethodName: "GetMinAllowance",
+			Handler:    _Bidder_GetMinAllowance_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

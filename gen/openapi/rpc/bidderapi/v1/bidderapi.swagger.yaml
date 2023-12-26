@@ -37,44 +37,44 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/rpcbidderapiv1Bid'
-  /v1/bidder/get_min_stake:
+  /v1/bidder/get_allowance:
     get:
-      summary: GetMinStake
-      description: GetMinStake is called by the bidder to get the minimum stake required to be in the bidder registry.
-      operationId: Bidder_GetMinStake
+      summary: GetAllowance
+      description: GetAllowance is called by the bidder to get its allowance in the bidder registry.
+      operationId: Bidder_GetAllowance
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
+            $ref: '#/definitions/v1PrepayResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
-  /v1/bidder/get_stake:
+  /v1/bidder/get_min_allowance:
     get:
-      summary: GetStake
-      description: GetStake is called by the bidder to get its stake in the bidder registry.
-      operationId: Bidder_GetStake
+      summary: GetMinAllowance
+      description: GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
+      operationId: Bidder_GetMinAllowance
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
+            $ref: '#/definitions/v1PrepayResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
-  /v1/bidder/register_stake/{amount}:
+  /v1/bidder/prepay/{amount}:
     post:
-      summary: RegisterStake
-      description: RegisterStake is called by the bidder to register its stake in the bidder registry.
-      operationId: Bidder_RegisterStake
+      summary: PrepayAllowance
+      description: PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.
+      operationId: Bidder_PrepayAllowance
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcbidderapiv1StakeResponse'
+            $ref: '#/definitions/v1PrepayResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -129,15 +129,6 @@ definitions:
       - txHash
       - amount
       - blockNumber
-  rpcbidderapiv1StakeResponse:
-    type: object
-    example:
-      amount: "1000000000000000000"
-    properties:
-      amount:
-        type: string
-    description: Get staked amount for bidder in the bidder provider_registry.
-    title: Stake response
   v1Commitment:
     type: object
     properties:
@@ -165,3 +156,12 @@ definitions:
       commitmentSignature:
         type: string
         description: Hex string encoding of signature of the commitment signed by the provider confirming this transaction.
+  v1PrepayResponse:
+    type: object
+    example:
+      amount: "1000000000000000000"
+    properties:
+      amount:
+        type: string
+    description: Get prepaid allowance for bidder in the bidder registry.
+    title: Prepay response

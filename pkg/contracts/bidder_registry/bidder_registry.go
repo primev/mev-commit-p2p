@@ -22,14 +22,14 @@ var bidderRegistryABI = func() abi.ABI {
 }
 
 type Interface interface {
-	// RegisterBidder registers a provider with the provider_registry contract.
-	RegisterBidder(ctx context.Context, amount *big.Int) error
-	// GetStake returns the stake of a provider.
-	GetStake(ctx context.Context, address common.Address) (*big.Int, error)
-	// GetMinStake returns the minimum stake required to register as a provider.
-	GetMinStake(ctx context.Context) (*big.Int, error)
+	// PrepayAllowance registers a provider with the provider_registry contract.
+	PrepayAllowance(ctx context.Context, amount *big.Int) error
+	// GetAllowance returns the stake of a provider.
+	GetAllowance(ctx context.Context, address common.Address) (*big.Int, error)
+	// GetMinAllowance returns the minimum stake required to register as a provider.
+	GetMinAllowance(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
-	CheckBidderRegistered(ctx context.Context, address common.Address) bool
+	CheckBidderAllowance(ctx context.Context, address common.Address) bool
 }
 
 type bidderRegistryContract struct {
@@ -52,7 +52,7 @@ func New(
 	}
 }
 
-func (r *bidderRegistryContract) RegisterBidder(ctx context.Context, amount *big.Int) error {
+func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *big.Int) error {
 	callData, err := r.bidderRegistryABI.Pack("registerAndStake")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
@@ -87,7 +87,7 @@ func (r *bidderRegistryContract) RegisterBidder(ctx context.Context, amount *big
 	return nil
 }
 
-func (r *bidderRegistryContract) GetStake(
+func (r *bidderRegistryContract) GetAllowance(
 	ctx context.Context,
 	address common.Address,
 ) (*big.Int, error) {
@@ -114,7 +114,7 @@ func (r *bidderRegistryContract) GetStake(
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *bidderRegistryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
+func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int, error) {
 	callData, err := r.bidderRegistryABI.Pack("minStake")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
@@ -138,18 +138,18 @@ func (r *bidderRegistryContract) GetMinStake(ctx context.Context) (*big.Int, err
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *bidderRegistryContract) CheckBidderRegistered(
+func (r *bidderRegistryContract) CheckBidderAllowance(
 	ctx context.Context,
 	address common.Address,
 ) bool {
 
-	minStake, err := r.GetMinStake(ctx)
+	minStake, err := r.GetMinAllowance(ctx)
 	if err != nil {
 		r.logger.Error("error getting min stake", "error", err)
 		return false
 	}
 
-	stake, err := r.GetStake(ctx, address)
+	stake, err := r.GetAllowance(ctx, address)
 	if err != nil {
 		r.logger.Error("error getting stake", "error", err)
 		return false

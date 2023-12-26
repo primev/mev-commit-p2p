@@ -37,7 +37,7 @@ type Topology interface {
 }
 
 type BidderStore interface {
-	CheckBidderRegistered(context.Context, common.Address) bool
+	CheckBidderAllowance(context.Context, common.Address) bool
 }
 
 type BidProcessor interface {
@@ -194,7 +194,7 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	if p.us.CheckBidderRegistered(ctx, *ethAddress) {
+	if p.us.CheckBidderAllowance(ctx, *ethAddress) {
 		// try to enqueue for 5 seconds
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()

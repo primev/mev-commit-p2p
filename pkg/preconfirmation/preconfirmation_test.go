@@ -27,7 +27,7 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 
 type testBidderStore struct{}
 
-func (t *testBidderStore) CheckBidderRegistered(_ context.Context, _ common.Address) bool {
+func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address) bool {
 	return true
 }
 

@@ -115,13 +115,23 @@ func main() {
 	defer conn.Close()
 
 	bidderClient := pb.NewBidderClient(conn)
-	err = checkOrStake(bidderClient, logger)
-	if err != nil {
-		logger.Error("failed to check or stake", "err", err)
-		return
-	}
 
 	wg := sync.WaitGroup{}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+
+		for {
+			err = checkOrPrepay(bidderClient, logger)
+			if err != nil {
+				logger.Error("failed to check or stake", "err", err)
+			}
+			<-ticker.C
+		}
+	}()
 
 	for i := 0; i < *parallelWorkers; i++ {
 		wg.Add(1)
@@ -140,38 +150,52 @@ func main() {
 	wg.Wait()
 }
 
-func checkOrStake(
+func checkOrPrepay(
 	bidderClient pb.BidderClient,
 	logger *slog.Logger,
 ) error {
-	stakeAmt, err := bidderClient.GetStake(context.Background(), &pb.EmptyMessage{})
+	allowance, err := bidderClient.GetAllowance(context.Background(), &pb.EmptyMessage{})
 	if err != nil {
-		logger.Error("failed to get stake amount", "err", err)
+		logger.Error("failed to get allowance", "err", err)
 		return err
 	}
 
-	logger.Info("stake amount", "stake", stakeAmt.Amount)
+	logger.Info("prepaid allowance", "amount", allowance.Amount)
 
-	stakedAmt, set := big.NewInt(0).SetString(stakeAmt.Amount, 10)
-	if !set {
-		logger.Error("failed to parse stake amount")
-		return errors.New("failed to parse stake amount")
+	minAllowance, err := bidderClient.GetMinAllowance(context.Background(), &pb.EmptyMessage{})
+	if err != nil {
+		logger.Error("failed to get min allowance", "err", err)
+		return err
 	}
 
-	if stakedAmt.Cmp(big.NewInt(0)) > 0 {
-		logger.Error("bidder already staked")
+	allowanceAmt, set := big.NewInt(0).SetString(allowance.Amount, 10)
+	if !set {
+		logger.Error("failed to parse allowance amount")
+		return errors.New("failed to parse allowance amount")
+	}
+
+	minAllowanceAmt, set := big.NewInt(0).SetString(minAllowance.Amount, 10)
+	if !set {
+		logger.Error("failed to parse min allowance amount")
+		return errors.New("failed to parse min allowance amount")
+	}
+
+	if allowanceAmt.Cmp(minAllowanceAmt) > 0 {
+		logger.Error("bidder already has balance")
 		return nil
 	}
 
-	_, err = bidderClient.RegisterStake(context.Background(), &pb.StakeRequest{
-		Amount: "10000000000000000000",
+	topup := big.NewInt(0).Mul(minAllowanceAmt, big.NewInt(10))
+
+	_, err = bidderClient.PrepayAllowance(context.Background(), &pb.PrepayRequest{
+		Amount: topup.String(),
 	})
 	if err != nil {
-		logger.Error("failed to register stake", "err", err)
+		logger.Error("failed to prepay allowance", "err", err)
 		return err
 	}
 
-	logger.Info("staked 10 ETH")
+	logger.Info("prepaid allowance", "amount", topup.String())
 
 	return nil
 }
