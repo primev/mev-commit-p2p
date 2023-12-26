@@ -53,7 +53,7 @@ func New(
 }
 
 func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *big.Int) error {
-	callData, err := r.bidderRegistryABI.Pack("registerAndStake")
+	callData, err := r.bidderRegistryABI.Pack("prepay")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return err
@@ -91,7 +91,7 @@ func (r *bidderRegistryContract) GetAllowance(
 	ctx context.Context,
 	address common.Address,
 ) (*big.Int, error) {
-	callData, err := r.bidderRegistryABI.Pack("checkStake", address)
+	callData, err := r.bidderRegistryABI.Pack("getAllowance", address)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -105,7 +105,7 @@ func (r *bidderRegistryContract) GetAllowance(
 		return nil, err
 	}
 
-	results, err := r.bidderRegistryABI.Unpack("checkStake", result)
+	results, err := r.bidderRegistryABI.Unpack("getAllowance", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
@@ -115,7 +115,7 @@ func (r *bidderRegistryContract) GetAllowance(
 }
 
 func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int, error) {
-	callData, err := r.bidderRegistryABI.Pack("minStake")
+	callData, err := r.bidderRegistryABI.Pack("minAllowance")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -129,7 +129,7 @@ func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int,
 		return nil, err
 	}
 
-	results, err := r.bidderRegistryABI.Unpack("minStake", result)
+	results, err := r.bidderRegistryABI.Unpack("minAllowance", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
