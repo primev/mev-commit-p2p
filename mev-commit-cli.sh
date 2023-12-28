@@ -333,7 +333,6 @@ show_help() {
     echo "Usage: $0 [command] [service(s)] [options]"
     echo ""
     echo "Commands:"
-    echo "  sl                     Start the settlement layer"
     echo "  deploy_contracts       Deploy contracts"
     echo "  start [services]       Start specified services. Available services: all, e2e, mev-commit, oracle, sl, bridge, minimal"
     echo "  stop [service]         Stop specified service. Available services: sl, mev-commit, all"
