@@ -207,11 +207,9 @@ deploy_contracts() {
 
 start_oracle(){
     local sepolia_key=$1
-    local starting_block_number=$2
-    local datadog_key=$3
+    local datadog_key=$2
     cat > "$ORACLE_PATH/.env" <<EOF
-    L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
-    STARTING_BLOCK=${starting_block_number}
+    L1_URL="${L1_RPC_BASE_URL}/${sepolia_key}"
     INTEGREATION_TEST=true
     DB_HOST=localhost
     POSTGRES_PASSWORD=oracle_pass
@@ -294,7 +292,7 @@ start_service() {
             start_settlement_layer "$datadog_key"
             deploy_contracts "$rpc_url"
             start_mev_commit "$datadog_key"
-            start_oracle "$sepolia_key" "$starting_block_number" "$datadog_key"
+            start_oracle "$sepolia_key" "$datadog_key"
             start_bridge
             ;;
         "e2e")
@@ -303,14 +301,14 @@ start_service() {
             deploy_contracts "$rpc_url"
             start_mev_commit_e2e "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
             sleep 12
-            start_oracle "$sepolia_key" "$starting_block_number" "$datadog_key"
+            start_oracle "$sepolia_key" "$datadog_key"
             start_bridge
             ;;
         "mev-commit")
             start_mev_commit "$datadog_key"
             ;;
         "oracle")
-            start_oracle "$sepolia_key" "$starting_block_number" "$datadog_key"
+            start_oracle "$sepolia_key" "$datadog_key"
             ;;
         "sl")
             start_settlement_layer "$datadog_key"
@@ -348,7 +346,6 @@ show_help() {
     echo "  --rpc-url URL          Set the RPC URL"
     echo "  --datadog-key KEY      Set the Datadog key"
     echo "  --sepolia-key KEY      Set the Sepolia key"
-    echo "  --starting-block-number NUMBER  Set the starting block number for oracle"
     echo ""
     echo "Examples:"
     echo "  $0 start all --rpc-url http://localhost:8545  Start all services with a specific RPC URL"
@@ -376,10 +373,6 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         --sepolia-key)
             sepolia_key="$2"
-            shift 2
-            ;;
-        --starting-block-number)
-            starting_block_number="$2"
             shift 2
             ;;
         start|stop|deploy_contracts|update|clean)
