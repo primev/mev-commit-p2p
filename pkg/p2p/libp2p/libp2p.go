@@ -195,7 +195,7 @@ func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 		case errors.Is(err, handshake.ErrObservedAddressMismatch):
 			s.blockPeer(peerID, 0, "address mismatch during handshake")
 		case errors.Is(err, handshake.ErrInsufficientStake):
-			s.blockPeer(peerID, 5*time.Minute, "insufficient stake")
+			s.blockPeer(peerID, 2*time.Minute, "insufficient stake")
 		}
 		return
 	}

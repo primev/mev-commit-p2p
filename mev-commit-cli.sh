@@ -4,10 +4,17 @@
 L1_RPC_BASE_URL=https://sepolia.infura.io/v3
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
-GETH_POA_PATH="$PRIMEV_DIR/mev-commit-geth"
-CONTRACTS_PATH="$PRIMEV_DIR/contracts"
-MEV_COMMIT_PATH="$PRIMEV_DIR/mev-commit"
-ORACLE_PATH="$PRIMEV_DIR/mev-commit-oracle"
+
+GETH_REPO_NAME="mev-commit-geth"
+CONTRACT_REPO_NAME="contracts"
+MEV_COMMIT_REPO_NAME="mev-commit"
+ORACLE_REPO_NAME="mev-commit-oracle"
+
+GETH_POA_PATH="$PRIMEV_DIR/$GETH_REPO_NAME"
+CONTRACTS_PATH="$PRIMEV_DIR/$CONTRACT_REPO_NAME"
+MEV_COMMIT_PATH="$PRIMEV_DIR/$MEV_COMMIT_REPO_NAME"
+ORACLE_PATH="$PRIMEV_DIR/$ORACLE_REPO_NAME"
+
 DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
@@ -47,10 +54,11 @@ create_primev_dir() {
 # Function to clone all repositories
 clone_repos() {
     echo "Cloning repositories under $PRIMEV_DIR..."
-    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/go-ethereum.git "$GETH_POA_PATH"
-    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/contracts.git "$CONTRACTS_PATH"
-    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/mev-commit.git "$MEV_COMMIT_PATH"
-    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/mev-oracle.git "$ORACLE_PATH"
+    # Clone only if the directory doesn't exist
+    [ ! -d "$GETH_POA_PATH" ] && git clone https://github.com/primevprotocol/$GETH_REPO_NAME.git "$GETH_POA_PATH"
+    [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/$CONTRACT_REPO_NAME.git "$CONTRACTS_PATH"
+    [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/$MEV_COMMIT_REPO_NAME.git "$MEV_COMMIT_PATH"
+    [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/$ORACLE_REPO_NAME.git "$ORACLE_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
@@ -78,13 +86,12 @@ start_settlement_layer() {
     local datadog_key=$1
 
     cat > "$GETH_POA_PATH/geth-poa/.env" <<EOF
-    CONTRACT_DEPLOYER_PRIVATE_KEY=0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f03d5830e2dd5b0ea
+    HYPERLANE_DEPLOYER_PRIVATE_KEY=0xc065f4c9a6dda0785e2224f5af8e473614de1c029acf094f03d5830e2dd5b0ea
     NODE1_PRIVATE_KEY=0xe82a054e06f89598485134b4f2ce8a612ce7f7f7e14e650f9f20b30efddd0e57
     NODE2_PRIVATE_KEY=0xb17b77fe56797c1a6c236f628d25ede823496af371b3fec858a7a6beff07696b
     RELAYER_PRIVATE_KEY=0xa0d74f611ee519f3fd4a84236ee24b955df2a3f40632f404ca46e0b17f696df3
     NEXT_PUBLIC_WALLET_CONNECT_ID=
     DD_KEY=${datadog_key}
-    RPC_URL=${rpc_url}
 EOF
 
     export AGENT_BASE_IMAGE=nil
@@ -126,9 +133,9 @@ start_mev_commit_e2e() {
 
         # Create or overwrite the .env file
     cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
-    BIDDER_REGISTRY=0xe38B5a8C41f307646F395030992Aa008978E2699
-    PROVIDER_REGISTRY=0x7fA45D14358B698Bd85a0a2B03720A6Fe4b566d7
-    PRECONF_CONTRACT=0x8B0F623dCD54cA50CD154B3dDCbB8436E876b019
+    BIDDER_REGISTRY=0x390066a15e1048445F1B1b69Ba98AC4cb5e91c52
+    PROVIDER_REGISTRY=0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
+    PRECONF_CONTRACT=0xBB632720f817792578060F176694D8f7230229d9
     RPC_URL=${rpc_url}
     PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
     L1_RPC_URL="${L1_RPC_BASE_URL}/${sepolia_key}"
@@ -139,10 +146,10 @@ EOF
     if [ -z "$datadog_key" ]; then
         echo "DD_KEY is empty, so no agents will be started."
         # Run Docker Compose without --profile agent
-        docker compose --profile main -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+        docker compose --profile e2etest -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
     else
         # Run Docker Compose with --profile agent
-        DD_KEY="$datadog_key" docker compose --profile main --profile agent -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+        DD_KEY="$datadog_key" docker compose --profile e2etest --profile agent -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
     fi
 }
 
