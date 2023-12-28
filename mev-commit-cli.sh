@@ -139,7 +139,7 @@ PROVIDER_REGISTRY=0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
 PRECONF_CONTRACT=0xBB632720f817792578060F176694D8f7230229d9
 RPC_URL=http://sl-bootnode:8545
 PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-L1_RPC_URL=https://sepolia.infura.io/v3/${sepolia_key}
+L1_RPC_URL=https://goerli.infura.io/v3/${sepolia_key}
 EOF
 
 
@@ -214,7 +214,7 @@ start_oracle(){
     local starting_block_number=$2
     local datadog_key=$3
     cat > "$ORACLE_PATH/.env" <<EOF
-L1_URL=https://sepolia.infura.io/v3/${sepolia_key}
+L1_URL=https://goerli.infura.io/v3/${sepolia_key}
 STARTING_BLOCK=${starting_block_number}
 INTEGREATION_TEST=true
 DB_HOST=localhost
