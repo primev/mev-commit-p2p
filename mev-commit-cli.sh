@@ -207,7 +207,7 @@ deploy_contracts() {
 
 start_oracle(){
     local sepolia_key=$1
-    local datadog_key=$3
+    local datadog_key=$2
     cat > "$ORACLE_PATH/.env" <<EOF
     L1_URL="${L1_RPC_BASE_URL}/${sepolia_key}"
     INTEGREATION_TEST=true
