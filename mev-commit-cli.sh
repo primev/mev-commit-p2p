@@ -269,6 +269,7 @@ stop_services() {
             ;;
         "oracle")
             stop_oracle
+            ;;
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
