@@ -223,7 +223,7 @@ EOF
 
 stop_oracle(){
     # Run Docker Compose
-    DEPLOY_ENV=e2e DD_KEY=nil docker compose -f "$ORACLE_PATH/docker-compose.yml" up down
+    DEPLOY_ENV=e2e DD_KEY=nil docker compose -f "$ORACLE_PATH/docker-compose.yml" down
 }
 
 start_bridge(){
@@ -268,7 +268,7 @@ stop_services() {
             docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
             ;;
         "oracle")
-            stop_oracle
+            stop_oracle  # Assuming stop_oracle is a function you've defined elsewhere
             ;;
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
@@ -279,12 +279,13 @@ stop_services() {
             ;;
         *)
             echo "Invalid service: $service"
-            echo "Valid services: geth-poa, mev-commit, all"
+            echo "Valid services: sl, oracle, mev-commit, all"
             return 1
     esac
 
     echo "Service(s) stopped."
 }
+
 
 start_service() {
     local service_name=$1
@@ -422,7 +423,12 @@ case "$command" in
         deploy_contracts "$rpc_url"
         ;;
     stop)
-        stop_services "$2"
+        if [ -z "${service_names[0]}" ]; then
+            echo "No service specified for stopping."
+            exit 1
+        else
+            stop_services "${service_names[0]}"
+        fi
         ;;
     update)
         update_repos
