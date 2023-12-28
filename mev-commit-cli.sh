@@ -267,6 +267,8 @@ stop_services() {
         "sl")
             docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
             ;;
+        "oracle")
+            stop_oracle
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
