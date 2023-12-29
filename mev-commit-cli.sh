@@ -225,12 +225,13 @@ stop_oracle(){
 }
 
 start_bridge(){
-    local external_rpc_url=${1:-$DEFAULT_RPC_URL}
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 SETTLEMENT_RPC_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+    local public_rpc_url=${1:-$DEFAULT_RPC_URL}
+    local rpc_url=${2:-$DEFAULT_RPC_URL}
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
 }
 
 stop_bridge(){
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 SETTLEMENT_RPC_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge down
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge down
 }
 
 clean() {
@@ -305,7 +306,7 @@ start_service() {
             start_mev_commit_e2e "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
             sleep 12
             start_oracle "$sepolia_key" "$datadog_key"
-            start_bridge "$external_rpc_url"
+            start_bridge "$public_rpc_url"
             ;;
         "mev-commit")
             start_mev_commit "$datadog_key"
@@ -317,7 +318,7 @@ start_service() {
             start_settlement_layer "$datadog_key"
             ;;
         "bridge")
-            start_bridge "$external_rpc_url"
+            start_bridge "$public_rpc_url"
             ;;
         "minimal")
             initialize_environment
@@ -347,7 +348,7 @@ show_help() {
     echo "Options:"
     echo "  -h, --help             Show this help message"
     echo "  --rpc-url URL          Set the internal RPC URL for mev-commit-geth"
-    echo "  --external-rpc-url URL Set the public RPC URL for mev-commit-geth"
+    echo "  --public-rpc-url URL   Set the public RPC URL for mev-commit-geth"
     echo "  --datadog-key KEY      Set the Datadog key"
     echo "  --sepolia-key KEY      Set the Sepolia key"
     echo ""
@@ -371,8 +372,8 @@ while [[ "$#" -gt 0 ]]; do
             rpc_url="$2"
             shift 2
             ;;
-        --external-rpc-url)
-            external_rpc_url="$2"
+        --public-rpc-url)
+            public_rpc_url="$2"
             shift 2
             ;;
         --datadog-key)
