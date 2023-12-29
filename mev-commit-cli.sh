@@ -268,6 +268,9 @@ stop_services() {
         "oracle")
             stop_oracle  # Assuming stop_oracle is a function you've defined elsewhere
             ;;
+        "bridge")
+            stop_bridge
+            ;;
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
