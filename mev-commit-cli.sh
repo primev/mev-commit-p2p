@@ -226,11 +226,11 @@ stop_oracle(){
 
 start_bridge(){
     local external_rpc_url=${1:-$DEFAULT_RPC_URL}
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 L2_NODE_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 SETTLEMENT_RPC_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
 }
 
 stop_bridge(){
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 L2_NODE_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge down
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 SETTLEMENT_RPC_URL="$external_rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge down
 }
 
 clean() {
