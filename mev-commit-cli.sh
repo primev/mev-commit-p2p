@@ -239,23 +239,29 @@ stop_oracle(){
 start_bridge(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
-    # AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
     local chain_id=${2:-17864}  # Default chain ID
     local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
 
-    # TODO: Obtain artifacts
+    # Run Alpine container which:
+    # 1. Install jq
+    # 2. Prints warp-deployment.json from docker volume
+    # 3. Parses the JSON to get hyperlane ERC20 contract address "router" deployed on settlement layer
+    HYP_ERC20_ADDR=$(docker run --rm -v geth-poa_hyperlane-deploy-artifacts:/data alpine /bin/sh -c "apk add --no-cache -q jq && cat /data/warp-deployment.json | jq -r '.mevcommitsettlement.router'")
 
-    # Bridge is now up, deploy whitelist contract
+    echo "HYP_ERC20_ADDR: $HYP_ERC20_ADDR"
+
     build_contract_deployer
 
     deploy_create2
-    
+
+    # Deploy whitelist contract 
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
         -e PRIVATE_KEY="$private_key" \
         -e DEPLOY_TYPE="whitelist" \
-        -e HYP_ERC20_ADDR="0x707719517b112c9A3F571709e59Cfbaa28fCf873" \
+        -e HYP_ERC20_ADDR="$HYP_ERC20_ADDR" \
         contract-deployer
 }
 
