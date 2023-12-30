@@ -183,7 +183,7 @@ build_contract_deployer() {
 }
 
 # Deploy create2 proxy from alpine container.
-# This script is able to handle the contract already being deployed.
+# This script is able to handle the proxy already being deployed.
 deploy_create2() {
     chmod +x "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh"
     docker run \
@@ -239,9 +239,12 @@ stop_oracle(){
 start_bridge(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
-    local chain_id=${2:-17864}  # Default chain ID
-    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
+    local chain_id=${3:-17864}  # Default chain ID
+    local private_key=${4:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 \
+        PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" \
+        SETTLEMENT_RPC_URL="$rpc_url" \
+        docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
 
     # Run Alpine container which:
     # 1. Install jq
