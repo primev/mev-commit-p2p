@@ -169,24 +169,22 @@ start_mev_commit() {
     fi
 }
 
-
-deploy_contracts() {
-    local rpc_url=${1:-$DEFAULT_RPC_URL}
-    local chain_id=${2:-17864}  # Default chain ID
-    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
-    echo "Building Contract Deployment Image..."
-
+# Builds contract-deployer image only if it doesn't already exist
+build_contract_deployer() {
     # Ensure the latest contracts repo is being used
     git -C "$CONTRACTS_PATH" pull
 
-    # Build the Docker image for contract deployment
-    docker build -t contract-deployer "$CONTRACTS_PATH"
+    if [[ -z $(docker images -q contract-deployer) ]]; then
+        echo "Image 'contract-deployer' does not exist. Building the image..."
+        docker build -t contract-deployer "$CONTRACTS_PATH"
+    else
+        echo "Image 'contract-deployer' already exists."
+    fi
+}
 
-    # Wait for the Geth POA network to be up and running
-    echo "Waiting for Geth POA network to be fully up..."
-    sleep 10
-
-    # Deploy create2 proxy from alpine container
+# Deploy create2 proxy from alpine container.
+# This script is able to handle the proxy already being deployed.
+deploy_create2() {
     chmod +x "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh"
     docker run \
         --rm \
@@ -195,6 +193,20 @@ deploy_contracts() {
         alpine /bin/sh -c \
         "apk add --no-cache curl jq \
         && /deploy_create2.sh ${rpc_url}"
+}
+
+deploy_contracts() {
+    local rpc_url=${1:-$DEFAULT_RPC_URL}
+    local chain_id=${2:-17864}  # Default chain ID
+    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
+
+    # Wait for the Geth POA network to be up and running
+    echo "Waiting for Geth POA network to be fully up..."
+    sleep 10
+
+    build_contract_deployer
+
+    deploy_create2
 
     # Run the Docker container to deploy the contracts
     echo "Deploying Contracts with RPC URL: $rpc_url, Chain ID: $chain_id, and Private Key: [HIDDEN]"
@@ -227,7 +239,33 @@ stop_oracle(){
 start_bridge(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+    local chain_id=${3:-17864}  # Default chain ID
+    local private_key=${4:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 \
+        PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" \
+        SETTLEMENT_RPC_URL="$rpc_url" \
+        docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+
+    # Run Alpine container which:
+    # 1. Install jq
+    # 2. Prints warp-deployment.json from docker volume
+    # 3. Parses the JSON to get hyperlane ERC20 contract address "router" deployed on settlement layer
+    HYP_ERC20_ADDR=$(docker run --rm -v geth-poa_hyperlane-deploy-artifacts:/data alpine /bin/sh -c "apk add --no-cache -q jq && cat /data/warp-deployment.json | jq -r '.mevcommitsettlement.router'")
+
+    echo "HYP_ERC20_ADDR: $HYP_ERC20_ADDR"
+
+    build_contract_deployer
+
+    deploy_create2
+
+    # Deploy whitelist contract 
+    docker run --rm --network "$DOCKER_NETWORK_NAME" \
+        -e RPC_URL="$rpc_url" \
+        -e CHAIN_ID="$chain_id" \
+        -e PRIVATE_KEY="$private_key" \
+        -e DEPLOY_TYPE="whitelist" \
+        -e HYP_ERC20_ADDR="$HYP_ERC20_ADDR" \
+        contract-deployer
 }
 
 stop_bridge(){
@@ -297,7 +335,7 @@ start_service() {
             deploy_contracts "$rpc_url"
             start_mev_commit "$datadog_key"
             start_oracle "$sepolia_key" "$datadog_key"
-            start_bridge
+            start_bridge "$public_rpc_url"
             ;;
         "e2e")
             initialize_environment
