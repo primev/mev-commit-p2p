@@ -226,7 +226,7 @@ start_oracle(){
 
 stop_oracle(){
     # Run Docker Compose
-    docker compose -f "$ORACLE_PATH/docker-compose.yml" down
+    docker compose -f "$ORACLE_PATH/integration-compose.yml" down
 }
 
 start_bridge(){
