@@ -218,22 +218,15 @@ deploy_contracts() {
 }
 
 start_oracle(){
-    local sepolia_key=$1
+    local l1_url=${L1_RPC_BASE_URL}/$1
     local datadog_key=$2
-    cat > "$ORACLE_PATH/.env" <<EOF
-    L1_URL="${L1_RPC_BASE_URL}/${sepolia_key}"
-    INTEGREATION_TEST=true
-    DB_HOST=localhost
-    POSTGRES_PASSWORD=oracle_pass
-    DD_KEY=${datadog_key}
-EOF
     # Run Docker Compose
-    DEPLOY_ENV=e2e DD_KEY="$datadog_key" docker compose -f "$ORACLE_PATH/docker-compose.yml" up -d --build
+    L1_URL="$l1_url" DD_KEY="$datadog_key" docker compose -f "$ORACLE_PATH/integration-compose.yml" up -d --build
 }
 
 stop_oracle(){
     # Run Docker Compose
-    DEPLOY_ENV=e2e DD_KEY=nil docker compose -f "$ORACLE_PATH/docker-compose.yml" down
+    docker compose -f "$ORACLE_PATH/docker-compose.yml" down
 }
 
 start_bridge(){
