@@ -10,7 +10,7 @@ require (
 	github.com/libp2p/go-msgio v0.3.0
 	github.com/multiformats/go-multiaddr v0.12.0
 	github.com/multiformats/go-multiaddr-dns v0.3.1
-	github.com/prometheus/client_golang v1.17.0
+	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.26.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
@@ -74,7 +74,7 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.1 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/miekg/dns v1.1.55 // indirect
 	github.com/mikioh/tcpinfo v0.0.0-20190314235526-30a79bb1804b // indirect
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
@@ -94,9 +94,9 @@ require (
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
-	github.com/prometheus/common v0.44.0 // indirect
-	github.com/prometheus/procfs v0.11.1 // indirect
+	github.com/prometheus/client_model v0.5.0 // indirect
+	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.3.3 // indirect
 	github.com/quic-go/quic-go v0.38.1 // indirect
