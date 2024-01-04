@@ -442,6 +442,9 @@ fi
 
 # Main script logic based on the command variable
 case "$command" in
+    init_network)
+        create_docker_network
+        ;;
     start)
         if [ ${#service_names[@]} -eq 0 ]; then
             echo "No service specified. Starting all services."
