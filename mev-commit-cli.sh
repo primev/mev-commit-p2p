@@ -173,13 +173,7 @@ start_mev_commit() {
 build_contract_deployer() {
     # Ensure the latest contracts repo is being used
     git -C "$CONTRACTS_PATH" pull
-
-    if [[ -z $(docker images -q contract-deployer) ]]; then
-        echo "Image 'contract-deployer' does not exist. Building the image..."
-        docker build -t contract-deployer "$CONTRACTS_PATH"
-    else
-        echo "Image 'contract-deployer' already exists."
-    fi
+    docker build -t contract-deployer "$CONTRACTS_PATH"
 }
 
 # Deploy create2 proxy from alpine container.
