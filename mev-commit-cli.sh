@@ -97,8 +97,11 @@ EOF
     export AGENT_BASE_IMAGE=nil
     export L2_NODE_URL=nil
 
-    # Run Docker Compose
-    docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+    AGENT_BASE_IMAGE=nil SETTLEMENT_RPC_URL=nil PUBLIC_SETTLEMENT_RPC_URL=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+}
+
+stop_settlement_layer() {
+    AGENT_BASE_IMAGE=nil SETTLEMENT_RPC_URL=nil PUBLIC_SETTLEMENT_RPC_URL=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
 }
 
 start_mev_commit_minimal() {
@@ -289,7 +292,7 @@ stop_services() {
 
     case $service in
         "sl")
-            docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
+            stop_settlement_layer
             ;;
         "oracle")
             stop_oracle  # Assuming stop_oracle is a function you've defined elsewhere
@@ -301,7 +304,9 @@ stop_services() {
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         "all")
-            docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
+            stop_settlement_layer
+            stop_oracle
+            stop_bridge
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         *)
