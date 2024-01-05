@@ -1,9 +1,5 @@
-VERSION ?= "$(shell git describe --tags --abbrev=0 | cut -c2-)"
-COMMIT_HASH ?= "$(shell git describe --long --dirty --always --match "" || true)"
-
 LDFLAGS ?= -s -w \
--X github.com/primevprotocol/mev-commit.version="$(VERSION)" \
--X github.com/primevprotocol/mev-commit.commitHash="$(COMMIT_HASH)"
+-X github.com/primevprotocol/mev-commit.version=$(shell git describe --tags)
 
 .PHONY: build
 build: export CGO_ENABLED=0
