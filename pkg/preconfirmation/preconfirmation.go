@@ -30,6 +30,7 @@ type Preconfirmation struct {
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
 	logger       *slog.Logger
+	metrics      *metrics
 }
 
 type Topology interface {
@@ -61,6 +62,7 @@ func New(
 		processer:    processor,
 		commitmentDA: commitmentDA,
 		logger:       logger,
+		metrics:      newMetrics(),
 	}
 }
 
@@ -132,6 +134,7 @@ func (p *Preconfirmation) SendBid(
 				logger.Error("writing message", "err", err)
 				return
 			}
+			p.metrics.SentBidsCount.Inc()
 
 			preConfirmation, err := r.ReadMsg(ctx)
 			if err != nil {
@@ -150,6 +153,7 @@ func (p *Preconfirmation) SendBid(
 			}
 
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
+			p.metrics.ReceivedPreconfsCount.Inc()
 
 			select {
 			case preConfirmations <- preConfirmation:
