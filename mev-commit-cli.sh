@@ -9,17 +9,20 @@ GETH_REPO_NAME="mev-commit-geth"
 CONTRACT_REPO_NAME="contracts"
 MEV_COMMIT_REPO_NAME="mev-commit"
 ORACLE_REPO_NAME="mev-commit-oracle"
+BRIDGE_REPO_NAME="mev-commit-bridge"
 
 GETH_POA_PATH="$PRIMEV_DIR/$GETH_REPO_NAME"
 CONTRACTS_PATH="$PRIMEV_DIR/$CONTRACT_REPO_NAME"
 MEV_COMMIT_PATH="$PRIMEV_DIR/$MEV_COMMIT_REPO_NAME"
 ORACLE_PATH="$PRIMEV_DIR/$ORACLE_REPO_NAME"
+BRIDGE_PATH="$PRIMEV_DIR/$BRIDGE_REPO_NAME"
 
 DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="main"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
 ORACLE_BRANCH="main"
+BRIDGE_BRANCH="main"
 
 # Default values for optional arguments
 rpc_url=$DEFAULT_RPC_URL
@@ -59,6 +62,7 @@ clone_repos() {
     [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/$CONTRACT_REPO_NAME.git "$CONTRACTS_PATH"
     [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/$MEV_COMMIT_REPO_NAME.git "$MEV_COMMIT_PATH"
     [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/$ORACLE_REPO_NAME.git "$ORACLE_PATH"
+    [ ! -d "$BRIDGE_PATH" ] && git clone https://github.com/primevprotocol/$BRIDGE_REPO_NAME.git
 }
 
 # Function to checkout a specific branch for all repositories
@@ -71,6 +75,8 @@ checkout_branch() {
     git -C "$CONTRACTS_PATH" checkout "$CONTRACTS_BRANCH"
     echo "Checking out branch $ORACLE_BRANCH for oracle..."
     git -C "$ORACLE_PATH" checkout "$ORACLE_BRANCH"
+    echo "Checking out branch $BRIDGE_BRANCH for bridge..."
+    git -C "$BRIDGE_PATH" checkout "$BRIDGE_BRANCH"
 }
 
 # Function to pull latest changes for all repositories
@@ -80,6 +86,7 @@ update_repos() {
     git -C "$CONTRACTS_PATH" pull
     git -C "$MEV_COMMIT_PATH" pull
     git -C "$ORACLE_PATH" pull
+    git -C "$BRIDGE_PATH" pull
 }
 
 start_settlement_layer() {
@@ -234,13 +241,13 @@ start_bridge(){
     AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 \
         PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" \
         SETTLEMENT_RPC_URL="$rpc_url" \
-        docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge up -d --build
+        docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge up -d --build
 
     # Run Alpine container which:
     # 1. Install jq
     # 2. Prints warp-deployment.json from docker volume
     # 3. Parses the JSON to get hyperlane ERC20 contract address "router" deployed on settlement layer
-    HYP_ERC20_ADDR=$(docker run --rm -v geth-poa_hyperlane-deploy-artifacts:/data alpine /bin/sh -c "apk add --no-cache -q jq && cat /data/warp-deployment.json | jq -r '.mevcommitsettlement.router'")
+    HYP_ERC20_ADDR=$(docker run --rm -v hyperlane_hyperlane-deploy-artifacts:/data alpine /bin/sh -c "apk add --no-cache -q jq && cat /data/warp-deployment.json | jq -r '.mevcommitsettlement.router'")
 
     echo "HYP_ERC20_ADDR: $HYP_ERC20_ADDR"
 
@@ -259,7 +266,7 @@ start_bridge(){
 }
 
 stop_bridge(){
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" --profile bridge down
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge down
 }
 
 clean() {
