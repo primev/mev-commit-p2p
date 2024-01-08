@@ -24,7 +24,7 @@ func newMetrics() *metrics {
 			Namespace: defaultNamespace,
 			Subsystem: subsystem,
 			Name:      "received_preconfs_count",
-			Help:      "Number of received preconfs",
+			Help:      "Number of received preconfirmations",
 		}),
 	}
 }
