@@ -13,41 +13,35 @@ type Query struct {
 	Type p2p.PeerType
 }
 
-type Topology interface {
-	p2p.Notifier
-	SetAnnouncer(Announcer)
-	GetPeers(Query) []p2p.Peer
-	AddPeers(...p2p.Peer)
-	IsConnected(common.Address) bool
-}
-
 type Announcer interface {
 	BroadcastPeers(context.Context, p2p.Peer, []p2p.PeerInfo) error
 }
 
-type topology struct {
+type Topology struct {
 	mu          sync.RWMutex
 	providers   map[common.Address]p2p.Peer
-	bidders       map[common.Address]p2p.Peer
+	bidders     map[common.Address]p2p.Peer
 	logger      *slog.Logger
 	addressbook p2p.Addressbook
 	announcer   Announcer
+	metrics     *metrics
 }
 
-func New(a p2p.Addressbook, logger *slog.Logger) *topology {
-	return &topology{
+func New(a p2p.Addressbook, logger *slog.Logger) *Topology {
+	return &Topology{
 		providers:   make(map[common.Address]p2p.Peer),
-		bidders:       make(map[common.Address]p2p.Peer),
+		bidders:     make(map[common.Address]p2p.Peer),
 		addressbook: a,
 		logger:      logger,
+		metrics:     newMetrics(),
 	}
 }
 
-func (t *topology) SetAnnouncer(a Announcer) {
+func (t *Topology) SetAnnouncer(a Announcer) {
 	t.announcer = a
 }
 
-func (t *topology) Connected(p p2p.Peer) {
+func (t *Topology) Connected(p p2p.Peer) {
 	t.add(p)
 
 	if t.announcer != nil {
@@ -100,19 +94,21 @@ func (t *topology) Connected(p p2p.Peer) {
 	}
 }
 
-func (t *topology) add(p p2p.Peer) {
+func (t *Topology) add(p p2p.Peer) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	switch p.Type {
 	case p2p.PeerTypeProvider:
 		t.providers[p.EthAddress] = p
+		t.metrics.ConnectedProvidersCount.Inc()
 	case p2p.PeerTypeBidder:
 		t.bidders[p.EthAddress] = p
+		t.metrics.ConnectedBiddersCount.Inc()
 	}
 }
 
-func (t *topology) Disconnected(p p2p.Peer) {
+func (t *Topology) Disconnected(p p2p.Peer) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -121,18 +117,20 @@ func (t *topology) Disconnected(p p2p.Peer) {
 	switch p.Type {
 	case p2p.PeerTypeProvider:
 		delete(t.providers, p.EthAddress)
+		t.metrics.ConnectedProvidersCount.Dec()
 	case p2p.PeerTypeBidder:
 		delete(t.bidders, p.EthAddress)
+		t.metrics.ConnectedBiddersCount.Dec()
 	}
 }
 
-func (t *topology) AddPeers(peers ...p2p.Peer) {
+func (t *Topology) AddPeers(peers ...p2p.Peer) {
 	for _, p := range peers {
 		t.add(p)
 	}
 }
 
-func (t *topology) GetPeers(q Query) []p2p.Peer {
+func (t *Topology) GetPeers(q Query) []p2p.Peer {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -152,7 +150,7 @@ func (t *topology) GetPeers(q Query) []p2p.Peer {
 	return peers
 }
 
-func (t *topology) IsConnected(addr common.Address) bool {
+func (t *Topology) IsConnected(addr common.Address) bool {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 

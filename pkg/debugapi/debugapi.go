@@ -15,9 +15,13 @@ type APIServer interface {
 	ChainHandlers(string, http.Handler, ...func(http.Handler) http.Handler)
 }
 
+type Topology interface {
+	GetPeers(topology.Query) []p2p.Peer
+}
+
 func RegisterAPI(
 	srv APIServer,
-	topo topology.Topology,
+	topo Topology,
 	p2pSvc *libp2p.Service,
 	logger *slog.Logger,
 ) {
@@ -34,7 +38,7 @@ func RegisterAPI(
 }
 
 type debugapi struct {
-	topo   topology.Topology
+	topo   Topology
 	p2p    *libp2p.Service
 	logger *slog.Logger
 }

@@ -118,6 +118,8 @@ func NewNode(opts *Options) (*Node, error) {
 	disc := discovery.New(topo, p2pSvc, opts.Logger.With("component", "discovery_protocol"))
 	nd.closers = append(nd.closers, disc)
 
+	srv.RegisterMetricsCollectors(topo.Metrics()...)
+
 	// Set the announcer for the topology service
 	topo.SetAnnouncer(disc)
 	// Set the notifier for the p2p service
@@ -153,6 +155,7 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 			bidProcessor = providerAPI
+			srv.RegisterMetricsCollectors(providerAPI.Metrics()...)
 
 			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
 
@@ -173,6 +176,7 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			// Only register handler for provider
 			p2pSvc.AddProtocol(preconfProto.Protocol())
+			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
@@ -184,6 +188,7 @@ func NewNode(opts *Options) (*Node, error) {
 				commitmentDA,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
+			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 			bidderAPI := bidderapi.NewService(
 				preconfProto,
@@ -192,6 +197,7 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "bidderapi"),
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)
+			srv.RegisterMetricsCollectors(bidderAPI.Metrics()...)
 		}
 
 		started := make(chan struct{})

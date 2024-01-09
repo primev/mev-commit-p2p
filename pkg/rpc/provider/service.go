@@ -25,6 +25,7 @@ type Service struct {
 	owner            common.Address
 	registryContract registrycontract.Interface
 	evmClient        EvmClient
+	metrics          *metrics
 }
 
 type EvmClient interface {
@@ -45,6 +46,7 @@ func NewService(
 		owner:            owner,
 		logger:           logger,
 		evmClient:        e,
+		metrics:          newMetrics(),
 	}
 }
 
@@ -102,6 +104,7 @@ func (s *Service) ReceiveBids(
 			if err != nil {
 				return err
 			}
+			s.metrics.BidsSentToProviderCount.Inc()
 		}
 	}
 }
@@ -126,6 +129,11 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 				"status", status.Status.String(),
 			)
 			callback(status.Status)
+			if status.Status == providerapiv1.BidResponse_STATUS_ACCEPTED {
+				s.metrics.BidsAcceptedByProviderCount.Inc()
+			} else {
+				s.metrics.BidsRejectedByProviderCount.Inc()
+			}
 		}
 	}
 }

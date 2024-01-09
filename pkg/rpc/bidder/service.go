@@ -23,6 +23,7 @@ type Service struct {
 	owner            common.Address
 	registryContract registrycontract.Interface
 	logger           *slog.Logger
+	metrics          *metrics
 }
 
 func NewService(
@@ -36,6 +37,7 @@ func NewService(
 		owner:            owner,
 		registryContract: registryContract,
 		logger:           logger,
+		metrics:          newMetrics(),
 	}
 }
 
@@ -50,6 +52,8 @@ func (s *Service) SendBid(
 	// timeout to prevent hanging of bidder node if provider node is not responding
 	ctx, cancel := context.WithTimeout(srv.Context(), 10*time.Second)
 	defer cancel()
+
+	s.metrics.ReceivedBidsCount.Inc()
 
 	respC, err := s.sender.SendBid(
 		ctx,
@@ -77,6 +81,7 @@ func (s *Service) SendBid(
 			s.logger.Error("error sending preConfirmation", "err", err)
 			return err
 		}
+		s.metrics.ReceivedPreconfsCount.Inc()
 	}
 
 	return nil
