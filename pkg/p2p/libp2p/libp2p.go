@@ -107,7 +107,13 @@ func New(opts *Options) (*Service, error) {
 
 	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)
 	if opts.NatAddr != "" {
-		listenAddr = fmt.Sprintf("/ip4/%s/tcp/%d", opts.NatAddr, opts.ListenPort)
+		var addr string
+		var port int
+		_, err := fmt.Sscanf(opts.NatAddr, "%s:%d", &addr, &port)
+		if err != nil {
+			return nil, errors.New("invalid NAT address")
+		}
+		listenAddr = fmt.Sprintf("/ip4/%s/tcp/%d", addr, port)
 	}
 
 	host, err := libp2p.New(
