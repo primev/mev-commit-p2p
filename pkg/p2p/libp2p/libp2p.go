@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"sync"
 	"time"
 
@@ -107,9 +108,7 @@ func New(opts *Options) (*Service, error) {
 
 	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)
 	if opts.NatAddr != "" {
-		var addr string
-		var port int
-		_, err := fmt.Sscanf(opts.NatAddr, "%s:%d", &addr, &port)
+		addr, port, err := net.SplitHostPort(opts.NatAddr)
 		if err != nil {
 			return nil, errors.New("invalid NAT address")
 		}
