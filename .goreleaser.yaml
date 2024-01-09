@@ -22,8 +22,8 @@ builds:
     main: ./cmd
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.revision={{ .ShortCommit }}
+      - -X github.com/primevprotocol/mev-commit.version={{.Version}}
+      - -X github.com/primevprotocol/mev-commit.revision={{ .ShortCommit }}
 
 archives:
   - format: tar.gz
