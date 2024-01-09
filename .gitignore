@@ -3,3 +3,5 @@ vendor
 **/.vscode
 *.DS_STORE
 bin/*
+
+dist/
