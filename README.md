@@ -61,6 +61,12 @@ rpc_port: 13524
 # Secret for the node. This is used to authorize the nodes. The value doesnt matter as long as it is sufficiently unique. It is signed using the private key.
 secret: hello
 
+# Address of bidder registery
+bidder_registry_contract: 0x62197Abd7672925c7606Bdf9931e42baCa6619AD
+
+# Address of provider registery
+provider_registry_contract: 0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
+
 # Format used for the logs. Options are "text" or "json".
 log_fmt: text
 
