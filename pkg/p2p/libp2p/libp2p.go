@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
@@ -106,17 +107,27 @@ func New(opts *Options) (*Service, error) {
 
 	conngtr := newGater(opts.Logger)
 
-	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)
+	var extMultiAddr ma.Multiaddr
 	if opts.NatAddr != "" {
 		addr, port, err := net.SplitHostPort(opts.NatAddr)
 		if err != nil {
-			return nil, errors.New("invalid NAT address")
+			return nil, err
 		}
-		listenAddr = fmt.Sprintf("/ip4/%s/tcp/%s", addr, port)
+		extMultiAddr, err = ma.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%s", addr, port))
+		if err != nil {
+			return nil, err
+		}
+	}
+	addressFactory := func(addrs []ma.Multiaddr) []ma.Multiaddr {
+		if extMultiAddr != nil {
+			addrs = append(addrs, extMultiAddr)
+		}
+		return addrs
 	}
 
 	host, err := libp2p.New(
-		libp2p.ListenAddrStrings(listenAddr),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
+		libp2p.AddrsFactory(addressFactory),
 		libp2p.ConnectionGater(conngtr),
 		libp2p.Identity(libp2pKey),
 		libp2p.ConnectionManager(connmgr),
