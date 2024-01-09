@@ -1,7 +1,5 @@
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates
-
 COPY mev-commit /usr/local/bin/mev-commit
 
 EXPOSE 13522 13523 13524
