@@ -42,8 +42,6 @@ archives:
 
 dockers:
   - image_templates:
-    - docker.io/primevprotocol/mev-commit:v{{ .Major }}.{{ .Minor }}
-    - docker.io/primevprotocol/mev-commit:latest
     - ghcr.io/primevprotocol/mev-commit:v{{ .Major }}.{{ .Minor }}
     - ghcr.io/primevprotocol/mev-commit:latest
     dockerfile: Dockerfile.goreleaser
@@ -57,8 +55,6 @@ dockers:
       - "--label=org.opencontainers.image.version={{.Version}}"
       - "--platform=linux/amd64"
   - image_templates:
-    - docker.io/primevprotocol/mev-commit:v{{ .Major }}.{{ .Minor }}
-    - docker.io/primevprotocol/mev-commit:latest
     - ghcr.io/primevprotocol/mev-commit:v{{ .Major }}.{{ .Minor }}
     - ghcr.io/primevprotocol/mev-commit:latest
     dockerfile: Dockerfile.goreleaser
