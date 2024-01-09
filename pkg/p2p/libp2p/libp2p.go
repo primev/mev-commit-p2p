@@ -61,6 +61,7 @@ type Options struct {
 	Logger         *slog.Logger
 	MetricsReg     *prometheus.Registry
 	BootstrapAddrs []string
+	NatAddr        string
 }
 
 func New(opts *Options) (*Service, error) {
@@ -104,8 +105,13 @@ func New(opts *Options) (*Service, error) {
 
 	conngtr := newGater(opts.Logger)
 
+	listenAddr := fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)
+	if opts.NatAddr != "" {
+		listenAddr = fmt.Sprintf("/ip4/%s/tcp/%d", opts.NatAddr, opts.ListenPort)
+	}
+
 	host, err := libp2p.New(
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
+		libp2p.ListenAddrStrings(listenAddr),
 		libp2p.ConnectionGater(conngtr),
 		libp2p.Identity(libp2pKey),
 		libp2p.ConnectionManager(connmgr),

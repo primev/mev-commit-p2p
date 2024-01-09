@@ -107,6 +107,7 @@ type config struct {
 	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
 	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
 	RPCEndpoint              string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
+	NatAddr                  string   `yaml:"nat_addr" json:"nat_addr"`
 }
 
 func checkConfig(cfg *config) error {
@@ -196,6 +197,7 @@ func start(c *cli.Context) error {
 		ProviderRegistryContract: cfg.ProviderRegistryContract,
 		BidderRegistryContract:   cfg.BidderRegistryContract,
 		RPCEndpoint:              cfg.RPCEndpoint,
+		NatAddr:                  cfg.NatAddr,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)

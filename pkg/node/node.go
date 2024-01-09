@@ -49,6 +49,7 @@ type Options struct {
 	ProviderRegistryContract string
 	BidderRegistryContract   string
 	RPCEndpoint              string
+	NatAddr                  string
 }
 
 type Node struct {
@@ -106,6 +107,7 @@ func NewNode(opts *Options) (*Node, error) {
 		ListenPort:     opts.P2PPort,
 		MetricsReg:     srv.MetricsRegistry(),
 		BootstrapAddrs: opts.Bootnodes,
+		NatAddr:        opts.NatAddr,
 	})
 	if err != nil {
 		return nil, err
