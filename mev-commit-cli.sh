@@ -62,7 +62,7 @@ clone_repos() {
     [ ! -d "$CONTRACTS_PATH" ] && git clone https://github.com/primevprotocol/$CONTRACT_REPO_NAME.git "$CONTRACTS_PATH"
     [ ! -d "$MEV_COMMIT_PATH" ] && git clone https://github.com/primevprotocol/$MEV_COMMIT_REPO_NAME.git "$MEV_COMMIT_PATH"
     [ ! -d "$ORACLE_PATH" ] && git clone https://github.com/primevprotocol/$ORACLE_REPO_NAME.git "$ORACLE_PATH"
-    [ ! -d "$BRIDGE_PATH" ] && git clone https://github.com/primevprotocol/$BRIDGE_REPO_NAME.git
+    [ ! -d "$BRIDGE_PATH" ] && git clone https://github.com/primevprotocol/$BRIDGE_REPO_NAME.git "$BRIDGE_PATH"
 }
 
 # Function to checkout a specific branch for all repositories
