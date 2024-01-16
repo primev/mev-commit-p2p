@@ -24,7 +24,7 @@ var (
 
 	optionPeerType = &cli.StringFlag{
 		Name:    "peer-type",
-		Usage:   "The type of peer to run. Options are 'bidder' or 'provider'",
+		Usage:   "The type of peer to run. Options are 'bidder', 'provider' or 'bootnode'",
 		EnvVars: []string{"MEV_COMMIT_PEER_TYPE"},
 		Value:   "bidder",
 	}
@@ -62,7 +62,7 @@ func initNode(c *cli.Context) error {
 	}
 
 	peerType := c.String(optionPeerType.Name)
-	if peerType != "bidder" && peerType != "provider" {
+	if peerType != "bidder" && peerType != "provider" && peerType != "bootnode" {
 		return fmt.Errorf("invalid peer type: %s", peerType)
 	}
 
@@ -75,9 +75,12 @@ func initNode(c *cli.Context) error {
 		RPCPort:     defaultRPCPort,
 		PeerType:    peerType,
 		RPCEndpoint: rpcEndpoint,
-		Bootnodes:   defaultBootnodes,
 		LogLevel:    "info",
 		LogFmt:      "text",
+	}
+
+	if peerType != "bootnode" {
+		conf.Bootnodes = defaultBootnodes
 	}
 
 	buf, err := yaml.Marshal(conf)
