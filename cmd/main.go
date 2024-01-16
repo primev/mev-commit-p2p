@@ -74,7 +74,8 @@ func main() {
 				ArgsUsage: "<output_file>",
 				Action:    createKey,
 			},
-		}}
+		},
+	}
 
 	if err := app.Run(os.Args); err != nil {
 		fmt.Fprintf(app.Writer, "exited with error: %v\n", err)
@@ -116,20 +117,20 @@ func createKeyAt(c *cli.Context, path string) error {
 }
 
 type config struct {
-	PrivKeyFile              string   `yaml:"priv_key_file" json:"priv_key_file"`
-	Secret                   string   `yaml:"secret" json:"secret"`
-	PeerType                 string   `yaml:"peer_type" json:"peer_type"`
-	P2PPort                  int      `yaml:"p2p_port" json:"p2p_port"`
-	HTTPPort                 int      `yaml:"http_port" json:"http_port"`
-	RPCPort                  int      `yaml:"rpc_port" json:"rpc_port"`
-	LogFmt                   string   `yaml:"log_fmt" json:"log_fmt"`
-	LogLevel                 string   `yaml:"log_level" json:"log_level"`
-	Bootnodes                []string `yaml:"bootnodes" json:"bootnodes"`
-	PreconfContract          string   `yaml:"preconf_contract" json:"preconf_contract"`
-	ProviderRegistryContract string   `yaml:"provider_registry_contract" json:"provider_registry_contract"`
-	BidderRegistryContract   string   `yaml:"bidder_registry_contract" json:"bidder_registry_contract"`
-	RPCEndpoint              string   `yaml:"rpc_endpoint" json:"rpc_endpoint"`
-	NatAddr                  string   `yaml:"nat_addr" json:"nat_addr"`
+	PrivKeyFile              string   `yaml:"priv_key_file"`
+	Secret                   string   `yaml:"secret"`
+	PeerType                 string   `yaml:"peer_type"`
+	P2PPort                  int      `yaml:"p2p_port"`
+	HTTPPort                 int      `yaml:"http_port"`
+	RPCPort                  int      `yaml:"rpc_port"`
+	LogFmt                   string   `yaml:"log_fmt"`
+	LogLevel                 string   `yaml:"log_level"`
+	Bootnodes                []string `yaml:"bootnodes"`
+	PreconfContract          string   `yaml:"preconf_contract,omitempty"`
+	ProviderRegistryContract string   `yaml:"provider_registry_contract,omitempty"`
+	BidderRegistryContract   string   `yaml:"bidder_registry_contract,omitempty"`
+	RPCEndpoint              string   `yaml:"rpc_endpoint"`
+	NatAddr                  string   `yaml:"nat_addr,omitempty"`
 }
 
 func checkConfig(cfg *config) error {
