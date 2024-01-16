@@ -20,6 +20,9 @@ builds:
       - goos: windows
         goarch: arm64
     main: ./cmd
+    flags:
+      - -v
+      - -trimpath
     ldflags:
       - -s -w
       - -X github.com/primevprotocol/mev-commit.version={{.Version}}
