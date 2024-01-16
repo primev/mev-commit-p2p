@@ -24,24 +24,21 @@ var (
 
 	optionPeerType = &cli.StringFlag{
 		Name:    "peer-type",
-		Usage:   "The type of peer to run",
+		Usage:   "The type of peer to run. Options are 'bidder' or 'provider'",
 		EnvVars: []string{"MEV_COMMIT_PEER_TYPE"},
 		Value:   "bidder",
 	}
 
 	optionRPCEndpoint = &cli.StringFlag{
-		Name:     "rpc-endpoint",
-		Usage:    "The Settlement chain RPC endpoint to connect to",
-		EnvVars:  []string{"MEV_COMMIT_RPC_ENDPOINT"},
-		Required: true,
+		Name:    "rpc-endpoint",
+		Usage:   "The Settlement chain RPC endpoint to connect to",
+		EnvVars: []string{"MEV_COMMIT_RPC_ENDPOINT"},
+		Value:   "http://localhost:8545",
 	}
 )
 
 func initNode(c *cli.Context) error {
 	rpcEndpoint := c.String(optionRPCEndpoint.Name)
-	if rpcEndpoint == "" {
-		return fmt.Errorf("rpc_endpoint is required")
-	}
 
 	dir, err := resolveFilePath(c.String(optionConfigDir.Name))
 	if err != nil {
@@ -65,6 +62,9 @@ func initNode(c *cli.Context) error {
 	}
 
 	peerType := c.String(optionPeerType.Name)
+	if peerType != "bidder" && peerType != "provider" {
+		return fmt.Errorf("invalid peer type: %s", peerType)
+	}
 
 	// create config file
 	conf := &config{
