@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	contracts "github.com/primevprotocol/contracts-abi/config"
 	mevcommit "github.com/primevprotocol/mev-commit"
 	"github.com/primevprotocol/mev-commit/pkg/node"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
@@ -21,6 +22,16 @@ const (
 	defaultP2PPort  = 13522
 	defaultHTTPPort = 13523
 	defaultRPCPort  = 13524
+
+	defaultConfigDir  = "~/.mev-commit"
+	defaultConfigFile = "config.yaml"
+	defaultSecret     = "secret"
+)
+
+var (
+	defaultBootnodes = []string{
+		"/ip4/69.67.151.95/tcp/13522/p2p/16Uiu2HAmLYUvthfDCewNMdfPhrVefBbsfaPL22fWWfC2zuoh5SpV",
+	}
 )
 
 var (
@@ -29,6 +40,7 @@ var (
 		Usage:    "path to config file",
 		Required: true,
 		EnvVars:  []string{"MEV_COMMIT_CONFIG"},
+		Value:    filepath.Join(defaultConfigDir, defaultConfigFile),
 	}
 )
 
@@ -39,22 +51,28 @@ func main() {
 		Version: mevcommit.Version(),
 		Commands: []*cli.Command{
 			{
+				Name:  "init",
+				Usage: "Initialize a mev-commit node",
+				Flags: []cli.Flag{
+					optionConfigDir,
+					optionRPCEndpoint,
+					optionPeerType,
+				},
+				Action: initNode,
+			},
+			{
 				Name:  "start",
 				Usage: "Start the mev-commit node",
 				Flags: []cli.Flag{
 					optionConfig,
 				},
-				Action: func(c *cli.Context) error {
-					return start(c)
-				},
+				Action: start,
 			},
 			{
 				Name:      "create-key",
 				Usage:     "Create a new ECDSA private key and save it to a file",
 				ArgsUsage: "<output_file>",
-				Action: func(c *cli.Context) error {
-					return createKey(c)
-				},
+				Action:    createKey,
 			},
 		}}
 
@@ -64,31 +82,35 @@ func main() {
 }
 
 func createKey(c *cli.Context) error {
-	privKey, err := crypto.GenerateKey()
-	if err != nil {
-		return err
-	}
-
 	if len(c.Args().Slice()) != 1 {
 		return fmt.Errorf("usage: mev-commit create-key <output_file>")
 	}
 
 	outputFile := c.Args().Slice()[0]
 
-	f, err := os.Create(outputFile)
+	return createKeyAt(c, outputFile)
+}
+
+func createKeyAt(c *cli.Context, path string) error {
+	privKey, err := crypto.GenerateKey()
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
 
-	if err := crypto.SaveECDSA(outputFile, privKey); err != nil {
+	if err := crypto.SaveECDSA(path, privKey); err != nil {
 		return err
 	}
 
 	wallet := libp2p.GetEthAddressFromPubKey(&privKey.PublicKey)
 
-	fmt.Fprintf(c.App.Writer, "Private key saved to file: %s\n", outputFile)
+	fmt.Fprintf(c.App.Writer, "Private key saved to file: %s\n", path)
 	fmt.Fprintf(c.App.Writer, "Wallet address: %s\n", wallet.Hex())
 	return nil
 }
@@ -115,12 +137,16 @@ func checkConfig(cfg *config) error {
 		return fmt.Errorf("priv_key_file is required")
 	}
 
-	if cfg.Secret == "" {
-		return fmt.Errorf("secret is required")
-	}
-
 	if cfg.PeerType == "" {
 		return fmt.Errorf("peer_type is required")
+	}
+
+	if cfg.RPCEndpoint == "" {
+		return fmt.Errorf("rpc_endpoint is required")
+	}
+
+	if cfg.Secret == "" {
+		cfg.Secret = "welcome"
 	}
 
 	if cfg.P2PPort == 0 {
@@ -143,11 +169,48 @@ func checkConfig(cfg *config) error {
 		cfg.LogLevel = "info"
 	}
 
+	if cfg.BidderRegistryContract == "" {
+		cfg.BidderRegistryContract = contracts.TestnetContracts.BidderRegistry
+	}
+
+	if cfg.ProviderRegistryContract == "" {
+		cfg.ProviderRegistryContract = contracts.TestnetContracts.ProviderRegistry
+	}
+
+	if cfg.PreconfContract == "" && cfg.PeerType == "provider" {
+		cfg.PreconfContract = contracts.TestnetContracts.PreconfCommitmentStore
+	}
+
+	if cfg.Bootnodes == nil {
+		cfg.Bootnodes = defaultBootnodes
+	}
+
 	return nil
 }
 
+func resolveFilePath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("path is empty")
+	}
+
+	if strings.HasPrefix(path, "~") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+
+		return filepath.Join(home, path[1:]), nil
+	}
+
+	return path, nil
+}
+
 func start(c *cli.Context) error {
-	configFile := c.String(optionConfig.Name)
+	configFile, err := resolveFilePath(c.String(optionConfig.Name))
+	if err != nil {
+		return fmt.Errorf("failed to resolve config file path: %w", err)
+	}
+
 	fmt.Fprintf(c.App.Writer, "starting mev-commit with config file: %s\n", configFile)
 
 	var cfg config
@@ -169,14 +232,9 @@ func start(c *cli.Context) error {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	privKeyFile := cfg.PrivKeyFile
-	if strings.HasPrefix(privKeyFile, "~/") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get user home directory: %w", err)
-		}
-
-		privKeyFile = filepath.Join(homeDir, privKeyFile[2:])
+	privKeyFile, err := resolveFilePath(cfg.PrivKeyFile)
+	if err != nil {
+		return fmt.Errorf("failed to resolve private key file path: %w", err)
 	}
 
 	privKey, err := crypto.LoadECDSA(privKeyFile)
