@@ -159,28 +159,31 @@ var (
 )
 
 func main() {
+	flags := []cli.Flag{
+		optionConfig,
+		optionPeerType,
+		optionPrivKeyFile,
+		optionP2PPort,
+		optionHTTPPort,
+		optionRPCPort,
+		optionBootnodes,
+		optionSecret,
+		optionLogFmt,
+		optionLogLevel,
+		optionBidderRegistryAddr,
+		optionProviderRegistryAddr,
+		optionPreconfStoreAddr,
+		optionSettlementRPCEndpoint,
+		optionNATAddr,
+	}
+
 	app := &cli.App{
 		Name:    "mev-commit",
 		Usage:   "Start mev-commit node",
 		Version: mevcommit.Version(),
-		Flags: []cli.Flag{
-			optionConfig,
-			optionPeerType,
-			optionPrivKeyFile,
-			optionP2PPort,
-			optionHTTPPort,
-			optionRPCPort,
-			optionBootnodes,
-			optionSecret,
-			optionLogFmt,
-			optionLogLevel,
-			optionBidderRegistryAddr,
-			optionProviderRegistryAddr,
-			optionPreconfStoreAddr,
-			optionSettlementRPCEndpoint,
-			optionNATAddr,
-		},
-		Action: start,
+		Flags:   flags,
+		Before:  altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc(optionConfig.Name)),
+		Action:  start,
 	}
 
 	if err := app.Run(os.Args); err != nil {
