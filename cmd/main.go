@@ -15,7 +15,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/node"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/urfave/cli/v2"
-	"gopkg.in/yaml.v2"
+	"github.com/urfave/cli/v2/altsrc"
 )
 
 const (
@@ -23,58 +23,167 @@ const (
 	defaultHTTPPort = 13523
 	defaultRPCPort  = 13524
 
-	defaultConfigDir  = "~/.mev-commit"
-	defaultConfigFile = "config.yaml"
-	defaultSecret     = "secret"
+	defaultConfigDir = "~/.mev-commit"
+	defaultKeyFile   = "key"
+	defaultSecret    = "secret"
 )
 
 var (
-	defaultBootnodes = []string{
-		"/ip4/69.67.151.95/tcp/13522/p2p/16Uiu2HAmLYUvthfDCewNMdfPhrVefBbsfaPL22fWWfC2zuoh5SpV",
+	portCheck = func(c *cli.Context, p int) error {
+		if p < 0 || p > 65535 {
+			return fmt.Errorf("Invalid port number %d, expected 0 <= port <= 65535", p)
+		}
+		return nil
+	}
+
+	stringInCheck = func(flag string, opts []string) func(c *cli.Context, p string) error {
+		return func(c *cli.Context, p string) error {
+			for _, opt := range opts {
+				if p == opt {
+					return nil
+				}
+			}
+			return fmt.Errorf("Invalid %s option '%s', expected one of %s", flag, p, strings.Join(opts, ", "))
+		}
 	}
 )
 
 var (
 	optionConfig = &cli.StringFlag{
-		Name:     "config",
-		Usage:    "path to config file",
-		Required: true,
-		EnvVars:  []string{"MEV_COMMIT_CONFIG"},
-		Value:    filepath.Join(defaultConfigDir, defaultConfigFile),
+		Name:    "config",
+		Usage:   "path to config file",
+		EnvVars: []string{"MEV_COMMIT_CONFIG"},
 	}
+
+	optionPrivKeyFile = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "priv-key-file",
+		Usage:   "path to private key file",
+		EnvVars: []string{"MEV_COMMIT_PRIVKEY_FILE"},
+		Value:   filepath.Join(defaultConfigDir, defaultKeyFile),
+	})
+
+	optionPeerType = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "peer-type",
+		Usage:   "peer type to use, options are 'bidder', 'provider' or 'bootnode'",
+		EnvVars: []string{"MEV_COMMIT_PEER_TYPE"},
+		Value:   "bidder",
+		Action:  stringInCheck("peer-type", []string{"bidder", "provider", "bootnode"}),
+	})
+
+	optionP2PPort = altsrc.NewIntFlag(&cli.IntFlag{
+		Name:    "p2p-port",
+		Usage:   "port to listen for p2p connections",
+		EnvVars: []string{"MEV_COMMIT_P2P_PORT"},
+		Value:   defaultP2PPort,
+		Action:  portCheck,
+	})
+
+	optionHTTPPort = altsrc.NewIntFlag(&cli.IntFlag{
+		Name:    "http-port",
+		Usage:   "port to listen for http connections",
+		EnvVars: []string{"MEV_COMMIT_HTTP_PORT"},
+		Value:   defaultHTTPPort,
+		Action:  portCheck,
+	})
+
+	optionRPCPort = altsrc.NewIntFlag(&cli.IntFlag{
+		Name:    "rpc-port",
+		Usage:   "port to listen for rpc connections",
+		EnvVars: []string{"MEV_COMMIT_RPC_PORT"},
+		Value:   defaultRPCPort,
+		Action:  portCheck,
+	})
+
+	optionBootnodes = altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
+		Name:    "bootnodes",
+		Usage:   "list of bootnodes to connect to",
+		EnvVars: []string{"MEV_COMMIT_BOOTNODES"},
+	})
+
+	optionSecret = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "secret",
+		Usage:   "secret to use for signing",
+		EnvVars: []string{"MEV_COMMIT_SECRET"},
+		Value:   defaultSecret,
+	})
+
+	optionLogFmt = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "log-fmt",
+		Usage:   "log format to use, options are 'text' or 'json'",
+		EnvVars: []string{"MEV_COMMIT_LOG_FMT"},
+		Value:   "text",
+		Action:  stringInCheck("log-fmt", []string{"text", "json"}),
+	})
+
+	optionLogLevel = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "log-level",
+		Usage:   "log level to use, options are 'debug', 'info', 'warn', 'error'",
+		EnvVars: []string{"MEV_COMMIT_LOG_LEVEL"},
+		Value:   "info",
+		Action:  stringInCheck("log-level", []string{"debug", "info", "warn", "error"}),
+	})
+
+	optionBidderRegistryAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "bidder-registry-contract",
+		Usage:   "address of the bidder registry contract",
+		EnvVars: []string{"MEV_COMMIT_BIDDER_REGISTRY_ADDR"},
+		Value:   contracts.TestnetContracts.BidderRegistry,
+	})
+
+	optionProviderRegistryAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "provider-registry-contract",
+		Usage:   "address of the provider registry contract",
+		EnvVars: []string{"MEV_COMMIT_PROVIDER_REGISTRY_ADDR"},
+		Value:   contracts.TestnetContracts.ProviderRegistry,
+	})
+
+	optionPreconfStoreAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "preconf-contract",
+		Usage:   "address of the preconfirmation commitment store contract",
+		EnvVars: []string{"MEV_COMMIT_PRECONF_ADDR"},
+		Value:   contracts.TestnetContracts.PreconfCommitmentStore,
+	})
+
+	optionSettlementRPCEndpoint = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "settlement-rpc-endpoint",
+		Usage:   "rpc endpoint of the settlement layer",
+		EnvVars: []string{"MEV_COMMIT_SETTLEMENT_RPC_ENDPOINT"},
+		Value:   "http://localhost:8545",
+	})
+
+	optionNATAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "nat-addr",
+		Usage:   "external address of the node",
+		EnvVars: []string{"MEV_COMMIT_NAT_ADDR"},
+	})
 )
 
 func main() {
+	flags := []cli.Flag{
+		optionConfig,
+		optionPeerType,
+		optionPrivKeyFile,
+		optionP2PPort,
+		optionHTTPPort,
+		optionRPCPort,
+		optionBootnodes,
+		optionSecret,
+		optionLogFmt,
+		optionLogLevel,
+		optionBidderRegistryAddr,
+		optionProviderRegistryAddr,
+		optionPreconfStoreAddr,
+		optionSettlementRPCEndpoint,
+		optionNATAddr,
+	}
+
 	app := &cli.App{
 		Name:    "mev-commit",
-		Usage:   "Entry point for mev-commit",
+		Usage:   "Start mev-commit node",
 		Version: mevcommit.Version(),
-		Commands: []*cli.Command{
-			{
-				Name:  "init",
-				Usage: "Initialize a mev-commit node",
-				Flags: []cli.Flag{
-					optionConfigDir,
-					optionRPCEndpoint,
-					optionPeerType,
-				},
-				Action: initNode,
-			},
-			{
-				Name:  "start",
-				Usage: "Start the mev-commit node",
-				Flags: []cli.Flag{
-					optionConfig,
-				},
-				Action: start,
-			},
-			{
-				Name:      "create-key",
-				Usage:     "Create a new ECDSA private key and save it to a file",
-				ArgsUsage: "<output_file>",
-				Action:    createKey,
-			},
-		},
+		Flags:   flags,
+		Before:  altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc(optionConfig.Name)),
+		Action:  start,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -82,17 +191,23 @@ func main() {
 	}
 }
 
-func createKey(c *cli.Context) error {
-	if len(c.Args().Slice()) != 1 {
-		return fmt.Errorf("usage: mev-commit create-key <output_file>")
+func createKeyIfNotExists(c *cli.Context, path string) error {
+	// check if key already exists
+	if _, err := os.Stat(path); err == nil {
+		fmt.Fprintf(c.App.Writer, "Using existing private key: %s\n", path)
+		return nil
 	}
 
-	outputFile := c.Args().Slice()[0]
+	fmt.Fprintf(c.App.Writer, "Creating new private key: %s\n", path)
 
-	return createKeyAt(c, outputFile)
-}
+	// check if parent directory exists
+	if _, err := os.Stat(filepath.Dir(path)); os.IsNotExist(err) {
+		// create parent directory
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			return err
+		}
+	}
 
-func createKeyAt(c *cli.Context, path string) error {
 	privKey, err := crypto.GenerateKey()
 	if err != nil {
 		return err
@@ -116,79 +231,6 @@ func createKeyAt(c *cli.Context, path string) error {
 	return nil
 }
 
-type config struct {
-	PrivKeyFile              string   `yaml:"priv_key_file"`
-	Secret                   string   `yaml:"secret"`
-	PeerType                 string   `yaml:"peer_type"`
-	P2PPort                  int      `yaml:"p2p_port"`
-	HTTPPort                 int      `yaml:"http_port"`
-	RPCPort                  int      `yaml:"rpc_port"`
-	LogFmt                   string   `yaml:"log_fmt"`
-	LogLevel                 string   `yaml:"log_level"`
-	Bootnodes                []string `yaml:"bootnodes"`
-	PreconfContract          string   `yaml:"preconf_contract,omitempty"`
-	ProviderRegistryContract string   `yaml:"provider_registry_contract,omitempty"`
-	BidderRegistryContract   string   `yaml:"bidder_registry_contract,omitempty"`
-	RPCEndpoint              string   `yaml:"rpc_endpoint"`
-	NatAddr                  string   `yaml:"nat_addr,omitempty"`
-}
-
-func checkConfig(cfg *config) error {
-	if cfg.PrivKeyFile == "" {
-		return fmt.Errorf("priv_key_file is required")
-	}
-
-	if cfg.PeerType == "" {
-		return fmt.Errorf("peer_type is required")
-	}
-
-	if cfg.RPCEndpoint == "" {
-		return fmt.Errorf("rpc_endpoint is required")
-	}
-
-	if cfg.Secret == "" {
-		cfg.Secret = "welcome"
-	}
-
-	if cfg.P2PPort == 0 {
-		cfg.P2PPort = defaultP2PPort
-	}
-
-	if cfg.HTTPPort == 0 {
-		cfg.HTTPPort = defaultHTTPPort
-	}
-
-	if cfg.RPCPort == 0 {
-		cfg.RPCPort = defaultRPCPort
-	}
-
-	if cfg.LogFmt == "" {
-		cfg.LogFmt = "text"
-	}
-
-	if cfg.LogLevel == "" {
-		cfg.LogLevel = "info"
-	}
-
-	if cfg.BidderRegistryContract == "" {
-		cfg.BidderRegistryContract = contracts.TestnetContracts.BidderRegistry
-	}
-
-	if cfg.ProviderRegistryContract == "" {
-		cfg.ProviderRegistryContract = contracts.TestnetContracts.ProviderRegistry
-	}
-
-	if cfg.PreconfContract == "" && cfg.PeerType == "provider" {
-		cfg.PreconfContract = contracts.TestnetContracts.PreconfCommitmentStore
-	}
-
-	if cfg.Bootnodes == nil {
-		cfg.Bootnodes = defaultBootnodes
-	}
-
-	return nil
-}
-
 func resolveFilePath(path string) (string, error) {
 	if path == "" {
 		return "", fmt.Errorf("path is empty")
@@ -207,56 +249,43 @@ func resolveFilePath(path string) (string, error) {
 }
 
 func start(c *cli.Context) error {
-	configFile, err := resolveFilePath(c.String(optionConfig.Name))
+	privKeyFile, err := resolveFilePath(c.String(optionPrivKeyFile.Name))
 	if err != nil {
-		return fmt.Errorf("failed to resolve config file path: %w", err)
+		return fmt.Errorf("failed to get private key file path: %w", err)
 	}
 
-	fmt.Fprintf(c.App.Writer, "starting mev-commit with config file: %s\n", configFile)
-
-	var cfg config
-	buf, err := os.ReadFile(configFile)
-	if err != nil {
-		return fmt.Errorf("failed to read config file at '%s': %w", configFile, err)
+	if err := createKeyIfNotExists(c, privKeyFile); err != nil {
+		return fmt.Errorf("failed to create private key: %w", err)
 	}
 
-	if err := yaml.Unmarshal(buf, &cfg); err != nil {
-		return fmt.Errorf("failed to unmarshal config file at '%s': %w", configFile, err)
-	}
-
-	if err := checkConfig(&cfg); err != nil {
-		return fmt.Errorf("invalid config file at '%s': %w", configFile, err)
-	}
-
-	logger, err := newLogger(cfg.LogLevel, cfg.LogFmt, c.App.Writer)
+	logger, err := newLogger(
+		c.String(optionLogLevel.Name),
+		c.String(optionLogFmt.Name),
+		c.App.Writer,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	privKeyFile, err := resolveFilePath(cfg.PrivKeyFile)
-	if err != nil {
-		return fmt.Errorf("failed to resolve private key file path: %w", err)
-	}
-
 	privKey, err := crypto.LoadECDSA(privKeyFile)
 	if err != nil {
-		return fmt.Errorf("failed to load private key from file '%s': %w", cfg.PrivKeyFile, err)
+		return fmt.Errorf("failed to load private key from file '%s': %w", privKeyFile, err)
 	}
 
 	nd, err := node.NewNode(&node.Options{
 		PrivKey:                  privKey,
-		Secret:                   cfg.Secret,
-		PeerType:                 cfg.PeerType,
-		P2PPort:                  cfg.P2PPort,
-		HTTPPort:                 cfg.HTTPPort,
-		RPCPort:                  cfg.RPCPort,
+		Secret:                   c.String(optionSecret.Name),
+		PeerType:                 c.String(optionPeerType.Name),
+		P2PPort:                  c.Int(optionP2PPort.Name),
+		HTTPPort:                 c.Int(optionHTTPPort.Name),
+		RPCPort:                  c.Int(optionRPCPort.Name),
 		Logger:                   logger,
-		Bootnodes:                cfg.Bootnodes,
-		PreconfContract:          cfg.PreconfContract,
-		ProviderRegistryContract: cfg.ProviderRegistryContract,
-		BidderRegistryContract:   cfg.BidderRegistryContract,
-		RPCEndpoint:              cfg.RPCEndpoint,
-		NatAddr:                  cfg.NatAddr,
+		Bootnodes:                c.StringSlice(optionBootnodes.Name),
+		PreconfContract:          c.String(optionPreconfStoreAddr.Name),
+		ProviderRegistryContract: c.String(optionProviderRegistryAddr.Name),
+		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
+		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
+		NatAddr:                  c.String(optionNATAddr.Name),
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)

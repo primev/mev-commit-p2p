@@ -3,19 +3,12 @@ FROM golang:1.21.1 AS builder
 WORKDIR /app
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o mev-commit ./cmd/main.go
+RUN CGO_ENABLED=0 make build
 
 FROM alpine:latest
 
-RUN apk --no-cache add curl
-RUN apk add --no-cache jq
-
-COPY --from=builder /app/mev-commit /app/mev-commit
-COPY --from=builder /app/config /config
-COPY --from=builder /app/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY --from=builder /app/bin/mev-commit /usr/local/bin/mev-commit
 
 EXPOSE 13522 13523 13524
 
-ENTRYPOINT ["/entrypoint.sh"]
-
+ENTRYPOINT ["mev-commit"]

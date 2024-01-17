@@ -19,4 +19,4 @@ fi
 CONFIG=$(cat /config.yaml)
 
 echo "starting mev-commit with config: ${CONFIG}"
-/app/mev-commit start --config /config.yaml
+/app/mev-commit --config /config.yaml
