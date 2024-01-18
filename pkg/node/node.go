@@ -42,8 +42,9 @@ type Options struct {
 	PeerType                 string
 	Logger                   *slog.Logger
 	P2PPort                  int
-	HTTPPort                 int
-	RPCPort                  int
+	P2PAddr                  string
+	HTTPAddr                 string
+	RPCAddr                  string
 	Bootnodes                []string
 	PreconfContract          string
 	ProviderRegistryContract string
@@ -105,6 +106,7 @@ func NewNode(opts *Options) (*Node, error) {
 		Register:       providerRegistry,
 		Logger:         opts.Logger.With("component", "p2p"),
 		ListenPort:     opts.P2PPort,
+		ListenAddr:     opts.P2PAddr,
 		MetricsReg:     srv.MetricsRegistry(),
 		BootstrapAddrs: opts.Bootnodes,
 		NatAddr:        opts.NatAddr,
@@ -131,7 +133,7 @@ func NewNode(opts *Options) (*Node, error) {
 	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger.With("component", "debugapi"))
 
 	if opts.PeerType != p2p.PeerTypeBootnode.String() {
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", opts.RPCPort))
+		lis, err := net.Listen("tcp", opts.RPCAddr)
 		if err != nil {
 			_ = nd.Close()
 			return nil, err
@@ -220,7 +222,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 		grpcConn, err := grpc.DialContext(
 			bgCtx,
-			fmt.Sprintf(":%d", opts.RPCPort),
+			opts.RPCAddr,
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
@@ -261,7 +263,7 @@ func NewNode(opts *Options) (*Node, error) {
 	}
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", opts.HTTPPort),
+		Addr:    opts.HTTPAddr,
 		Handler: srv.Router(),
 	}
 

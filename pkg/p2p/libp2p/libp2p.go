@@ -60,6 +60,7 @@ type Options struct {
 	PeerType       p2p.PeerType
 	Register       handshake.ProviderRegistry
 	ListenPort     int
+	ListenAddr     string
 	Logger         *slog.Logger
 	MetricsReg     *prometheus.Registry
 	BootstrapAddrs []string
@@ -126,7 +127,7 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	host, err := libp2p.New(
-		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/0.0.0.0/tcp/%d", opts.ListenPort)),
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", opts.ListenAddr, opts.ListenPort)),
 		libp2p.AddrsFactory(addressFactory),
 		libp2p.ConnectionGater(conngtr),
 		libp2p.Identity(libp2pKey),

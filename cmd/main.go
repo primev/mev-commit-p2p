@@ -19,9 +19,14 @@ import (
 )
 
 const (
-	defaultP2PPort  = 13522
+	defaultP2PPort = 13522
+	defaultP2PAddr = "0.0.0.0"
+
 	defaultHTTPPort = 13523
-	defaultRPCPort  = 13524
+	defaultHTTPAddr = "localhost"
+
+	defaultRPCPort = 13524
+	defaultRPCAddr = "localhost"
 
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
@@ -78,6 +83,13 @@ var (
 		Action:  portCheck,
 	})
 
+	optionP2PAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "p2p-addr",
+		Usage:   "address to bind for p2p connections",
+		EnvVars: []string{"MEV_COMMIT_P2P_ADDR"},
+		Value:   defaultP2PAddr,
+	})
+
 	optionHTTPPort = altsrc.NewIntFlag(&cli.IntFlag{
 		Name:    "http-port",
 		Usage:   "port to listen for http connections",
@@ -86,12 +98,26 @@ var (
 		Action:  portCheck,
 	})
 
+	optionHTTPAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "http-addr",
+		Usage:   "address to bind for http connections",
+		EnvVars: []string{"MEV_COMMIT_HTTP_ADDR"},
+		Value:   defaultHTTPAddr,
+	})
+
 	optionRPCPort = altsrc.NewIntFlag(&cli.IntFlag{
 		Name:    "rpc-port",
 		Usage:   "port to listen for rpc connections",
 		EnvVars: []string{"MEV_COMMIT_RPC_PORT"},
 		Value:   defaultRPCPort,
 		Action:  portCheck,
+	})
+
+	optionRPCAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "rpc-addr",
+		Usage:   "address to bind for RPC connections",
+		EnvVars: []string{"MEV_COMMIT_RPC_ADDR"},
+		Value:   defaultRPCAddr,
 	})
 
 	optionBootnodes = altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
@@ -156,6 +182,13 @@ var (
 		Usage:   "external address of the node",
 		EnvVars: []string{"MEV_COMMIT_NAT_ADDR"},
 	})
+
+	optionNATPort = altsrc.NewIntFlag(&cli.IntFlag{
+		Name:    "nat-port",
+		Usage:   "externally mapped port for the node",
+		EnvVars: []string{"MEV_COMMIT_NAT_PORT"},
+		Value:   defaultP2PPort,
+	})
 )
 
 func main() {
@@ -164,8 +197,11 @@ func main() {
 		optionPeerType,
 		optionPrivKeyFile,
 		optionP2PPort,
+		optionP2PAddr,
 		optionHTTPPort,
+		optionHTTPAddr,
 		optionRPCPort,
+		optionRPCAddr,
 		optionBootnodes,
 		optionSecret,
 		optionLogFmt,
@@ -175,6 +211,7 @@ func main() {
 		optionPreconfStoreAddr,
 		optionSettlementRPCEndpoint,
 		optionNATAddr,
+		optionNATPort,
 	}
 
 	app := &cli.App{
@@ -272,20 +309,28 @@ func start(c *cli.Context) error {
 		return fmt.Errorf("failed to load private key from file '%s': %w", privKeyFile, err)
 	}
 
+	httpAddr := fmt.Sprintf("%s:%d", c.String(optionHTTPAddr.Name), c.Int(optionHTTPPort.Name))
+	rpcAddr := fmt.Sprintf("%s:%d", c.String(optionRPCAddr.Name), c.Int(optionRPCPort.Name))
+	natAddr := ""
+	if c.String(optionNATAddr.Name) != "" {
+		natAddr = fmt.Sprintf("%s:%d", c.String(optionNATAddr.Name), c.Int(optionNATPort.Name))
+	}
+
 	nd, err := node.NewNode(&node.Options{
 		PrivKey:                  privKey,
 		Secret:                   c.String(optionSecret.Name),
 		PeerType:                 c.String(optionPeerType.Name),
 		P2PPort:                  c.Int(optionP2PPort.Name),
-		HTTPPort:                 c.Int(optionHTTPPort.Name),
-		RPCPort:                  c.Int(optionRPCPort.Name),
+		P2PAddr:                  c.String(optionP2PAddr.Name),
+		HTTPAddr:                 httpAddr,
+		RPCAddr:                  rpcAddr,
 		Logger:                   logger,
 		Bootnodes:                c.StringSlice(optionBootnodes.Name),
 		PreconfContract:          c.String(optionPreconfStoreAddr.Name),
 		ProviderRegistryContract: c.String(optionProviderRegistryAddr.Name),
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
-		NatAddr:                  c.String(optionNATAddr.Name),
+		NatAddr:                  natAddr,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)
