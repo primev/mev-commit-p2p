@@ -47,6 +47,7 @@ func newTestService(t *testing.T) *libp2p.Service {
 		PrivKey:    privKey,
 		Secret:     "test",
 		ListenPort: 0,
+		ListenAddr: "0.0.0.0",
 		PeerType:   p2p.PeerTypeProvider,
 		Register:   &testRegistry{},
 		Logger:     newTestLogger(t, os.Stdout),
@@ -221,6 +222,7 @@ func TestBootstrap(t *testing.T) {
 	testDefaultOptions := libp2p.Options{
 		Secret:     "test",
 		ListenPort: 0,
+		ListenAddr: "0.0.0.0",
 		PeerType:   p2p.PeerTypeProvider,
 		Register:   &testRegistry{},
 		Logger:     newTestLogger(t, os.Stdout),
