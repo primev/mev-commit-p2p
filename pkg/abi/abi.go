@@ -1404,6 +1404,19 @@ var BidderRegistryJson = `
   },
   {
     "type": "function",
+    "name": "getFeeRecipientAmount",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getProviderAmount",
     "inputs": [
       {
@@ -1590,7 +1603,7 @@ var BidderRegistryJson = `
   },
   {
     "type": "function",
-    "name": "withdrawPrepayedAmount",
+    "name": "withdrawPrepaidAmount",
     "inputs": [
       {
         "name": "bidder",
@@ -1638,7 +1651,7 @@ var BidderRegistryJson = `
         "internalType": "address"
       },
       {
-        "name": "prepayedAmount",
+        "name": "prepaidAmount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
