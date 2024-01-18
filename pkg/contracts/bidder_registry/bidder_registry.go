@@ -75,14 +75,14 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 
 	if receipt.Status != types.ReceiptStatusSuccessful {
 		r.logger.Error(
-			"Prepay failed for bidder registry",
+			"prepay failed for bidder registry",
 			"txnHash", txnHash,
 			"receipt", receipt,
 		)
 		return err
 	}
 
-	r.logger.Info("Prepay successful for bidder registry", "txnHash", txnHash)
+	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash)
 
 	return nil
 }
