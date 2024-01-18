@@ -23,10 +23,7 @@ const (
 	defaultP2PAddr = "0.0.0.0"
 
 	defaultHTTPPort = 13523
-	defaultHTTPAddr = "localhost"
-
-	defaultRPCPort = 13524
-	defaultRPCAddr = "localhost"
+	defaultRPCPort  = 13524
 
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
@@ -102,7 +99,7 @@ var (
 		Name:    "http-addr",
 		Usage:   "address to bind for http connections",
 		EnvVars: []string{"MEV_COMMIT_HTTP_ADDR"},
-		Value:   defaultHTTPAddr,
+		Value:   "",
 	})
 
 	optionRPCPort = altsrc.NewIntFlag(&cli.IntFlag{
@@ -117,7 +114,7 @@ var (
 		Name:    "rpc-addr",
 		Usage:   "address to bind for RPC connections",
 		EnvVars: []string{"MEV_COMMIT_RPC_ADDR"},
-		Value:   defaultRPCAddr,
+		Value:   "",
 	})
 
 	optionBootnodes = altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
