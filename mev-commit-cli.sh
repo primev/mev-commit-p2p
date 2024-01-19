@@ -266,7 +266,7 @@ start_bridge(){
 }
 
 stop_bridge(){
-    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge down
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge --profile dd_agent down
 }
 
 clean() {
