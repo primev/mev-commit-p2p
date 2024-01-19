@@ -18,7 +18,13 @@ mev-commit is P2P software that creates a network of execution providers and bid
 
 ![](node-architecture.png)
 
-## One line startup
+## Single Line Script For Quick Experimentation
+The command: 
+- Installs Foundry: For smart contract development and testing.
+- Downloads MEV-Commit Binary: The software included in this Repo, pre-built for your platform.
+- Automatic Funding and Initialization: Prepares node for participation in mev-commit network.
+- Runs the node with the required configurations to connect to the mev-commit testnet.
+- 
 ### Bidder Node
 ```bash
 curl -o launchmevcommit https://raw.githubusercontent.com/primevprotocol/scripts/main/launchmevcommit && chmod +x launchmevcommit && ./launchmevcommit --node-type bidder
