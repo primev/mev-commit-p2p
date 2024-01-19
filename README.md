@@ -18,6 +18,17 @@ mev-commit is P2P software that creates a network of execution providers and bid
 
 ![](node-architecture.png)
 
+## One line startup
+### Bidder Node
+```bash
+curl -o launchmevcommit https://raw.githubusercontent.com/primevprotocol/scripts/main/launchmevcommit && chmod +x launchmevcommit && ./launchmevcommit --node-type bidder
+```
+
+### Provider Node
+```bash
+curl -o launchmevcommit https://raw.githubusercontent.com/primevprotocol/scripts/main/launchmevcommit && chmod +x launchmevcommit && ./launchmevcommit --node-type provider
+```
+
 ## Quick Build (For docker please skip this instruction)
 
 * Install [buf](https://buf.build/docs/installation)
