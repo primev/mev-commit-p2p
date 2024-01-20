@@ -238,7 +238,9 @@ start_bridge(){
     local rpc_url=${2:-$DEFAULT_RPC_URL}
     local chain_id=${3:-17864}  # Default chain ID
     local private_key=${4:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
-    AGENT_BASE_IMAGE=shaspitz/hyperlane-agent:sha-e277ebfd8 \
+    # Try most recent agent release: https://github.com/hyperlane-xyz/hyperlane-monorepo/releases/tag/agents-2023-12-14
+    # Eventually build from our fork?
+    AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent:a888cf7-20231214-180118 \
         PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" \
         SETTLEMENT_RPC_URL="$rpc_url" \
         docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge --profile dd_agent up -d --build
