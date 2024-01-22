@@ -146,13 +146,13 @@ func (p *Preconfirmation) SendBid(
 			_ = providerStream.Close()
 
 			// Process preConfirmation as a bidder
-			_, err = p.signer.VerifyPreConfirmation(preConfirmation)
+			providerAddress, err := p.signer.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
 				logger.Error("verifying provider signature", "err", err)
 				return
 			}
 
-			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
+			logger.Info("received preconfirmation", "preConfirmation", preConfirmation, "providerAddress", providerAddress.String())
 			p.metrics.ReceivedPreconfsCount.Inc()
 
 			select {
