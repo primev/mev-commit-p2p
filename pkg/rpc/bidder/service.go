@@ -76,6 +76,7 @@ func (s *Service) SendBid(
 			ReceivedBidSignature: hex.EncodeToString(b.Signature),
 			CommitmentDigest:     hex.EncodeToString(resp.Digest),
 			CommitmentSignature:  hex.EncodeToString(resp.Signature),
+			ProviderAddress:      resp.ProviderAddress.String(),
 		})
 		if err != nil {
 			s.logger.Error("error sending preConfirmation", "err", err)

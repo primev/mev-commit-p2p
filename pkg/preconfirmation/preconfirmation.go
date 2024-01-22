@@ -151,8 +151,8 @@ func (p *Preconfirmation) SendBid(
 				logger.Error("verifying provider signature", "err", err)
 				return
 			}
-
-			logger.Info("received preconfirmation", "preConfirmation", preConfirmation, "providerAddress", providerAddress.String())
+			preConfirmation.ProviderAddress = *providerAddress
+			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
 
 			select {

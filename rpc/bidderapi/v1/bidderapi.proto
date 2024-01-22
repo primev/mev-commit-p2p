@@ -117,4 +117,7 @@ message Commitment {
   string commitment_signature = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of signature of the commitment signed by the provider confirming this transaction."
   }];
+  string provider_address = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the address of the provider that signed the commitment signature."
+  }];
 };

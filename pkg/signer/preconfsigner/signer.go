@@ -46,6 +46,8 @@ type PreConfirmation struct {
 
 	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"signature"`
+
+	ProviderAddress common.Address `json:"provider_address"`
 }
 
 func (p PreConfirmation) String() string {

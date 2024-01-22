@@ -156,6 +156,9 @@ definitions:
       commitmentSignature:
         type: string
         description: Hex string encoding of signature of the commitment signed by the provider confirming this transaction.
+      providerAddress:
+        type: string
+        description: Hex string encoding of the address of the provider that signed the commitment signature.
   v1PrepayResponse:
     type: object
     example:
