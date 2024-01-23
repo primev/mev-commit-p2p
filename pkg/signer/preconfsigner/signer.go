@@ -46,6 +46,8 @@ type PreConfirmation struct {
 
 	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"signature"`
+
+	ProviderAddress common.Address `json:"provider_address"`
 }
 
 func (p PreConfirmation) String() string {
@@ -154,6 +156,8 @@ func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
 	)
 }
 
+// VerifyPreConfirmation verifies the preconfirmation message, and returns the address of the provider
+// that signed the preconfirmation.
 func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Address, error) {
 	if c.Digest == nil || c.Signature == nil {
 		return nil, ErrMissingHashSignature
