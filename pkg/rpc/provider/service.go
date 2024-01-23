@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 	"sync"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
@@ -26,6 +28,7 @@ type Service struct {
 	registryContract registrycontract.Interface
 	evmClient        EvmClient
 	metrics          *metrics
+	validator        *protovalidate.Validator
 }
 
 type EvmClient interface {
@@ -52,8 +55,8 @@ func NewService(
 
 func toString(bid *providerapiv1.Bid) string {
 	return fmt.Sprintf(
-		"{TxHash: %s, BidAmount: %d, BlockNumber: %d, BidDigest: %x}",
-		bid.TxHash, bid.BidAmount, bid.BlockNumber, bid.BidDigest,
+		"{TxHash: %v, BidAmount: %d, BlockNumber: %d, BidDigest: %x}",
+		bid.TxHashes, bid.BidAmount, bid.BlockNumber, bid.BidDigest,
 	)
 }
 
@@ -78,8 +81,8 @@ func (s *Service) ProcessBid(
 		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
 		return nil, ctx.Err()
 	case s.receiver <- &providerapiv1.Bid{
-		TxHash:      bid.TxHash,
-		BidAmount:   bid.BidAmt.Int64(),
+		TxHashes:    strings.Split(bid.TxHash, ","),
+		BidAmount:   bid.BidAmt.String(),
 		BlockNumber: bid.BlockNumber.Int64(),
 		BidDigest:   bid.Digest,
 	}:
@@ -114,6 +117,12 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 		status, err := srv.Recv()
 		if err != nil {
 			s.logger.Error("error receiving bid status", "err", err)
+			return err
+		}
+
+		err = s.validator.Validate(status)
+		if err != nil {
+			s.logger.Error("error validating bid status", "err", err)
 			return err
 		}
 

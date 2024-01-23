@@ -6,10 +6,12 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
+	"strings"
 	"time"
 
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -24,6 +26,7 @@ type Service struct {
 	registryContract registrycontract.Interface
 	logger           *slog.Logger
 	metrics          *metrics
+	validator        *protovalidate.Validator
 }
 
 func NewService(
@@ -55,10 +58,25 @@ func (s *Service) SendBid(
 
 	s.metrics.ReceivedBidsCount.Inc()
 
+	// validate bid
+	err := s.validator.Validate(bid)
+	if err != nil {
+		s.logger.Error("error validating bid", "err", err)
+		return status.Errorf(codes.InvalidArgument, "error validating bid: %v", err)
+	}
+
+	amtVal, success := big.NewInt(0).SetString(bid.Amount, 10)
+	if !success {
+		s.logger.Error("error parsing amount", "amount", bid.Amount)
+		return status.Errorf(codes.InvalidArgument, "error parsing amount: %v", bid.Amount)
+	}
+
+	txnsStr := strings.Join(bid.TxHashes, ",")
+
 	respC, err := s.sender.SendBid(
 		ctx,
-		bid.TxHash,
-		big.NewInt(bid.Amount),
+		txnsStr,
+		amtVal,
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
@@ -69,7 +87,7 @@ func (s *Service) SendBid(
 	for resp := range respC {
 		b := resp.Bid
 		err := srv.Send(&bidderapiv1.Commitment{
-			TxHash:               b.TxHash,
+			TxHashes:             strings.Split(b.TxHash, ","),
 			BidAmount:            b.BidAmt.Int64(),
 			BlockNumber:          b.BlockNumber.Int64(),
 			ReceivedBidDigest:    hex.EncodeToString(b.Digest),

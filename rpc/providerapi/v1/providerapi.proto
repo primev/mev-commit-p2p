@@ -6,6 +6,7 @@ option go_package = "github.com/primevprotocol/mev-commit/rpc/providerapi/v1;pro
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/api/annotations.proto";
+import "buf/validate/validate.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
@@ -77,7 +78,14 @@ message StakeRequest {
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };
-  string amount = 1;
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH to stake in the provider provider_registry."
+    pattern: "[0-9]+"
+  }, (buf.validate.field).cel = {
+      id: "amount",
+      message: "amount must be a valid integer.",
+      expression: "this.matches('^[0-9]+$') && this.toNumber() > 0"
+  }];
 };
 
 message StakeResponse {
@@ -100,18 +108,27 @@ message Bid {
       description: "Signed bid message from bidders to the provider."
       required: ["txHash", "bidAmount", "blockNumber", "bidDigest"]
     }
-    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"bidAmount\": 1000000000000000000, \"blockNumber\": 123456, \"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
+    example: "{\"txHashes\": [\"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"82b89B633194c0D86C539A1A5B14DCCbfeD47111\"], \"amount\": \"1000000000000000000\", \"blockNumber\": 123456, \"bidDigest\": \"9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==\"}"
   };
-  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
+  repeated string tx_hashes = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hashes of the transactions that the bidder wants to include in the block."
     pattern: "[a-fA-F0-9]{40}"
+  }, (buf.validate.field).cel = {
+      id: "tx_hashes",
+      message: "tx_hashes must be a valid array of transaction hashes.",
+      expression: "this.all(r, r.matches('^[a-fA-F0-9]{40}$')) && this.length() > 0"
   }];
-  int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block."
+    pattern: "[0-9]+"
+  }, (buf.validate.field).cel = {
+      id: "bid_amount",
+      message: "bid_amount must be a valid integer.",
+      expression: "this.matches('^[0-9]+$') && this.toNumber() > 0"
   }];
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Max block number that the bidder wants to include the transaction in."
-  }];
+  }, (buf.validate.field).int64.gt = 0];
   bytes bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Digest of the bid message signed by the bidder."
   }];
@@ -136,6 +153,12 @@ message BidResponse {
   }
   Status status = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Status of the bid."
+  }, (buf.validate.field).enum = {
+      defined_only: true,
+      in: [
+        1,
+        2
+      ]
   }];
 };
 
