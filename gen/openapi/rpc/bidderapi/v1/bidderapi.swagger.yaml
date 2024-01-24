@@ -118,7 +118,7 @@ definitions:
         type: array
         items:
           type: string
-          pattern: '[a-fA-F0-9]{40}'
+          pattern: '[a-fA-F0-9]{64}'
         description: Hex string encoding of the hashes of the transactions that the bidder wants to include in the block.
       amount:
         type: string

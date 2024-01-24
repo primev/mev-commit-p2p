@@ -64,7 +64,7 @@ message PrepayRequest {
   }, (buf.validate.field).cel = {
       id: "amount",
       message: "amount must be a valid integer.",
-      expression: "this.matches('^[0-9]+$') && this.toNumber() > 0"
+      expression: "this.matches('^[0-9]+$') && uint(this) > 0"
   }];
 };
 
@@ -92,11 +92,11 @@ message Bid {
   };
   repeated string tx_hashes = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the hashes of the transactions that the bidder wants to include in the block."
-    pattern: "[a-fA-F0-9]{40}"
+    pattern: "[a-fA-F0-9]{64}"
   }, (buf.validate.field).cel = {
         id: "tx_hashes",
         message: "tx_hashes must be a valid array of transaction hashes.",
-        expression: "this.all(r, r.matches('^[a-fA-F0-9]{40}$')) && this.length() > 0"
+        expression: "this.all(r, r.matches('^[a-fA-F0-9]{64}$')) && size(this) > 0"
   }];
   string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block."
@@ -104,14 +104,14 @@ message Bid {
   }, (buf.validate.field).cel = {
       id: "amount",
       message: "amount must be a valid integer.",
-      expression: "this.matches('^[0-9]+$') && this.toNumber() > 0"
+      expression: "this.matches('^[0-9]+$') && uint(this) > 0"
   }];
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Max block number that the bidder wants to include the transaction in."
   }, (buf.validate.field).cel = {
       id: "block_number",
       message: "block_number must be a valid integer.",
-      expression: "this.toNumber() > 0"
+      expression: "uint(this) > 0"
   }];
 };
 
