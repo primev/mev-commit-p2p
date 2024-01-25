@@ -271,7 +271,7 @@ func TestBidHandling(t *testing.T) {
 				t.Fatalf("error receiving bids: %v", err)
 			}
 			go func() {
-				defer rcvr.CloseSend()
+				defer func() { _ = rcvr.CloseSend() }()
 				for {
 					bid, err := rcvr.Recv()
 					if err != nil {
@@ -301,7 +301,7 @@ func TestBidHandling(t *testing.T) {
 				t.Fatalf("error sending processed bids: %v", err)
 			}
 			go func() {
-				defer sndr.CloseSend()
+				defer func() { _ = sndr.CloseSend() }()
 				for {
 					bid, more := <-bidCh
 					if !more {
