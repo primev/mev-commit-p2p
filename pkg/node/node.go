@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -141,6 +142,11 @@ func NewNode(opts *Options) (*Node, error) {
 
 		grpcServer := grpc.NewServer()
 		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
+		validator, err := protovalidate.New()
+		if err != nil {
+			_ = nd.Close()
+			return nil, err
+		}
 
 		var (
 			bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
@@ -154,6 +160,7 @@ func NewNode(opts *Options) (*Node, error) {
 				providerRegistry,
 				ownerEthAddress,
 				evmClient,
+				validator,
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 			bidProcessor = providerAPI
@@ -196,6 +203,7 @@ func NewNode(opts *Options) (*Node, error) {
 				preconfProto,
 				ownerEthAddress,
 				bidderRegistry,
+				validator,
 				opts.Logger.With("component", "bidderapi"),
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)

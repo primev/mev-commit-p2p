@@ -123,8 +123,8 @@ func main() {
 
 func bidString(bid *providerapiv1.Bid) string {
 	return fmt.Sprintf(
-		"bid: {txnHash: %s, block_number: %d, bid_amount: %d, bid_hash: %x}",
-		bid.TxHash, bid.BlockNumber, bid.BidAmount, bid.BidDigest,
+		"bid: {txnHashes: %v, block_number: %d, bid_amount: %s, bid_hash: %x}",
+		bid.TxHashes, bid.BlockNumber, bid.BidAmount, bid.BidDigest,
 	)
 }
 

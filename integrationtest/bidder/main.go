@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -230,8 +231,8 @@ func sendBid(
 	)
 
 	bid := &pb.Bid{
-		TxHash:      txHash.Hex(),
-		Amount:      amount,
+		TxHashes:    []string{txHash.Hex()},
+		Amount:      strconv.Itoa(int(amount)),
 		BlockNumber: int64(blkNum) + 5,
 	}
 
