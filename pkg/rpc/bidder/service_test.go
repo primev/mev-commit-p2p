@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/big"
 	"net"
 	"os"
@@ -115,7 +114,7 @@ func startServer(t *testing.T) bidderapiv1.BidderClient {
 	bidderapiv1.RegisterBidderServer(baseServer, srvImpl)
 	go func() {
 		if err := baseServer.Serve(lis); err != nil {
-			log.Printf("error serving server: %v", err)
+			t.Errorf("error serving server: %v", err)
 		}
 	}()
 
@@ -124,13 +123,13 @@ func startServer(t *testing.T) bidderapiv1.BidderClient {
 			return lis.Dial()
 		}), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Printf("error connecting to server: %v", err)
+		t.Errorf("error connecting to server: %v", err)
 	}
 
 	t.Cleanup(func() {
 		err := lis.Close()
 		if err != nil {
-			log.Printf("error closing listener: %v", err)
+			t.Errorf("error closing listener: %v", err)
 		}
 		baseServer.Stop()
 	})
