@@ -164,8 +164,8 @@ definitions:
       bidDigest: 9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==
       blockNumber: 123456
       txHashes:
-        - 91a89B633194c0D86C539A1A5B14DCCacfD47094
-        - 82b89B633194c0D86C539A1A5B14DCCbfeD47111
+        - fe4cb47db3630551beedfbd02a71ecc69fd59758e2ba699606e2d5c74284ffa7
+        - 71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8
     properties:
       txHashes:
         type: array
@@ -220,12 +220,12 @@ definitions:
   v1CancelResponse:
     type: object
     example:
-      txHash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
+      txHash: 71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8
     properties:
       txHash:
         type: string
         description: Hex string encoding of the hash of the transaction that the bidder wants to cancel.
-        pattern: '[a-fA-F0-9]{40}'
+        pattern: '[a-fA-F0-9]{64}'
     description: Hash of the cancellation transaction request.
     title: Cancel response
     required:
@@ -257,7 +257,7 @@ definitions:
     example:
       created: 2009-11-10 23:00:00 +0000 UTC m=+0.000000001
       nonce: 1234
-      txHash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
+      txHash: 71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8
     properties:
       txHash:
         type: string

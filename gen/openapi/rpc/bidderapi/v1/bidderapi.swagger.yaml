@@ -111,8 +111,8 @@ definitions:
       amount: "1000000000000000000"
       blockNumber: 123456
       txHashes:
-        - 91a89B633194c0D86C539A1A5B14DCCacfD47094
-        - 82b89B633194c0D86C539A1A5B14DCCbfeD47111
+        - fe4cb47db3630551beedfbd02a71ecc69fd59758e2ba699606e2d5c74284ffa7
+        - 71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8
     properties:
       txHashes:
         type: array
@@ -141,7 +141,7 @@ definitions:
         type: array
         items:
           type: string
-          pattern: '[a-fA-F0-9]{40}'
+          pattern: '[a-fA-F0-9]{64}'
         description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
       bidAmount:
         type: string
