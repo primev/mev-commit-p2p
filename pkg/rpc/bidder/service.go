@@ -60,16 +60,15 @@ func (s *Service) SendBid(
 
 	s.metrics.ReceivedBidsCount.Inc()
 
-	// validate bid
 	err := s.validator.Validate(bid)
 	if err != nil {
-		s.logger.Error("error validating bid", "err", err)
-		return status.Errorf(codes.InvalidArgument, "error validating bid: %v", err)
+		s.logger.Error("bid validation", "err", err)
+		return status.Errorf(codes.InvalidArgument, "validating bid: %v", err)
 	}
 
 	amtVal, success := big.NewInt(0).SetString(bid.Amount, 10)
 	if !success {
-		s.logger.Error("error parsing amount", "amount", bid.Amount)
+		s.logger.Error("parsing amount", "amount", bid.Amount)
 		return status.Errorf(codes.InvalidArgument, "error parsing amount: %v", bid.Amount)
 	}
 
@@ -82,7 +81,7 @@ func (s *Service) SendBid(
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
-		s.logger.Error("error sending bid", "err", err)
+		s.logger.Error("sending bid", "err", err)
 		return status.Errorf(codes.Internal, "error sending bid: %v", err)
 	}
 
@@ -99,7 +98,7 @@ func (s *Service) SendBid(
 			ProviderAddress:      resp.ProviderAddress.String(),
 		})
 		if err != nil {
-			s.logger.Error("error sending preConfirmation", "err", err)
+			s.logger.Error("sending preConfirmation", "err", err)
 			return err
 		}
 		s.metrics.ReceivedPreconfsCount.Inc()
@@ -116,22 +115,22 @@ func (s *Service) PrepayAllowance(
 ) (*bidderapiv1.PrepayResponse, error) {
 	err := s.validator.Validate(stake)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "error validating prepay request: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "validating prepay request: %v", err)
 	}
 
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
-		return nil, status.Errorf(codes.InvalidArgument, "error parsing amount: %v", stake.Amount)
+		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
 	}
 
 	err = s.registryContract.PrepayAllowance(ctx, amount)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error prepaying allowance: %v", err)
+		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
 	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting allowance: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
@@ -143,7 +142,7 @@ func (s *Service) GetAllowance(
 ) (*bidderapiv1.PrepayResponse, error) {
 	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting allowance: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
@@ -155,7 +154,7 @@ func (s *Service) GetMinAllowance(
 ) (*bidderapiv1.PrepayResponse, error) {
 	stakeAmount, err := s.registryContract.GetMinAllowance(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting min allowance: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting min allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil

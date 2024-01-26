@@ -127,13 +127,13 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 	for {
 		status, err := srv.Recv()
 		if err != nil {
-			s.logger.Error("error receiving bid status", "err", err)
+			s.logger.Error("bid status", "err", err)
 			return err
 		}
 
 		err = s.validator.Validate(status)
 		if err != nil {
-			s.logger.Error("error validating bid status", "err", err)
+			s.logger.Error("bid status validation", "err", err)
 			return err
 		}
 
@@ -166,22 +166,22 @@ func (s *Service) RegisterStake(
 ) (*providerapiv1.StakeResponse, error) {
 	err := s.validator.Validate(stake)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "error validating stake request: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "validate stake request: %v", err)
 	}
 
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
-		return nil, status.Errorf(codes.InvalidArgument, "error parsing amount: %v", stake.Amount)
+		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
 	}
 
 	err = s.registryContract.RegisterProvider(ctx, amount)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error registering stake: %v", err)
+		return nil, status.Errorf(codes.Internal, "registering stake: %v", err)
 	}
 
 	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting stake: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -193,7 +193,7 @@ func (s *Service) GetStake(
 ) (*providerapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting stake: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -205,7 +205,7 @@ func (s *Service) GetMinStake(
 ) (*providerapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetMinStake(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error getting min stake: %v", err)
+		return nil, status.Errorf(codes.Internal, "getting min stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -236,7 +236,7 @@ func (s *Service) CancelTransaction(
 	txHash := common.HexToHash(cancel.TxHash)
 	cHash, err := s.evmClient.CancelTx(ctx, txHash)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "error cancelling transaction: %v", err)
+		return nil, status.Errorf(codes.Internal, "cancelling transaction: %v", err)
 	}
 
 	return &providerapiv1.CancelResponse{TxHash: cHash.Hex()}, nil

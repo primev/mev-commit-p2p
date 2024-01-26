@@ -222,12 +222,12 @@ func sendBid(
 	txnHash string,
 	blkNum int64,
 ) error {
-	amount := rand.Int63n(200000)
+	amount := rand.Intn(200000)
 	amount += 100000
 
 	bid := &pb.Bid{
 		TxHashes:    []string{txnHash},
-		Amount:      strconv.FormatInt(amount, 10),
+		Amount:      strconv.Itoa(amount),
 		BlockNumber: int64(blkNum),
 	}
 

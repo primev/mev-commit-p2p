@@ -172,7 +172,7 @@ func main() {
 				randGenerator := rand.New(randSource)
 
 				txHash = generateTxHash(randGenerator)
-				amount = strconv.FormatInt(randGenerator.Int63n(1000)+1, 10)
+				amount = strconv.Itoa(randGenerator.Intn(1000) + 1)
 				blockNumber = randGenerator.Int63n(100000) + 1
 
 				creds := insecure.NewCredentials()

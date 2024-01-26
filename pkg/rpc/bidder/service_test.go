@@ -22,6 +22,10 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 )
 
+const (
+	bufferSize = 101024 * 1024
+)
+
 type bid struct {
 	txHex    string
 	amount   *big.Int
@@ -57,7 +61,7 @@ func (s *testSender) SendBid(
 			},
 			Digest:          []byte("digest"),
 			Signature:       []byte("signature"),
-			ProviderAddress: common.HexToAddress(fmt.Sprintf("0x0000%d", i)),
+			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)),
 		}
 	}
 
@@ -89,8 +93,7 @@ func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address
 }
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {
-	buffer := 101024 * 1024
-	lis := bufconn.Listen(buffer)
+	lis := bufconn.Listen(bufferSize)
 
 	logger := util.NewTestLogger(os.Stdout)
 	validator, err := protovalidate.New()
@@ -217,8 +220,6 @@ func TestSendBid(t *testing.T) {
 		blockNum int64
 		err      string
 	}
-
-	fmt.Println(common.HexToHash("0x0000ab").Hex()[2:])
 
 	for _, tc := range []testCase{
 		{
