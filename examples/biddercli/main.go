@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 
 	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
@@ -18,7 +19,7 @@ import (
 
 var (
 	txHash      string
-	amount      int64
+	amount      string
 	blockNumber int64
 )
 
@@ -87,7 +88,7 @@ func main() {
 					Usage:       "Transaction hash",
 					Destination: &txHash,
 				},
-				&cli.Int64Flag{
+				&cli.StringFlag{
 					Name:        "amount",
 					Usage:       "Bid amount",
 					Destination: &amount,
@@ -99,7 +100,7 @@ func main() {
 				},
 			},
 			Action: func(c *cli.Context) error {
-				if txHash == "" || amount == 0 || blockNumber == 0 {
+				if txHash == "" || amount == "" || blockNumber == 0 {
 					return fmt.Errorf("Missing required arguments. Please provide --txhash, --amount, and --block.")
 				}
 
@@ -113,7 +114,7 @@ func main() {
 				client := pb.NewBidderClient(conn)
 
 				bid := &pb.Bid{
-					TxHash:      txHash,
+					TxHashes:    []string{txHash},
 					Amount:      amount,
 					BlockNumber: blockNumber,
 				}
@@ -171,7 +172,7 @@ func main() {
 				randGenerator := rand.New(randSource)
 
 				txHash = generateTxHash(randGenerator)
-				amount = randGenerator.Int63n(1000) + 1
+				amount = strconv.Itoa(randGenerator.Intn(1000) + 1)
 				blockNumber = randGenerator.Int63n(100000) + 1
 
 				creds := insecure.NewCredentials()
@@ -184,7 +185,7 @@ func main() {
 				client := pb.NewBidderClient(conn)
 
 				bid := &pb.Bid{
-					TxHash:      txHash,
+					TxHashes:    []string{txHash},
 					Amount:      amount,
 					BlockNumber: blockNumber,
 				}

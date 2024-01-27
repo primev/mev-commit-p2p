@@ -6,10 +6,12 @@ import (
 	"errors"
 	"log/slog"
 	"math/big"
+	"strings"
 	"time"
 
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -24,12 +26,14 @@ type Service struct {
 	registryContract registrycontract.Interface
 	logger           *slog.Logger
 	metrics          *metrics
+	validator        *protovalidate.Validator
 }
 
 func NewService(
 	sender PreconfSender,
 	owner common.Address,
 	registryContract registrycontract.Interface,
+	validator *protovalidate.Validator,
 	logger *slog.Logger,
 ) *Service {
 	return &Service{
@@ -38,6 +42,7 @@ func NewService(
 		registryContract: registryContract,
 		logger:           logger,
 		metrics:          newMetrics(),
+		validator:        validator,
 	}
 }
 
@@ -55,21 +60,35 @@ func (s *Service) SendBid(
 
 	s.metrics.ReceivedBidsCount.Inc()
 
+	err := s.validator.Validate(bid)
+	if err != nil {
+		s.logger.Error("bid validation", "err", err)
+		return status.Errorf(codes.InvalidArgument, "validating bid: %v", err)
+	}
+
+	amtVal, success := big.NewInt(0).SetString(bid.Amount, 10)
+	if !success {
+		s.logger.Error("parsing amount", "amount", bid.Amount)
+		return status.Errorf(codes.InvalidArgument, "error parsing amount: %v", bid.Amount)
+	}
+
+	txnsStr := strings.Join(bid.TxHashes, ",")
+
 	respC, err := s.sender.SendBid(
 		ctx,
-		bid.TxHash,
-		big.NewInt(bid.Amount),
+		txnsStr,
+		amtVal,
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
-		s.logger.Error("error sending bid", "err", err)
+		s.logger.Error("sending bid", "err", err)
 		return status.Errorf(codes.Internal, "error sending bid: %v", err)
 	}
 
 	for resp := range respC {
 		b := resp.Bid
 		err := srv.Send(&bidderapiv1.Commitment{
-			TxHash:               b.TxHash,
+			TxHashes:             strings.Split(b.TxHash, ","),
 			BidAmount:            b.BidAmt.Int64(),
 			BlockNumber:          b.BlockNumber.Int64(),
 			ReceivedBidDigest:    hex.EncodeToString(b.Digest),
@@ -79,7 +98,7 @@ func (s *Service) SendBid(
 			ProviderAddress:      resp.ProviderAddress.String(),
 		})
 		if err != nil {
-			s.logger.Error("error sending preConfirmation", "err", err)
+			s.logger.Error("sending preConfirmation", "err", err)
 			return err
 		}
 		s.metrics.ReceivedPreconfsCount.Inc()
@@ -94,18 +113,24 @@ func (s *Service) PrepayAllowance(
 	ctx context.Context,
 	stake *bidderapiv1.PrepayRequest,
 ) (*bidderapiv1.PrepayResponse, error) {
+	err := s.validator.Validate(stake)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validating prepay request: %v", err)
+	}
+
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
-		return nil, ErrInvalidAmount
+		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
 	}
-	err := s.registryContract.PrepayAllowance(ctx, amount)
+
+	err = s.registryContract.PrepayAllowance(ctx, amount)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
 	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
@@ -117,7 +142,7 @@ func (s *Service) GetAllowance(
 ) (*bidderapiv1.PrepayResponse, error) {
 	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
@@ -129,7 +154,7 @@ func (s *Service) GetMinAllowance(
 ) (*bidderapiv1.PrepayResponse, error) {
 	stakeAmount, err := s.registryContract.GetMinAllowance(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting min allowance: %v", err)
 	}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil

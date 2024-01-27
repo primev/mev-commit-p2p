@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -135,12 +136,15 @@ func NewNode(opts *Options) (*Node, error) {
 	if opts.PeerType != p2p.PeerTypeBootnode.String() {
 		lis, err := net.Listen("tcp", opts.RPCAddr)
 		if err != nil {
-			_ = nd.Close()
-			return nil, err
+			return nil, errors.Join(err, nd.Close())
 		}
 
 		grpcServer := grpc.NewServer()
 		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
+		validator, err := protovalidate.New()
+		if err != nil {
+			return nil, errors.Join(err, nd.Close())
+		}
 
 		var (
 			bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
@@ -154,6 +158,7 @@ func NewNode(opts *Options) (*Node, error) {
 				providerRegistry,
 				ownerEthAddress,
 				evmClient,
+				validator,
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 			bidProcessor = providerAPI
@@ -196,6 +201,7 @@ func NewNode(opts *Options) (*Node, error) {
 				preconfProto,
 				ownerEthAddress,
 				bidderRegistry,
+				validator,
 				opts.Logger.With("component", "bidderapi"),
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)
@@ -227,8 +233,7 @@ func NewNode(opts *Options) (*Node, error) {
 		)
 		if err != nil {
 			opts.Logger.Error("failed to dial grpc server", "err", err)
-			_ = nd.Close()
-			return nil, err
+			return nil, errors.Join(err, nd.Close())
 		}
 
 		switch opts.PeerType {
@@ -236,13 +241,13 @@ func NewNode(opts *Options) (*Node, error) {
 			err := providerapiv1.RegisterProviderHandler(bgCtx, gwMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register provider handler", "err", err)
-				return nil, err
+				return nil, errors.Join(err, nd.Close())
 			}
 		case p2p.PeerTypeBidder.String():
 			err := bidderapiv1.RegisterBidderHandler(bgCtx, gwMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register bidder handler", "err", err)
-				return nil, err
+				return nil, errors.Join(err, nd.Close())
 			}
 		}
 

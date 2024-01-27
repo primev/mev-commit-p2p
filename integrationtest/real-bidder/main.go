@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -221,12 +222,12 @@ func sendBid(
 	txnHash string,
 	blkNum int64,
 ) error {
-	amount := rand.Int63n(200000)
+	amount := rand.Intn(200000)
 	amount += 100000
 
 	bid := &pb.Bid{
-		TxHash:      txnHash,
-		Amount:      amount,
+		TxHashes:    []string{txnHash},
+		Amount:      strconv.Itoa(amount),
 		BlockNumber: int64(blkNum),
 	}
 

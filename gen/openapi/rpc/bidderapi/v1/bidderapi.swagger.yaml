@@ -81,6 +81,7 @@ paths:
             $ref: '#/definitions/googlerpcStatus'
       parameters:
         - name: amount
+          description: Amount of ETH to be prepaid in wei.
           in: path
           required: true
           type: string
@@ -107,18 +108,22 @@ definitions:
   rpcbidderapiv1Bid:
     type: object
     example:
-      amount: 1e+18
+      amount: "1000000000000000000"
       blockNumber: 123456
-      txHash: 91a89B633194c0D86C539A1A5B14DCCacfD47094
+      txHashes:
+        - fe4cb47db3630551beedfbd02a71ecc69fd59758e2ba699606e2d5c74284ffa7
+        - 71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8
     properties:
-      txHash:
-        type: string
-        description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
-        pattern: '[a-fA-F0-9]{40}'
+      txHashes:
+        type: array
+        items:
+          type: string
+          pattern: '[a-fA-F0-9]{64}'
+        description: Hex string encoding of the hashes of the transactions that the bidder wants to include in the block.
       amount:
         type: string
-        format: int64
         description: Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block.
+        pattern: '[0-9]+'
       blockNumber:
         type: string
         format: int64
@@ -126,16 +131,18 @@ definitions:
     description: Unsigned bid message from bidders to the bidder mev-commit node.
     title: Bid message
     required:
-      - txHash
+      - txHashes
       - amount
       - blockNumber
   v1Commitment:
     type: object
     properties:
-      txHash:
-        type: string
+      txHashes:
+        type: array
+        items:
+          type: string
+          pattern: '[a-fA-F0-9]{64}'
         description: Hex string encoding of the hash of the transaction that the bidder wants to include in the block.
-        pattern: '[a-fA-F0-9]{40}'
       bidAmount:
         type: string
         format: int64

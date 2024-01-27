@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"strings"
 	"sync"
 
+	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Service struct {
@@ -26,6 +30,7 @@ type Service struct {
 	registryContract registrycontract.Interface
 	evmClient        EvmClient
 	metrics          *metrics
+	validator        *protovalidate.Validator
 }
 
 type EvmClient interface {
@@ -38,6 +43,7 @@ func NewService(
 	registryContract registrycontract.Interface,
 	owner common.Address,
 	e EvmClient,
+	validator *protovalidate.Validator,
 ) *Service {
 	return &Service{
 		receiver:         make(chan *providerapiv1.Bid),
@@ -47,13 +53,14 @@ func NewService(
 		logger:           logger,
 		evmClient:        e,
 		metrics:          newMetrics(),
+		validator:        validator,
 	}
 }
 
 func toString(bid *providerapiv1.Bid) string {
 	return fmt.Sprintf(
-		"{TxHash: %s, BidAmount: %d, BlockNumber: %d, BidDigest: %x}",
-		bid.TxHash, bid.BidAmount, bid.BlockNumber, bid.BidDigest,
+		"{TxHash: %v, BidAmount: %s, BlockNumber: %d, BidDigest: %x}",
+		bid.TxHashes, bid.BidAmount, bid.BlockNumber, bid.BidDigest,
 	)
 }
 
@@ -61,6 +68,18 @@ func (s *Service) ProcessBid(
 	ctx context.Context,
 	bid *preconfsigner.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
+	bidMsg := &providerapiv1.Bid{
+		TxHashes:    strings.Split(bid.TxHash, ","),
+		BidAmount:   bid.BidAmt.String(),
+		BlockNumber: bid.BlockNumber.Int64(),
+		BidDigest:   bid.Digest,
+	}
+
+	err := s.validator.Validate(bidMsg)
+	if err != nil {
+		return nil, err
+	}
+
 	respC := make(chan providerapiv1.BidResponse_Status, 1)
 	s.bidsMu.Lock()
 	s.bidsInProcess[string(bid.Digest)] = func(status providerapiv1.BidResponse_Status) {
@@ -77,12 +96,7 @@ func (s *Service) ProcessBid(
 
 		s.logger.Error("context cancelled for sending bid", "err", ctx.Err())
 		return nil, ctx.Err()
-	case s.receiver <- &providerapiv1.Bid{
-		TxHash:      bid.TxHash,
-		BidAmount:   bid.BidAmt.Int64(),
-		BlockNumber: bid.BlockNumber.Int64(),
-		BidDigest:   bid.Digest,
-	}:
+	case s.receiver <- bidMsg:
 	}
 	s.logger.Info("sent bid to provider node", "bid", bid)
 
@@ -113,7 +127,13 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 	for {
 		status, err := srv.Recv()
 		if err != nil {
-			s.logger.Error("error receiving bid status", "err", err)
+			s.logger.Error("bid status", "err", err)
+			return err
+		}
+
+		err = s.validator.Validate(status)
+		if err != nil {
+			s.logger.Error("bid status validation", "err", err)
 			return err
 		}
 
@@ -144,18 +164,24 @@ func (s *Service) RegisterStake(
 	ctx context.Context,
 	stake *providerapiv1.StakeRequest,
 ) (*providerapiv1.StakeResponse, error) {
+	err := s.validator.Validate(stake)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "validate stake request: %v", err)
+	}
+
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
-		return nil, ErrInvalidAmount
+		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
 	}
-	err := s.registryContract.RegisterProvider(ctx, amount)
+
+	err = s.registryContract.RegisterProvider(ctx, amount)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "registering stake: %v", err)
 	}
 
 	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -167,7 +193,7 @@ func (s *Service) GetStake(
 ) (*providerapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetStake(ctx, s.owner)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -179,7 +205,7 @@ func (s *Service) GetMinStake(
 ) (*providerapiv1.StakeResponse, error) {
 	stakeAmount, err := s.registryContract.GetMinStake(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "getting min stake: %v", err)
 	}
 
 	return &providerapiv1.StakeResponse{Amount: stakeAmount.String()}, nil
@@ -210,7 +236,7 @@ func (s *Service) CancelTransaction(
 	txHash := common.HexToHash(cancel.TxHash)
 	cHash, err := s.evmClient.CancelTx(ctx, txHash)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "cancelling transaction: %v", err)
 	}
 
 	return &providerapiv1.CancelResponse{TxHash: cHash.Hex()}, nil

@@ -6,6 +6,7 @@ option go_package = "github.com/primevprotocol/mev-commit/rpc/bidderapi/v1;bidde
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/api/annotations.proto";
+import "buf/validate/validate.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
@@ -52,12 +53,19 @@ message PrepayRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
       title: "Prepay request"
-      description: "Prepayment for bids to be issued by the bidder."
+      description: "Prepayment for bids to be issued by the bidder in wei."
       required: ["amount"]
     }
     example: "{\"amount\": \"1000000000000000000\" }"
   };
-  string amount = 1;
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount of ETH to be prepaid in wei."
+    pattern: "[0-9]+"
+  }, (buf.validate.field).cel = {
+      id: "amount",
+      message: "amount must be a valid integer.",
+      expression: "this.matches('^[0-9]+$') && uint(this) > 0"
+  }];
 };
 
 message PrepayResponse {
@@ -78,26 +86,39 @@ message Bid {
     json_schema: {
       title: "Bid message"
       description: "Unsigned bid message from bidders to the bidder mev-commit node."
-      required: ["txHash", "amount", "blockNumber"]
+      required: ["txHashes", "amount", "blockNumber"]
     }
-    example: "{\"txHash\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\", \"amount\": 1000000000000000000, \"blockNumber\": 123456}"
+    example: "{\"txHashes\": [\"fe4cb47db3630551beedfbd02a71ecc69fd59758e2ba699606e2d5c74284ffa7\", \"71c1348f2d7ff7e814f9c3617983703435ea7446de420aeac488bf1de35737e8\"], \"amount\": \"1000000000000000000\", \"blockNumber\": 123456}"
   };
-  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
-    pattern: "[a-fA-F0-9]{40}"
+  repeated string tx_hashes = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the hashes of the transactions that the bidder wants to include in the block."
+    pattern: "[a-fA-F0-9]{64}"
+  }, (buf.validate.field).cel = {
+        id: "tx_hashes",
+        message: "tx_hashes must be a valid array of transaction hashes.",
+        expression: "this.all(r, r.matches('^[a-fA-F0-9]{64}$')) && size(this) > 0"
   }];
-  int64 amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH that the bidder is willing to pay to the provider for including the transaction in the block."
+    pattern: "[0-9]+"
+  }, (buf.validate.field).cel = {
+      id: "amount",
+      message: "amount must be a valid integer.",
+      expression: "this.matches('^[0-9]+$') && uint(this) > 0"
   }];
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Max block number that the bidder wants to include the transaction in."
+  }, (buf.validate.field).cel = {
+      id: "block_number",
+      message: "block_number must be a valid integer.",
+      expression: "uint(this) > 0"
   }];
 };
 
 message Commitment {
-  string tx_hash = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  repeated string tx_hashes = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
-    pattern: "[a-fA-F0-9]{40}"
+    pattern: "[a-fA-F0-9]{64}"
   }];
   int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH that the bidder has agreed to pay to the provider for including the transaction in the block."
