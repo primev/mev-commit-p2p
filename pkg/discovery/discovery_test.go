@@ -40,6 +40,13 @@ func (t *testTopo) IsConnected(addr common.Address) bool {
 	return false
 }
 
+func (t *testTopo) Peers() int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	return len(t.peers)
+}
+
 func newTestLogger(w io.Writer) *slog.Logger {
 	testLogger := slog.NewTextHandler(w, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -96,7 +103,7 @@ func TestDiscovery(t *testing.T) {
 			if time.Since(start) > 5*time.Second {
 				t.Fatal("timed out")
 			}
-			if len(topo.peers) == 1 {
+			if topo.Peers() == 1 {
 				break
 			}
 			time.Sleep(100 * time.Millisecond)

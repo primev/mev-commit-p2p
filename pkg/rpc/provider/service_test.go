@@ -307,7 +307,7 @@ func TestBidHandling(t *testing.T) {
 					if !more {
 						break
 					}
-					err = sndr.Send(&providerapiv1.BidResponse{
+					err := sndr.Send(&providerapiv1.BidResponse{
 						BidDigest: bid.BidDigest,
 						Status:    tc.status,
 					})

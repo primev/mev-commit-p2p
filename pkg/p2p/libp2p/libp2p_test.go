@@ -214,6 +214,15 @@ func (t *testNotifier) Disconnected(p p2p.Peer) {
 	}
 }
 
+func (t *testNotifier) Peers() []p2p.Peer {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	peers := make([]p2p.Peer, len(t.peers))
+	copy(peers, t.peers)
+	return peers
+}
+
 func TestBootstrap(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping bootstrap test in short mode")
@@ -266,13 +275,14 @@ func TestBootstrap(t *testing.T) {
 		}
 
 		if p1.PeerCount() == 1 {
-			if len(notifier.peers) != 1 {
-				t.Fatalf("expected 1 peer, got %d", len(notifier.peers))
+			peers := notifier.Peers()
+			if len(peers) != 1 {
+				t.Fatalf("expected 1 peer, got %d", len(peers))
 			}
-			if notifier.peers[0].Type != p2p.PeerTypeProvider {
+			if peers[0].Type != p2p.PeerTypeProvider {
 				t.Fatalf(
 					"expected peer type %s, got %s",
-					p2p.PeerTypeProvider, notifier.peers[0].Type,
+					p2p.PeerTypeProvider, peers[0].Type,
 				)
 			}
 			break
