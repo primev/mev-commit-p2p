@@ -375,6 +375,7 @@ stop_services() {
             stop_oracle
             stop_hyperlane
             stop_local_l1
+            stop_standard_bridge
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         *)
