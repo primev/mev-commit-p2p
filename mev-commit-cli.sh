@@ -316,7 +316,7 @@ start_standard_bridge() {
         -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
         contract-deployer
     
-    echo "Standard bridge gateway contracts finished deploying."
+    echo "Standard bridge gateway contracts finished deploying on both chains"
 }
 
 clean() {
