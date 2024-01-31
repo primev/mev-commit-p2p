@@ -285,16 +285,11 @@ stop_local_l1() {
     DD_KEY=nil docker compose --profile local_l1 -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
 }
 
-# TODO: rename to "deploy_standard_bridge_contracts"
-start_standard_bridge() {
+deploy_standard_bridge_contracts() {
     # These params only apply to settlement layer
     local rpc_url=${1:-$DEFAULT_RPC_URL}
     local chain_id=${2:-17864}
     local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
-
-    # start settlement layer and local l1 if not already running
-    start_settlement_layer
-    start_local_l1
 
     build_contract_deployer
 
@@ -424,7 +419,10 @@ start_service() {
             start_local_l1
             ;;
         "standard_bridge")
-            start_standard_bridge
+            # start settlement layer and local l1 if not already running
+            start_settlement_layer
+            start_local_l1
+            deploy_standard_bridge_contracts
             ;;
         *)
             echo "Invalid service name: $service_name"
