@@ -323,6 +323,14 @@ deploy_standard_bridge_contracts() {
     echo "Standard bridge gateway contracts finished deploying on both chains"
 }
 
+start_standard_relayer() {
+    echo "Starting standard bridge relayer..."
+}
+
+stop_standard_relayer() {
+    echo "Stopping standard bridge relayer..."
+}
+
 clean() {
     echo "Cleaning up..."
     # Docker cleanup script
@@ -368,7 +376,7 @@ stop_services() {
             stop_local_l1
             ;;
         "standard_bridge")
-            # TODO:
+            stop_standard_relayer
             ;;
         "all")
             stop_settlement_layer
@@ -430,10 +438,10 @@ start_service() {
             ;;
         "standard_bridge")
             create_docker_network
-            # start settlement layer and local l1 if not already running
             start_settlement_layer
             start_local_l1
             deploy_standard_bridge_contracts
+            start_standard_relayer
             ;;
         *)
             echo "Invalid service name: $service_name"
