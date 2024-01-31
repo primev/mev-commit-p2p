@@ -104,11 +104,14 @@ EOF
     export AGENT_BASE_IMAGE=nil
     export L2_NODE_URL=nil
 
-    AGENT_BASE_IMAGE=nil SETTLEMENT_RPC_URL=nil PUBLIC_SETTLEMENT_RPC_URL=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+    DD_KEY=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+
+    # Deploy create2 proxy on settlement layer
+    deploy_create2
 }
 
 stop_settlement_layer() {
-    AGENT_BASE_IMAGE=nil SETTLEMENT_RPC_URL=nil PUBLIC_SETTLEMENT_RPC_URL=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
+    DD_KEY=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
 }
 
 start_mev_commit_minimal() {
@@ -189,10 +192,16 @@ build_contract_deployer() {
 # Deploy create2 proxy from alpine container.
 # This script is able to handle the proxy already being deployed.
 deploy_create2() {
+    # Use default rpc_url if not provided as arg
+    local rpc_url=${1:-$DEFAULT_RPC_URL}
+
+    # Use default DOCKER_NETWORK_NAME if not provided as arg
+    local network_name=${2:-"$DOCKER_NETWORK_NAME"}
+
     chmod +x "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh"
     docker run \
         --rm \
-        --network "$DOCKER_NETWORK_NAME" \
+        --network "$network_name" \
         -v "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh:/deploy_create2.sh" \
         alpine /bin/sh -c \
         "apk add --no-cache curl jq \
@@ -209,8 +218,6 @@ deploy_contracts() {
     sleep 10
 
     build_contract_deployer
-
-    deploy_create2
 
     # Run the Docker container to deploy the contracts
     echo "Deploying Contracts with RPC URL: $rpc_url, Chain ID: $chain_id, and Private Key: [HIDDEN]"
@@ -233,6 +240,7 @@ stop_oracle(){
     docker compose -f "$ORACLE_PATH/integration-compose.yml" down
 }
 
+# TODO: rename to "start_hyperlane"
 start_bridge(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
@@ -253,8 +261,6 @@ start_bridge(){
 
     build_contract_deployer
 
-    deploy_create2
-
     # Deploy whitelist contract 
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
@@ -268,6 +274,39 @@ start_bridge(){
 stop_bridge(){
     AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge down
 }
+
+start_local_l1() {
+    DD_KEY=nil docker compose --profile local_l1 -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+    deploy_create2 "http://l1-bootnode:8545" "geth-poa_l1_net"
+}
+
+stop_local_l1() {
+    DD_KEY=nil docker compose --profile local_l1 -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" down
+}
+
+# TODO: rename to "deploy_standard_bridge_contracts"
+start_standard_bridge() {
+    local rpc_url=${1:-$DEFAULT_RPC_URL}
+    local chain_id=${2:-17864}
+    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
+
+    # TODO: If local l1 or sl is not running, fail
+
+    build_contract_deployer
+
+    # Deploy gateway contract on local l1
+    docker run --rm --network "$DOCKER_NETWORK_NAME" \
+        -e RPC_URL="$local_l1_rpc_url" \
+        -e CHAIN_ID="39999" \
+        -e PRIVATE_KEY="$private_key" \
+        -e DEPLOY_TYPE="l1-gateway" \
+        -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
+        contract-deployer
+    
+    echo "Complete!!!!"
+}
+
+# stop_standard_bridge() {}
 
 clean() {
     echo "Cleaning up..."
@@ -310,6 +349,12 @@ stop_services() {
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
+        "local_l1")
+            stop_local_l1
+            ;;
+        "standard_bridge")
+            stop_standard_bridge
+            ;;
         "all")
             stop_settlement_layer
             stop_oracle
@@ -318,7 +363,7 @@ stop_services() {
             ;;
         *)
             echo "Invalid service: $service"
-            echo "Valid services: sl, oracle, mev-commit, all"
+            echo "Valid services: sl, oracle, mev-commit, local_l1, standard_bridge, all"
             return 1
     esac
 
@@ -363,9 +408,15 @@ start_service() {
             deploy_contracts "$rpc_url"
             start_mev_commit_minimal
             ;;
+        "local_l1")
+            start_local_l1
+            ;;
+        "standard_bridge")
+            start_standard_bridge
+            ;;
         *)
             echo "Invalid service name: $service_name"
-            echo "Valid services: all, e2e, oracle, sl, bridge"
+            echo "Valid services: all, e2e, oracle, sl, bridge, minimal, local_l1, standard_bridge"
             return 1
             ;;
     esac
@@ -377,8 +428,8 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  deploy_contracts       Deploy contracts"
-    echo "  start [services]       Start specified services. Available services: all, e2e, mev-commit, oracle, sl, bridge, minimal"
-    echo "  stop [service]         Stop specified service. Available services: sl, mev-commit, all"
+    echo "  start [services]       Start specified services. Available services: all, e2e, mev-commit, oracle, sl, bridge, minimal, local_l1, standard_bridge"
+    echo "  stop [service]         Stop specified service. Available services: sl, mev-commit, local_l1, standard_bridge, all"
     echo "  update                 Update repositories"
     echo "  clean                  Cleanup Docker"
     echo ""
