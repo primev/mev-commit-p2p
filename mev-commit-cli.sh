@@ -2,7 +2,7 @@
 
 # Default RPC URL and Paths
 L1_RPC_BASE_URL=https://sepolia.infura.io/v3
-DEFAULT_RPC_URL="http://sl-bootnode:8545"
+DEFAULT_RPC_URL="http://geth-poa-sl-bootnode-1:8545"
 PRIMEV_DIR="$HOME/.primev"
 
 GETH_REPO_NAME="mev-commit-geth"
