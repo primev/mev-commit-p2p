@@ -240,8 +240,7 @@ stop_oracle(){
     docker compose -f "$ORACLE_PATH/integration-compose.yml" down
 }
 
-# TODO: rename to "start_hyperlane"
-start_bridge(){
+start_hyperlane(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
     local chain_id=${3:-17864}  # Default chain ID
@@ -271,7 +270,7 @@ start_bridge(){
         contract-deployer
 }
 
-stop_bridge(){
+stop_hyperlane(){
     AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" SETTLEMENT_RPC_URL="$rpc_url" docker compose -f "$BRIDGE_PATH/hyperlane/docker-compose.yml" --profile bridge down
 }
 
@@ -301,6 +300,16 @@ deploy_standard_bridge_contracts() {
         -e DEPLOY_TYPE="settlement-gateway" \
         -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
         contract-deployer 
+
+    # Deploy whitelist contract on settlement layer given address of gateway contract
+    local gateway_addr="0xd7c994692d5ac39F1d3a4E653e576C346820F226" # TODO: obtain as deploy artifact
+    docker run --rm --network "$DOCKER_NETWORK_NAME" \
+        -e RPC_URL="$rpc_url" \
+        -e CHAIN_ID="$chain_id" \
+        -e PRIVATE_KEY="$private_key" \
+        -e DEPLOY_TYPE="whitelist" \
+        -e HYP_ERC20_ADDR="$gateway_addr" \
+        contract-deployer
 
     # Deploy gateway contract on local l1
     docker run --rm --network "geth-poa_l1_net" \
@@ -349,8 +358,8 @@ stop_services() {
         "oracle")
             stop_oracle  # Assuming stop_oracle is a function you've defined elsewhere
             ;;
-        "bridge")
-            stop_bridge
+        "hyperlane")
+            stop_hyperlane
             ;;
         "mev-commit")
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
@@ -359,18 +368,18 @@ stop_services() {
             stop_local_l1
             ;;
         "standard_bridge")
-            stop_standard_bridge
+            # TODO:
             ;;
         "all")
             stop_settlement_layer
             stop_oracle
-            stop_bridge
+            stop_hyperlane
             stop_local_l1
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         *)
             echo "Invalid service: $service"
-            echo "Valid services: sl, oracle, mev-commit, local_l1, standard_bridge, all"
+            echo "Valid services: sl, oracle, mev-commit, hyperlane, local_l1, standard_bridge, all"
             return 1
     esac
 
@@ -386,7 +395,7 @@ start_service() {
             deploy_contracts "$rpc_url"
             start_mev_commit "$datadog_key"
             start_oracle "$sepolia_key" "$datadog_key"
-            start_bridge "$public_rpc_url"
+            start_hyperlane "$public_rpc_url"
             ;;
         "e2e")
             initialize_environment
@@ -395,7 +404,7 @@ start_service() {
             start_mev_commit_e2e "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
             sleep 12
             start_oracle "$sepolia_key" "$datadog_key"
-            start_bridge "$public_rpc_url"
+            start_hyperlane "$public_rpc_url"
             ;;
         "mev-commit")
             start_mev_commit "$datadog_key"
@@ -406,8 +415,8 @@ start_service() {
         "sl")
             start_settlement_layer "$datadog_key"
             ;;
-        "bridge")
-            start_bridge "$public_rpc_url"
+        "hyperlane")
+            start_hyperlane "$public_rpc_url"
             ;;
         "minimal")
             initialize_environment
@@ -419,6 +428,7 @@ start_service() {
             start_local_l1
             ;;
         "standard_bridge")
+            create_docker_network
             # start settlement layer and local l1 if not already running
             start_settlement_layer
             start_local_l1
@@ -426,7 +436,7 @@ start_service() {
             ;;
         *)
             echo "Invalid service name: $service_name"
-            echo "Valid services: all, e2e, oracle, sl, bridge, minimal, local_l1, standard_bridge"
+            echo "Valid services: all, e2e, oracle, sl, hyperlane, minimal, local_l1, standard_bridge"
             return 1
             ;;
     esac
@@ -438,8 +448,8 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  deploy_contracts       Deploy contracts"
-    echo "  start [services]       Start specified services. Available services: all, e2e, mev-commit, oracle, sl, bridge, minimal, local_l1, standard_bridge"
-    echo "  stop [service]         Stop specified service. Available services: sl, mev-commit, local_l1, standard_bridge, all"
+    echo "  start [services]       Start specified services. Available services: all, e2e, mev-commit, oracle, sl, hyperlane, minimal, local_l1, standard_bridge"
+    echo "  stop [service]         Stop specified service. Available services: sl, mev-commit, hyperlane, local_l1, standard_bridge, all"
     echo "  update                 Update repositories"
     echo "  clean                  Cleanup Docker"
     echo ""
