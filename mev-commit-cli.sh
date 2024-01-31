@@ -107,6 +107,7 @@ EOF
     DD_KEY=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
 
     # Deploy create2 proxy on settlement layer
+    sleep 10
     deploy_create2
 }
 
@@ -118,7 +119,6 @@ start_mev_commit_minimal() {
     echo "Starting MEV-Commit..."
     docker compose --profile minimal-setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
-
 
 start_mev_commit_e2e() {
     local datadog_key=""
@@ -277,6 +277,7 @@ stop_bridge(){
 
 start_local_l1() {
     DD_KEY=nil docker compose --profile local_l1 -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+    sleep 10
     deploy_create2 "http://l1-bootnode:8545" "geth-poa_l1_net"
 }
 
@@ -286,27 +287,37 @@ stop_local_l1() {
 
 # TODO: rename to "deploy_standard_bridge_contracts"
 start_standard_bridge() {
+    # These params only apply to settlement layer
     local rpc_url=${1:-$DEFAULT_RPC_URL}
     local chain_id=${2:-17864}
     local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
 
-    # TODO: If local l1 or sl is not running, fail
+    # start settlement layer and local l1 if not already running
+    start_settlement_layer
+    start_local_l1
 
     build_contract_deployer
 
-    # Deploy gateway contract on local l1
+    # Deploy gateway contract on settlement layer
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
-        -e RPC_URL="$local_l1_rpc_url" \
-        -e CHAIN_ID="39999" \
+        -e RPC_URL="$rpc_url" \
+        -e CHAIN_ID="$chain_id" \
         -e PRIVATE_KEY="$private_key" \
+        -e DEPLOY_TYPE="settlement-gateway" \
+        -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
+        contract-deployer 
+
+    # Deploy gateway contract on local l1
+    docker run --rm --network "geth-poa_l1_net" \
+        -e RPC_URL="http://l1-bootnode:8545" \
+        -e CHAIN_ID="39999" \
+        -e PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" \
         -e DEPLOY_TYPE="l1-gateway" \
         -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
         contract-deployer
     
-    echo "Complete!!!!"
+    echo "Standard bridge gateway contracts finished deploying."
 }
-
-# stop_standard_bridge() {}
 
 clean() {
     echo "Cleaning up..."
@@ -359,6 +370,7 @@ stop_services() {
             stop_settlement_layer
             stop_oracle
             stop_bridge
+            stop_local_l1
             docker compose -f "$MEV_COMMIT_PATH/integration-compose.yml" down
             ;;
         *)
