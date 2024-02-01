@@ -302,13 +302,13 @@ deploy_standard_bridge_contracts() {
         contract-deployer 
 
     # Deploy whitelist contract on settlement layer given address of gateway contract
-    local gateway_addr="0xF457d6dC28418182AFfc4A0790f3A9151Cf0499f" # TODO: obtain as deploy artifact
+    local settlement_gateway_addr="0x34991dD05B6dE236006aBf1AeBBc898289C43280" # TODO: obtain as deploy artifact from above
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
         -e PRIVATE_KEY="$private_key" \
         -e DEPLOY_TYPE="whitelist" \
-        -e HYP_ERC20_ADDR="$gateway_addr" \
+        -e HYP_ERC20_ADDR="$settlement_gateway_addr" \
         contract-deployer
 
     # Deploy gateway contract on local l1
