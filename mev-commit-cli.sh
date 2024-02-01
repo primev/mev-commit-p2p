@@ -298,11 +298,11 @@ deploy_standard_bridge_contracts() {
         -e CHAIN_ID="$chain_id" \
         -e PRIVATE_KEY="$private_key" \
         -e DEPLOY_TYPE="settlement-gateway" \
-        -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
+        -e RELAYER_ADDR="0x0DCaa27B9E4Db92F820189345792f8eC5Ef148F6" \
         contract-deployer 
 
     # Deploy whitelist contract on settlement layer given address of gateway contract
-    local gateway_addr="0xd7c994692d5ac39F1d3a4E653e576C346820F226" # TODO: obtain as deploy artifact
+    local gateway_addr="0xF457d6dC28418182AFfc4A0790f3A9151Cf0499f" # TODO: obtain as deploy artifact
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
@@ -317,7 +317,7 @@ deploy_standard_bridge_contracts() {
         -e CHAIN_ID="39999" \
         -e PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" \
         -e DEPLOY_TYPE="l1-gateway" \
-        -e RELAYER_ADDR="f39Fd6e51aad88F6F4ce6aB8827279cffFb92266" \
+        -e RELAYER_ADDR="0x0DCaa27B9E4Db92F820189345792f8eC5Ef148F6" \
         contract-deployer
     
     echo "Standard bridge gateway contracts finished deploying on both chains"
