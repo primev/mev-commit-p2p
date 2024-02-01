@@ -7,12 +7,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/primevprotocol/mev-commit/pkg/signer"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 )
 
 var (
@@ -65,27 +64,13 @@ type Signer interface {
 	VerifyPreConfirmation(*PreConfirmation) (*common.Address, error)
 }
 
-// type privateKeySigner struct {
-// 	privKey *ecdsa.PrivateKey
-// }
-
-// func NewSigner(key *ecdsa.PrivateKey) *privateKeySigner {
-// 	return &privateKeySigner{
-// 		privKey: key,
-// 	}
-// }
-
 type privateKeySigner struct {
-	account accounts.Account
-	ks signer.KeyStoreSigner
-	ksPassword string
+	keySigner keysigner.KeySigner
 }
 
-func NewSigner(account accounts.Account, ks signer.KeyStoreSigner, ksPassword string) *privateKeySigner {
+func NewSigner(keySigner keysigner.KeySigner) *privateKeySigner {
 	return &privateKeySigner{
-		account: account,
-		ks: ks,
-		ksPassword: ksPassword,
+		keySigner: keySigner,
 	}
 }
 
@@ -109,8 +94,7 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, err
 	}
 
-	sig, err := p.ks.SignHashWithPassphrase(p.account, p.ksPassword, bidHash)
-	// sig, err := crypto.Sign(bidHash, p.privKey)
+	sig, err := p.keySigner.SignHash(bidHash)
 	if err != nil {
 		return nil, err
 	}
@@ -140,8 +124,7 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		return nil, err
 	}
 
-	sig, err := p.ks.SignHashWithPassphrase(p.account, p.ksPassword, preConfirmationHash)
-	// sig, err := crypto.Sign(preConfirmationHash, p.privKey)
+	sig, err := p.keySigner.SignHash(preConfirmationHash)
 	if err != nil {
 		return nil, err
 	}

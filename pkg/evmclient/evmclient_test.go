@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient/mockevm"
-	"github.com/primevprotocol/mev-commit/pkg/evmclient/mockks"
+	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 )
 
@@ -29,13 +29,13 @@ func TestSendCall(t *testing.T) {
 	nonce := uint64(1)
 	chainID := big.NewInt(1)
 	unblockMonitor := make(chan struct{})
-	ks := mockks.NewMockKeyStore()
-	password := "password"
 
-	// pk, err := crypto.GenerateKey()
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	pk, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ks := mockkeysigner.NewMockKeySigner(pk, owner)
 
 	evm := mockevm.NewMockEvm(
 		chainID.Uint64(),
@@ -140,8 +140,7 @@ func TestSendCall(t *testing.T) {
 		),
 	)
 
-	client, err := evmclient.New(accounts.Account{Address: owner}, ks, password, evm, util.NewTestLogger(os.Stdout))
-	// client, err := evmclient.New(owner, pk, evm, util.NewTestLogger(os.Stdout))
+	client, err := evmclient.New(ks, evm, util.NewTestLogger(os.Stdout))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,13 +208,13 @@ func TestCancel(t *testing.T) {
 	unblockMonitor := make(chan struct{})
 	successHash := common.HexToHash("0x123")
 	blkNum := uint64(1)
-	ks := mockks.NewMockKeyStore()
-	password := "password"
 
-	// pk, err := crypto.GenerateKey()
-	// if err != nil {
-	// 	t.Fatal(err)
-	// }
+	pk, err := crypto.GenerateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ks := mockkeysigner.NewMockKeySigner(pk, owner)
 
 	evm := mockevm.NewMockEvm(
 		chainID.Uint64(),
@@ -286,8 +285,7 @@ func TestCancel(t *testing.T) {
 		),
 	)
 
-	// client, err := evmclient.New(owner, pk, evm, util.NewTestLogger(os.Stdout))
-	client, err := evmclient.New(accounts.Account{Address: owner}, ks, password, evm, util.NewTestLogger(os.Stdout))
+	client, err := evmclient.New(ks, evm, util.NewTestLogger(os.Stdout))
 	if err != nil {
 		t.Fatal(err)
 	}

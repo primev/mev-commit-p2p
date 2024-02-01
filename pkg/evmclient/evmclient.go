@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -50,16 +50,12 @@ type EvmClient struct {
 	chainID   *big.Int
 	ethClient EVM
 	owner     common.Address
-	// signer    *ecdsa.PrivateKey
-	account    accounts.Account
-	ks         KeyStoreEVMClient
-	ksPassword string
-
-	logger  *slog.Logger
-	nonce   uint64
-	metrics *metrics
-	sentTxs map[common.Hash]txnDetails
-	monitor *txmonitor
+	keySigner keysigner.KeySigner
+	logger    *slog.Logger
+	nonce     uint64
+	metrics   *metrics
+	sentTxs   map[common.Hash]txnDetails
+	monitor   *txmonitor
 }
 
 type txnDetails struct {
@@ -68,9 +64,7 @@ type txnDetails struct {
 }
 
 func New(
-	account accounts.Account,
-	ks KeyStoreEVMClient,
-	password string,
+	keySigner keysigner.KeySigner,
 	ethClient EVM,
 	logger *slog.Logger,
 ) (*EvmClient, error) {
@@ -80,26 +74,23 @@ func New(
 	}
 
 	m := newMetrics()
-
+	address := keySigner.GetAddress()
 	monitor := newTxMonitor(
-		account.Address,
+		address,
 		ethClient,
 		logger.With("component", "evmclient/txmonitor"),
 		m,
 	)
 
 	return &EvmClient{
-		chainID:    chainID,
-		ethClient:  ethClient,
-		account:    account,
-		owner:      account.Address,
-		ks:         ks,
-		ksPassword: password,
-		// signer:    signer,
-		logger:  logger,
-		metrics: m,
-		sentTxs: make(map[common.Hash]txnDetails),
-		monitor: monitor,
+		chainID:   chainID,
+		ethClient: ethClient,
+		owner:     address,
+		keySigner: keySigner,
+		logger:    logger,
+		metrics:   m,
+		sentTxs:   make(map[common.Hash]txnDetails),
+		monitor:   monitor,
 	}, nil
 }
 
@@ -208,8 +199,7 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
-	signedTx, err := c.ks.SignTxWithPassphrase(c.account, c.ksPassword, txnData, c.chainID)
-	// signedTx, err := types.SignTx(txnData, types.NewLondonSigner(c.chainID), c.signer)
+	signedTx, err := c.keySigner.SignTx(txnData, c.chainID)
 	if err != nil {
 		c.logger.Error("failed to sign tx", "err", err)
 		return common.Hash{}, fmt.Errorf("failed to sign tx: %w", err)
@@ -372,8 +362,7 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 		Data:      []byte{},
 	})
 
-	// signedTx, err := types.SignTx(tx, types.NewLondonSigner(c.chainID), c.signer)
-	signedTx, err := c.ks.SignTxWithPassphrase(c.account, c.ksPassword, tx, c.chainID)
+	signedTx, err := c.keySigner.SignTx(tx, c.chainID)
 	if err != nil {
 		c.logger.Error("failed to sign cancel tx", "err", err)
 		return common.Hash{}, fmt.Errorf("failed to sign cancel tx: %w", err)

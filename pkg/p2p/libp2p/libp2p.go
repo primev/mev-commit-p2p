@@ -11,9 +11,9 @@ import (
 
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
 	libp2pcrypto "github.com/libp2p/go-libp2p/core/crypto"
@@ -56,25 +56,20 @@ type ProviderRegistry interface {
 
 type Options struct {
 	// PrivKey        *ecdsa.PrivateKey
-	Account          accounts.Account
-	KeyStore         signer.KeyStoreSigner
-	KeyStorePassword string
-	KeyExtractor     util.KeyExtractor
-	Secret           string
-	PeerType         p2p.PeerType
-	Register         handshake.ProviderRegistry
-	ListenPort       int
-	ListenAddr       string
-	Logger           *slog.Logger
-	MetricsReg       *prometheus.Registry
-	BootstrapAddrs   []string
-	NatAddr          string
+	KeySigner      keysigner.KeySigner
+	Secret         string
+	PeerType       p2p.PeerType
+	Register       handshake.ProviderRegistry
+	ListenPort     int
+	ListenAddr     string
+	Logger         *slog.Logger
+	MetricsReg     *prometheus.Registry
+	BootstrapAddrs []string
+	NatAddr        string
 }
 
 func New(opts *Options) (*Service, error) {
-	keystoreFilePath := opts.Account.URL.Path
-	password := opts.KeyStorePassword
-	privKey, err := opts.KeyExtractor.ExtractPrivateKey(keystoreFilePath, password)
+	privKey, err := opts.KeySigner.GetPrivateKey()
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get priv key from key path: %w", err)
@@ -167,11 +162,7 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	hsSvc, err := handshake.New(
-		// opts.PrivKey,
-		opts.KeyStore,
-		opts.KeyStorePassword,
-		opts.Account,
-		// ethAddress,
+		opts.KeySigner,
 		opts.PeerType,
 		opts.Secret,
 		signer.New(),
