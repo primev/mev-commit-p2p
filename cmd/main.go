@@ -401,10 +401,10 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 }
 
 func setupKeySigner(c *cli.Context) (ks.KeySigner, error) {
-	if c.IsSet(optionPrivKeyFile.Name) {
-		return setupPrivateKeySigner(c)
+	if c.IsSet(optionKeystorePath.Name) {
+		return setupKeystoreSigner(c)
 	}
-	return setupKeystoreSigner(c)
+	return setupPrivateKeySigner(c)
 }
 
 func setupPrivateKeySigner(c *cli.Context) (ks.KeySigner, error) {
