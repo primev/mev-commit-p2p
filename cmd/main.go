@@ -443,7 +443,7 @@ func setupKeystoreSigner(c *cli.Context) (ks.KeySigner, error) {
 	}
 
 	fmt.Fprintf(c.App.Writer, "Public address of the key: %s\n", account.Address.Hex())
-	fmt.Fprintf(c.App.Writer, "Path of the secret key file: %s", account.URL.Path)
-	
+	fmt.Fprintf(c.App.Writer, "Path of the secret key file: %s\n", account.URL.Path)
+
 	return ks.NewKeystoreSigner(keystore, password, account), nil
 }

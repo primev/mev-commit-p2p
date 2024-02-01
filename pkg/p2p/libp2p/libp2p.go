@@ -55,7 +55,6 @@ type ProviderRegistry interface {
 }
 
 type Options struct {
-	// PrivKey        *ecdsa.PrivateKey
 	KeySigner      keysigner.KeySigner
 	Secret         string
 	PeerType       p2p.PeerType
@@ -72,9 +71,9 @@ func New(opts *Options) (*Service, error) {
 	privKey, err := opts.KeySigner.GetPrivateKey()
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to get priv key from key path: %w", err)
+		return nil, fmt.Errorf("failed to get priv key: %w", err)
 	}
-	defer util.ZeroPrivateKey(privKey)
+	defer keysigner.ZeroPrivateKey(privKey)
 
 	padded32BytePrivKey := util.PadKeyTo32Bytes(privKey.D)
 	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)

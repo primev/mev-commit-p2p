@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 	"os"
+	"runtime"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -92,4 +93,13 @@ func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, erro
 	}
 
 	return key.PrivateKey, nil
+}
+
+func ZeroPrivateKey(key *ecdsa.PrivateKey) {
+	b := key.D.Bits()
+	for i := range b {
+		b[i] = 0
+	}
+	// Force garbage collection to remove the key from memory
+	runtime.GC()
 }
