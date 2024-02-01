@@ -5,8 +5,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/mockks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,8 +20,11 @@ func TestBids(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		signer := preconfsigner.NewSigner(key)
+		
+		ks := mockks.NewMockKeyStore(key)
+		ksPassword := "password"
+		account := accounts.Account{Address: crypto.PubkeyToAddress(key.PublicKey)}
+		signer := preconfsigner.NewSigner(account, ks, ksPassword)
 
 		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
@@ -47,14 +52,20 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bidderSigner := preconfsigner.NewSigner(bidderKey)
+		ks := mockks.NewMockKeyStore(bidderKey)
+		ksPassword := "password"
+		account := accounts.Account{Address: crypto.PubkeyToAddress(bidderKey.PublicKey)}
 
+		// bidderSigner := preconfsigner.NewSigner(bidderKey)
+		bidderSigner := preconfsigner.NewSigner(account, ks, ksPassword)
 		providerKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		providerSigner := preconfsigner.NewSigner(providerKey)
+		ks = mockks.NewMockKeyStore(providerKey)
+		account = accounts.Account{Address: crypto.PubkeyToAddress(providerKey.PublicKey)}
+		providerSigner := preconfsigner.NewSigner(account, ks, ksPassword)
 
 		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
 	contracts "github.com/primevprotocol/contracts-abi/config"
 	mevcommit "github.com/primevprotocol/mev-commit"
@@ -28,6 +30,8 @@ const (
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
 	defaultSecret    = "secret"
+	defaultPassword  = "primev"
+	defaultKeystore  = "keystore"
 )
 
 var (
@@ -62,6 +66,20 @@ var (
 		Usage:   "path to private key file",
 		EnvVars: []string{"MEV_COMMIT_PRIVKEY_FILE"},
 		Value:   filepath.Join(defaultConfigDir, defaultKeyFile),
+	})
+
+	optionKeystorePassword = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "keystore-password",
+		Usage:   "use to access keystore",
+		EnvVars: []string{"MEV_COMMIT_KEYSTORE_PASSWORD"},
+		Value:   defaultPassword,
+	})
+
+	optionKeystorePath = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "keystore-path",
+		Usage:   "path to keystore location",
+		EnvVars: []string{"MEV_COMMIT_KEYSTORE_PATH"},
+		Value:   filepath.Join(defaultConfigDir, defaultKeystore),
 	})
 
 	optionPeerType = altsrc.NewStringFlag(&cli.StringFlag{
@@ -193,6 +211,8 @@ func main() {
 		optionConfig,
 		optionPeerType,
 		optionPrivKeyFile,
+		optionKeystorePassword,
+		optionKeystorePath,
 		optionP2PPort,
 		optionP2PAddr,
 		optionHTTPPort,
@@ -283,14 +303,21 @@ func resolveFilePath(path string) (string, error) {
 }
 
 func start(c *cli.Context) error {
-	privKeyFile, err := resolveFilePath(c.String(optionPrivKeyFile.Name))
-	if err != nil {
-		return fmt.Errorf("failed to get private key file path: %w", err)
+	ks := keystore.NewKeyStore(c.String(optionKeystorePath.Name), keystore.StandardScryptN, keystore.StandardScryptP)
+	password := c.String(optionKeystorePassword.Name)
+	ksAccounts := ks.Accounts()
+	var account accounts.Account
+	if len(ksAccounts) == 0 {
+		var err error
+		account, err = ks.NewAccount(password)
+		if err != nil {
+			return fmt.Errorf("failed to create account: %w", err)
+		}
+	} else {
+		account = ksAccounts[0]
 	}
 
-	if err := createKeyIfNotExists(c, privKeyFile); err != nil {
-		return fmt.Errorf("failed to create private key: %w", err)
-	}
+	fmt.Fprintf(c.App.Writer, "Wallet address: %s\n", account.Address)
 
 	logger, err := newLogger(
 		c.String(optionLogLevel.Name),
@@ -301,11 +328,6 @@ func start(c *cli.Context) error {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	privKey, err := crypto.LoadECDSA(privKeyFile)
-	if err != nil {
-		return fmt.Errorf("failed to load private key from file '%s': %w", privKeyFile, err)
-	}
-
 	httpAddr := fmt.Sprintf("%s:%d", c.String(optionHTTPAddr.Name), c.Int(optionHTTPPort.Name))
 	rpcAddr := fmt.Sprintf("%s:%d", c.String(optionRPCAddr.Name), c.Int(optionRPCPort.Name))
 	natAddr := ""
@@ -314,7 +336,9 @@ func start(c *cli.Context) error {
 	}
 
 	nd, err := node.NewNode(&node.Options{
-		PrivKey:                  privKey,
+		Account:                  account,
+		KeyStore:                 ks,
+		KeyStorePassword:         c.String(optionKeystorePassword.Name),
 		Secret:                   c.String(optionSecret.Name),
 		PeerType:                 c.String(optionPeerType.Name),
 		P2PPort:                  c.Int(optionP2PPort.Name),

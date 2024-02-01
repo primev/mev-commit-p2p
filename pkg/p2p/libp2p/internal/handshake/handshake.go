@@ -3,10 +3,11 @@ package handshake
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"errors"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -32,8 +33,11 @@ type ProviderRegistry interface {
 
 // Handshake is the handshake protocol
 type Service struct {
-	privKey       *ecdsa.PrivateKey
-	ethAddress    common.Address
+	ks         signer.KeyStoreSigner
+	ksPassword string
+	account    accounts.Account
+	// privKey       *ecdsa.PrivateKey
+	// ethAddress    common.Address
 	peerType      p2p.PeerType
 	passcode      string
 	signer        signer.Signer
@@ -43,8 +47,11 @@ type Service struct {
 }
 
 func New(
-	privKey *ecdsa.PrivateKey,
-	ethAddress common.Address,
+	// privKey *ecdsa.PrivateKey,
+	ks signer.KeyStoreSigner,
+	ksPassword string,
+	account accounts.Account,
+	// ethAddress common.Address,
 	peerType p2p.PeerType,
 	passcode string,
 	signer signer.Signer,
@@ -52,8 +59,11 @@ func New(
 	getEthAddress func(core.PeerID) (common.Address, error),
 ) (*Service, error) {
 	s := &Service{
-		privKey:       privKey,
-		ethAddress:    ethAddress,
+		// privKey:       privKey,
+		ks:         ks,
+		ksPassword: ksPassword,
+		account:    account,
+		// ethAddress:    ethAddress,
 		peerType:      peerType,
 		passcode:      passcode,
 		signer:        signer,
@@ -123,7 +133,9 @@ func (h *Service) verifyReq(
 
 func (h *Service) createSignature() ([]byte, error) {
 	unsignedData := []byte(h.peerType.String() + h.passcode)
-	sig, err := h.signer.Sign(h.privKey, unsignedData)
+	hash := crypto.Keccak256Hash(unsignedData)
+	sig, err := h.ks.SignHashWithPassphrase(h.account, h.ksPassword, hash.Bytes())
+	// sig, err := h.signer.Sign(h.privKey, unsignedData)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +160,7 @@ func (h *Service) setHandshakeReq() error {
 }
 
 func (h *Service) verifyResp(resp *HandshakeResp) error {
-	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ethAddress.Bytes()) {
+	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.account.Address.Bytes()) {
 		return errors.New("observed address mismatch")
 	}
 

@@ -2,6 +2,7 @@ package libp2p_test
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"errors"
 	"io"
 	"log/slog"
@@ -10,11 +11,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
+	"github.com/primevprotocol/mev-commit/pkg/signer/mockks"
 )
 
 type testRegistry struct{}
@@ -24,6 +27,17 @@ func (t *testRegistry) CheckProviderRegistered(
 	_ common.Address,
 ) bool {
 	return true
+}
+
+type testKeyExtractor struct {
+	privKey *ecdsa.PrivateKey
+}
+
+func NewTestKeyExtractor(privKey *ecdsa.PrivateKey) *testKeyExtractor {
+	return &testKeyExtractor{privKey: privKey}
+}
+func (tke *testKeyExtractor) ExtractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, error) {
+	return tke.privKey, nil
 }
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
@@ -42,9 +56,19 @@ func newTestService(t *testing.T) *libp2p.Service {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ks := mockks.NewMockKeyStore(privKey)
+	ksPassword := "password"
 
+	tke := NewTestKeyExtractor(privKey)
 	svc, err := libp2p.New(&libp2p.Options{
-		PrivKey:    privKey,
+		KeyExtractor: tke,
+		Account: accounts.Account{
+			Address: crypto.PubkeyToAddress(privKey.PublicKey),
+			URL:     accounts.URL{Path: "random/path"},
+		},
+		KeyStore:         ks,
+		KeyStorePassword: ksPassword,
+		// PrivKey:    privKey,
 		Secret:     "test",
 		ListenPort: 0,
 		ListenAddr: "0.0.0.0",
@@ -230,6 +254,7 @@ func TestBootstrap(t *testing.T) {
 
 	testDefaultOptions := libp2p.Options{
 		Secret:     "test",
+		KeyStorePassword: "password",
 		ListenPort: 0,
 		ListenAddr: "0.0.0.0",
 		PeerType:   p2p.PeerTypeProvider,
@@ -242,8 +267,18 @@ func TestBootstrap(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ks := mockks.NewMockKeyStore(privKey)
+	tke := NewTestKeyExtractor(privKey)
+	account := accounts.Account{
+		Address: crypto.PubkeyToAddress(privKey.PublicKey),
+		URL:     accounts.URL{Path: "random/path"},
+	}
+
 	bnOpts := testDefaultOptions
-	bnOpts.PrivKey = privKey
+	// bnOpts.PrivKey = privKey
+	bnOpts.KeyExtractor = tke
+	bnOpts.KeyStore = ks
+	bnOpts.Account = account
 	bnOpts.PeerType = p2p.PeerTypeBootnode
 
 	bootnode, err := libp2p.New(&bnOpts)
@@ -259,9 +294,19 @@ func TestBootstrap(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ks = mockks.NewMockKeyStore(privKey)
+	tke = NewTestKeyExtractor(privKey)
+	account = accounts.Account{
+		Address: crypto.PubkeyToAddress(privKey.PublicKey),
+		URL:     accounts.URL{Path: "random/path"},
+	}
+
 	n1Opts := testDefaultOptions
 	n1Opts.BootstrapAddrs = []string{bootnode.AddrString()}
-	n1Opts.PrivKey = privKey
+	n1Opts.KeyStore = ks
+	n1Opts.KeyExtractor = tke
+	n1Opts.Account = account
+	// n1Opts.PrivKey = privKey
 
 	p1, err := libp2p.New(&n1Opts)
 	if err != nil {

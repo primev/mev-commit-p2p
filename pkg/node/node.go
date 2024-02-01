@@ -12,6 +12,8 @@ import (
 	"net/http"
 
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -31,6 +33,7 @@ import (
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
+	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
@@ -38,6 +41,9 @@ import (
 
 type Options struct {
 	Version                  string
+	Account                  accounts.Account
+	KeyStore                 *keystore.KeyStore
+	KeyStorePassword         string
 	PrivKey                  *ecdsa.PrivateKey
 	Secret                   string
 	PeerType                 string
@@ -65,15 +71,17 @@ func NewNode(opts *Options) (*Node, error) {
 
 	srv := apiserver.New(opts.Version, opts.Logger.With("component", "apiserver"))
 	peerType := p2p.FromString(opts.PeerType)
-	ownerEthAddress := libp2p.GetEthAddressFromPubKey(&opts.PrivKey.PublicKey)
 
 	contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
 	if err != nil {
 		return nil, err
 	}
 	evmClient, err := evmclient.New(
-		ownerEthAddress,
-		opts.PrivKey,
+		opts.Account,
+		opts.KeyStore,
+		opts.KeyStorePassword,
+		// ownerEthAddress,
+		// opts.PrivKey,
 		evmclient.WrapEthClient(contractRPC),
 		opts.Logger.With("component", "evmclient"),
 	)
@@ -100,8 +108,14 @@ func NewNode(opts *Options) (*Node, error) {
 		opts.Logger.With("component", "providerregistry"),
 	)
 
+	pkExtractor := util.NewKeyExtractor()
+
 	p2pSvc, err := libp2p.New(&libp2p.Options{
-		PrivKey:        opts.PrivKey,
+		Account:          opts.Account,
+		KeyStore:         opts.KeyStore,
+		KeyStorePassword: opts.KeyStorePassword,
+		KeyExtractor:     pkExtractor,
+		// PrivKey:        opts.PrivKey,
 		Secret:         opts.Secret,
 		PeerType:       peerType,
 		Register:       providerRegistry,
@@ -140,7 +154,11 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		grpcServer := grpc.NewServer()
-		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
+		preconfSigner := preconfsigner.NewSigner(
+			opts.Account,
+			opts.KeyStore,
+			opts.KeyStorePassword,
+		)
 		validator, err := protovalidate.New()
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
@@ -156,7 +174,7 @@ func NewNode(opts *Options) (*Node, error) {
 			providerAPI := providerapi.NewService(
 				opts.Logger.With("component", "providerapi"),
 				providerRegistry,
-				ownerEthAddress,
+				opts.Account.Address,
 				evmClient,
 				validator,
 			)
@@ -199,7 +217,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 			bidderAPI := bidderapi.NewService(
 				preconfProto,
-				ownerEthAddress,
+				opts.Account.Address,
 				bidderRegistry,
 				validator,
 				opts.Logger.With("component", "bidderapi"),

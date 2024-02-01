@@ -2,7 +2,6 @@ package libp2p
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,6 +13,7 @@ import (
 	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
 	libp2pcrypto "github.com/libp2p/go-libp2p/core/crypto"
@@ -55,20 +55,33 @@ type ProviderRegistry interface {
 }
 
 type Options struct {
-	PrivKey        *ecdsa.PrivateKey
-	Secret         string
-	PeerType       p2p.PeerType
-	Register       handshake.ProviderRegistry
-	ListenPort     int
-	ListenAddr     string
-	Logger         *slog.Logger
-	MetricsReg     *prometheus.Registry
-	BootstrapAddrs []string
-	NatAddr        string
+	// PrivKey        *ecdsa.PrivateKey
+	Account          accounts.Account
+	KeyStore         signer.KeyStoreSigner
+	KeyStorePassword string
+	KeyExtractor     util.KeyExtractor
+	Secret           string
+	PeerType         p2p.PeerType
+	Register         handshake.ProviderRegistry
+	ListenPort       int
+	ListenAddr       string
+	Logger           *slog.Logger
+	MetricsReg       *prometheus.Registry
+	BootstrapAddrs   []string
+	NatAddr          string
 }
 
 func New(opts *Options) (*Service, error) {
-	padded32BytePrivKey := util.PadKeyTo32Bytes(opts.PrivKey.D)
+	keystoreFilePath := opts.Account.URL.Path
+	password := opts.KeyStorePassword
+	privKey, err := opts.KeyExtractor.ExtractPrivateKey(keystoreFilePath, password)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get priv key from key path: %w", err)
+	}
+	defer util.ZeroPrivateKey(privKey)
+
+	padded32BytePrivKey := util.PadKeyTo32Bytes(privKey.D)
 	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)
 	if err != nil {
 		return nil, err
@@ -154,8 +167,11 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	hsSvc, err := handshake.New(
-		opts.PrivKey,
-		ethAddress,
+		// opts.PrivKey,
+		opts.KeyStore,
+		opts.KeyStorePassword,
+		opts.Account,
+		// ethAddress,
 		opts.PeerType,
 		opts.Secret,
 		signer.New(),

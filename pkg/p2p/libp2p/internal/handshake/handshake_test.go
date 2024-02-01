@@ -7,11 +7,13 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p/internal/handshake"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
+	"github.com/primevprotocol/mev-commit/pkg/signer/mockks"
 )
 
 type testRegister struct{}
@@ -39,19 +41,26 @@ func TestHandshake(t *testing.T) {
 	t.Parallel()
 
 	t.Run("ok", func(t *testing.T) {
+		ksPassword := "password"
+
 		privKey1, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		ks1 := mockks.NewMockKeyStore(privKey1)
 		privKey2, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		ks2 := mockks.NewMockKeyStore(privKey2)
+
 		hs1, err := handshake.New(
-			privKey1,
-			common.HexToAddress("0x1"),
+			// privKey1,
+			ks1,
+			ksPassword,
+			accounts.Account{Address: common.HexToAddress("0x1")},
 			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: common.HexToAddress("0x2")},
@@ -65,8 +74,10 @@ func TestHandshake(t *testing.T) {
 		}
 
 		hs2, err := handshake.New(
-			privKey2,
-			common.HexToAddress("0x2"),
+			// privKey2,
+			ks2,
+			ksPassword,
+			accounts.Account{Address: common.HexToAddress("0x2")},
 			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: common.HexToAddress("0x1")},
