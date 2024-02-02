@@ -31,7 +31,6 @@ const (
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
 	defaultSecret    = "secret"
-	defaultPassword  = "primev"
 	defaultKeystore  = "keystore"
 )
 
@@ -73,7 +72,6 @@ var (
 		Name:    "keystore-password",
 		Usage:   "use to access keystore",
 		EnvVars: []string{"MEV_COMMIT_KEYSTORE_PASSWORD"},
-		Value:   defaultPassword,
 	})
 
 	optionKeystorePath = altsrc.NewStringFlag(&cli.StringFlag{
@@ -238,7 +236,7 @@ func main() {
 		Version: mevcommit.Version(),
 		Flags:   flags,
 		Before:  altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc(optionConfig.Name)),
-		Action:  start,
+		Action:  startApp,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -301,6 +299,23 @@ func resolveFilePath(path string) (string, error) {
 	}
 
 	return path, nil
+}
+
+func startApp(c *cli.Context) error {
+	if err := checkPassword(c); err != nil {
+		return err
+	}
+	if err := start(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkPassword(c *cli.Context) error {
+	if c.IsSet(optionKeystorePath.Name) && !c.IsSet(optionKeystorePassword.Name) {
+		return cli.Exit("Password for encrypted keystore is missing", 1)
+	}
+	return nil
 }
 
 func start(c *cli.Context) error {
