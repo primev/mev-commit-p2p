@@ -69,7 +69,6 @@ type Options struct {
 
 func New(opts *Options) (*Service, error) {
 	privKey, err := opts.KeySigner.GetPrivateKey()
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to get priv key: %w", err)
 	}
