@@ -302,7 +302,7 @@ deploy_standard_bridge_contracts() {
         contract-deployer 
 
     # Deploy whitelist contract on settlement layer given address of gateway contract
-    local settlement_gateway_addr="0x34991dD05B6dE236006aBf1AeBBc898289C43280" # TODO: obtain as deploy artifact from above
+    local settlement_gateway_addr="0xc1f93bE11D7472c9B9a4d87B41dD0a491F1fbc75" # TODO: obtain as deploy artifact from above
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
