@@ -236,7 +236,7 @@ func main() {
 		Version: mevcommit.Version(),
 		Flags:   flags,
 		Before:  altsrc.InitInputSourceWithContext(flags, altsrc.NewYamlSourceFromFlagFunc(optionConfig.Name)),
-		Action:  startApp,
+		Action:  initializeApplication,
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -301,24 +301,27 @@ func resolveFilePath(path string) (string, error) {
 	return path, nil
 }
 
-func startApp(c *cli.Context) error {
-	if err := checkPassword(c); err != nil {
+func initializeApplication(c *cli.Context) error {
+	if err := verifyKeystorePasswordPresence(c); err != nil {
 		return err
 	}
-	if err := start(c); err != nil {
+	if err := launchNodeWithConfig(c); err != nil {
 		return err
 	}
 	return nil
 }
 
-func checkPassword(c *cli.Context) error {
+// verifyKeystorePasswordPresence checks for the presence of a keystore password.
+// it returns error, if keystore path is set and keystore password is not
+func verifyKeystorePasswordPresence(c *cli.Context) error {
 	if c.IsSet(optionKeystorePath.Name) && !c.IsSet(optionKeystorePassword.Name) {
 		return cli.Exit("Password for encrypted keystore is missing", 1)
 	}
 	return nil
 }
 
-func start(c *cli.Context) error {
+// launchNodeWithConfig configures and starts the p2p node based on the CLI context.
+func launchNodeWithConfig(c *cli.Context) error {
 	keysigner, err := setupKeySigner(c)
 	if err != nil {
 		return err

@@ -87,7 +87,8 @@ func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, erro
 		return nil, err
 	}
 
-	// Zero out the keyjson slice
+	// Overwrite the keyjson slice with zeros to wipe the sensitive data from memory.
+	// This is a security measure to reduce the risk of the encrypted key being extracted from memory.
 	for i := range keyjson {
 		keyjson[i] = 0
 	}
