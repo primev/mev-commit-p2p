@@ -132,8 +132,10 @@ func main() {
 			} else {
 				throtle := time.Duration(12000*time.Millisecond) / time.Duration(len(block))
 				logger.Info("thortling set", "throtle", throtle.String())
-				for j := 0; j < len(block); j++ {
-					err = sendBid(bidderClient, logger, rpcClient, block[j], int64(blkNum))
+				bundle := 1
+				for j := 0; j < len(block); j += bundle {
+					bundle := rand.Intn(10)
+					err = sendBid(bidderClient, logger, rpcClient, block[j:j+bundle], int64(blkNum))
 					if err != nil {
 						logger.Error("failed to send bid", "err", err)
 					}
@@ -159,7 +161,7 @@ func RetreivedBlock(rpcClient *ethclient.Client) ([]string, int64, error) {
 	blockTxns := []string{}
 	txns := fullBlock.Transactions()
 	for _, txn := range txns {
-		blockTxns = append(blockTxns, txn.Hash().Hex())
+		blockTxns = append(blockTxns, txn.Hash().Hex()[2:])
 	}
 
 	return blockTxns, int64(blkNum), nil
@@ -219,14 +221,14 @@ func sendBid(
 	bidderClient pb.BidderClient,
 	logger *slog.Logger,
 	rpcClient *ethclient.Client,
-	txnHash string,
+	txnHashes []string,
 	blkNum int64,
 ) error {
 	amount := rand.Intn(200000)
 	amount += 100000
 
 	bid := &pb.Bid{
-		TxHashes:    []string{txnHash},
+		TxHashes:    txnHashes,
 		Amount:      strconv.Itoa(amount),
 		BlockNumber: int64(blkNum),
 	}
