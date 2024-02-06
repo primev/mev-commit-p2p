@@ -60,7 +60,7 @@ func TestSendCall(t *testing.T) {
 		),
 		mockevm.WithSuggestGasPriceFunc(
 			func(ctx context.Context) (*big.Int, error) {
-				return big.NewInt(1000000000), nil
+				return big.NewInt(2000000000), nil
 			},
 		),
 		mockevm.WithSuggestGasTipCapFunc(
@@ -71,7 +71,7 @@ func TestSendCall(t *testing.T) {
 		mockevm.WithSendTransactionFunc(
 			func(ctx context.Context, tx *types.Transaction) error {
 				if tx.GasFeeCap().Cmp(big.NewInt(2000000000)) != 0 {
-					return fmt.Errorf("expected gas price to be 1000000000, got %v", tx.GasPrice())
+					return fmt.Errorf("expected gas price to be 2000000000, got %v", tx.GasPrice())
 				}
 				if tx.GasTipCap().Cmp(big.NewInt(1000000000)) != 0 {
 					return fmt.Errorf("expected gas tip cap to be 1000000000, got %v", tx.GasTipCap())
@@ -229,7 +229,7 @@ func TestCancel(t *testing.T) {
 					return nil
 				}
 				if tx.GasFeeCap().Cmp(big.NewInt(2000000000)) <= 0 {
-					return fmt.Errorf("expected gas price to be 1000000000, got %v", tx.GasFeeCap())
+					return fmt.Errorf("expected gas price to be 2000000000, got %v", tx.GasFeeCap())
 				}
 				if tx.GasTipCap().Cmp(big.NewInt(1000000000)) <= 0 {
 					return fmt.Errorf("expected gas tip cap to be 1000000000, got %v", tx.GasTipCap())
