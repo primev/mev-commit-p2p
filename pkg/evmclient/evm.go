@@ -26,6 +26,7 @@ type EVM interface {
 	NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error)
 	// SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 	// execution of a transaction.
+	// Note after eip 1559 this returns suggested priority fee per gas + suggested base fee per gas.
 	SuggestGasPrice(ctx context.Context) (*big.Int, error)
 	// SuggestGasTipCap retrieves the currently suggested 1559 priority fee to allow
 	// a timely execution of a transaction.
