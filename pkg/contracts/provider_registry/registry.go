@@ -9,12 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	contractsabi "github.com/primevprotocol/mev-commit/pkg/abi"
+	"github.com/primevprotocol/contracts-abi/clients/ProviderRegistry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
 var registryABI = func() abi.ABI {
-	abi, err := abi.JSON(strings.NewReader(contractsabi.ProviderRegistryJson))
+	abi, err := abi.JSON(strings.NewReader(providerregistry.ProviderregistryMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}

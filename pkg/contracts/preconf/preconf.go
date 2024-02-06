@@ -9,12 +9,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	contractsabi "github.com/primevprotocol/mev-commit/pkg/abi"
+	"github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
 var preconfABI = func() abi.ABI {
-	abi, err := abi.JSON(strings.NewReader(contractsabi.PreConfJson))
+	abi, err := abi.JSON(strings.NewReader(preconfcommitmentstore.PreconfcommitmentstoreMetaData.ABI))
 	if err != nil {
 		panic(err)
 	}
