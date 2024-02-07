@@ -323,12 +323,14 @@ deploy_standard_bridge_contracts() {
     echo "Standard bridge gateway contracts finished deploying on both chains"
 }
 
-start_standard_relayer() {
-    echo "Starting standard bridge relayer..."
+start_standard_bridge() {
+    echo "Starting standard bridge..."
+    docker compose -f "$BRIDGE_PATH/standard/v1/docker-compose.yml" up --build -d
 }
 
-stop_standard_relayer() {
-    echo "Stopping standard bridge relayer..."
+stop_standard_bridge() {
+    echo "Stopping standard bridge..."
+    docker compose -f "$BRIDGE_PATH/standard/v1/docker-compose.yml" down
 }
 
 clean() {
@@ -376,7 +378,7 @@ stop_services() {
             stop_local_l1
             ;;
         "standard_bridge")
-            stop_standard_relayer
+            stop_standard_bridge
             ;;
         "all")
             stop_settlement_layer
@@ -441,7 +443,7 @@ start_service() {
             start_settlement_layer
             start_local_l1
             deploy_standard_bridge_contracts
-            start_standard_relayer
+            start_standard_bridge
             ;;
         *)
             echo "Invalid service name: $service_name"
