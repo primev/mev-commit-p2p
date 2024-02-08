@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,7 +20,8 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		signer := preconfsigner.NewSigner(key)
+		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
+		signer := preconfsigner.NewSigner(keySigner)
 
 		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
@@ -47,14 +49,16 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bidderSigner := preconfsigner.NewSigner(bidderKey)
+		keySigner := mockkeysigner.NewMockKeySigner(bidderKey, crypto.PubkeyToAddress(bidderKey.PublicKey))
 
+		bidderSigner := preconfsigner.NewSigner(keySigner)
 		providerKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		providerSigner := preconfsigner.NewSigner(providerKey)
+		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
+		providerSigner := preconfsigner.NewSigner(keySigner)
 
 		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {

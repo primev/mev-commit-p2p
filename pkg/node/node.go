@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +23,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -38,7 +38,7 @@ import (
 
 type Options struct {
 	Version                  string
-	PrivKey                  *ecdsa.PrivateKey
+	KeySigner                keysigner.KeySigner
 	Secret                   string
 	PeerType                 string
 	Logger                   *slog.Logger
@@ -65,15 +65,13 @@ func NewNode(opts *Options) (*Node, error) {
 
 	srv := apiserver.New(opts.Version, opts.Logger.With("component", "apiserver"))
 	peerType := p2p.FromString(opts.PeerType)
-	ownerEthAddress := libp2p.GetEthAddressFromPubKey(&opts.PrivKey.PublicKey)
 
 	contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
 	if err != nil {
 		return nil, err
 	}
 	evmClient, err := evmclient.New(
-		ownerEthAddress,
-		opts.PrivKey,
+		opts.KeySigner,
 		evmclient.WrapEthClient(contractRPC),
 		opts.Logger.With("component", "evmclient"),
 	)
@@ -101,7 +99,7 @@ func NewNode(opts *Options) (*Node, error) {
 	)
 
 	p2pSvc, err := libp2p.New(&libp2p.Options{
-		PrivKey:        opts.PrivKey,
+		KeySigner:      opts.KeySigner,
 		Secret:         opts.Secret,
 		PeerType:       peerType,
 		Register:       providerRegistry,
@@ -140,7 +138,9 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		grpcServer := grpc.NewServer()
-		preconfSigner := preconfsigner.NewSigner(opts.PrivKey)
+		preconfSigner := preconfsigner.NewSigner(
+			opts.KeySigner,
+		)
 		validator, err := protovalidate.New()
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
@@ -156,7 +156,7 @@ func NewNode(opts *Options) (*Node, error) {
 			providerAPI := providerapi.NewService(
 				opts.Logger.With("component", "providerapi"),
 				providerRegistry,
-				ownerEthAddress,
+				opts.KeySigner.GetAddress(),
 				evmClient,
 				validator,
 			)
@@ -199,7 +199,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 			bidderAPI := bidderapi.NewService(
 				preconfProto,
-				ownerEthAddress,
+				opts.KeySigner.GetAddress(),
 				bidderRegistry,
 				validator,
 				opts.Logger.With("component", "bidderapi"),

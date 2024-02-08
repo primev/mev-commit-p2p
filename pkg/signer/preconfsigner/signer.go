@@ -2,7 +2,6 @@ package preconfsigner
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 )
 
 var (
@@ -65,12 +65,12 @@ type Signer interface {
 }
 
 type privateKeySigner struct {
-	privKey *ecdsa.PrivateKey
+	keySigner keysigner.KeySigner
 }
 
-func NewSigner(key *ecdsa.PrivateKey) *privateKeySigner {
+func NewSigner(keySigner keysigner.KeySigner) *privateKeySigner {
 	return &privateKeySigner{
-		privKey: key,
+		keySigner: keySigner,
 	}
 }
 
@@ -94,7 +94,7 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, err
 	}
 
-	sig, err := crypto.Sign(bidHash, p.privKey)
+	sig, err := p.keySigner.SignHash(bidHash)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		return nil, err
 	}
 
-	sig, err := crypto.Sign(preConfirmationHash, p.privKey)
+	sig, err := p.keySigner.SignHash(preConfirmationHash)
 	if err != nil {
 		return nil, err
 	}

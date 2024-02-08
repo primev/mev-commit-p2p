@@ -2,7 +2,6 @@ package evmclient
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -14,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -50,7 +50,7 @@ type EvmClient struct {
 	chainID   *big.Int
 	ethClient EVM
 	owner     common.Address
-	signer    *ecdsa.PrivateKey
+	keySigner keysigner.KeySigner
 	logger    *slog.Logger
 	nonce     uint64
 	metrics   *metrics
@@ -64,8 +64,7 @@ type txnDetails struct {
 }
 
 func New(
-	owner common.Address,
-	signer *ecdsa.PrivateKey,
+	keySigner keysigner.KeySigner,
 	ethClient EVM,
 	logger *slog.Logger,
 ) (*EvmClient, error) {
@@ -75,9 +74,9 @@ func New(
 	}
 
 	m := newMetrics()
-
+	address := keySigner.GetAddress()
 	monitor := newTxMonitor(
-		owner,
+		address,
 		ethClient,
 		logger.With("component", "evmclient/txmonitor"),
 		m,
@@ -86,8 +85,8 @@ func New(
 	return &EvmClient{
 		chainID:   chainID,
 		ethClient: ethClient,
-		owner:     owner,
-		signer:    signer,
+		owner:     address,
+		keySigner: keySigner,
 		logger:    logger,
 		metrics:   m,
 		sentTxs:   make(map[common.Hash]txnDetails),
@@ -200,7 +199,7 @@ func (c *EvmClient) Send(ctx context.Context, tx *TxRequest) (common.Hash, error
 		return common.Hash{}, err
 	}
 
-	signedTx, err := types.SignTx(txnData, types.NewLondonSigner(c.chainID), c.signer)
+	signedTx, err := c.keySigner.SignTx(txnData, c.chainID)
 	if err != nil {
 		c.logger.Error("failed to sign tx", "err", err)
 		return common.Hash{}, fmt.Errorf("failed to sign tx: %w", err)
@@ -363,7 +362,7 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 		Data:      []byte{},
 	})
 
-	signedTx, err := types.SignTx(tx, types.NewLondonSigner(c.chainID), c.signer)
+	signedTx, err := c.keySigner.SignTx(tx, c.chainID)
 	if err != nil {
 		c.logger.Error("failed to sign cancel tx", "err", err)
 		return common.Hash{}, fmt.Errorf("failed to sign cancel tx: %w", err)

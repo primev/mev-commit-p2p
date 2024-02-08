@@ -2,7 +2,6 @@ package libp2p
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -12,6 +11,7 @@ import (
 
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,7 +55,7 @@ type ProviderRegistry interface {
 }
 
 type Options struct {
-	PrivKey        *ecdsa.PrivateKey
+	KeySigner      keysigner.KeySigner
 	Secret         string
 	PeerType       p2p.PeerType
 	Register       handshake.ProviderRegistry
@@ -68,7 +68,13 @@ type Options struct {
 }
 
 func New(opts *Options) (*Service, error) {
-	padded32BytePrivKey := util.PadKeyTo32Bytes(opts.PrivKey.D)
+	privKey, err := opts.KeySigner.GetPrivateKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get priv key: %w", err)
+	}
+	defer keysigner.ZeroPrivateKey(privKey)
+
+	padded32BytePrivKey := util.PadKeyTo32Bytes(privKey.D)
 	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)
 	if err != nil {
 		return nil, err
@@ -154,8 +160,7 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	hsSvc, err := handshake.New(
-		opts.PrivKey,
-		ethAddress,
+		opts.KeySigner,
 		opts.PeerType,
 		opts.Secret,
 		signer.New(),

@@ -3,12 +3,13 @@ package handshake
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
@@ -32,8 +33,7 @@ type ProviderRegistry interface {
 
 // Handshake is the handshake protocol
 type Service struct {
-	privKey       *ecdsa.PrivateKey
-	ethAddress    common.Address
+	ks            keysigner.KeySigner
 	peerType      p2p.PeerType
 	passcode      string
 	signer        signer.Signer
@@ -43,8 +43,7 @@ type Service struct {
 }
 
 func New(
-	privKey *ecdsa.PrivateKey,
-	ethAddress common.Address,
+	ks keysigner.KeySigner,
 	peerType p2p.PeerType,
 	passcode string,
 	signer signer.Signer,
@@ -52,8 +51,7 @@ func New(
 	getEthAddress func(core.PeerID) (common.Address, error),
 ) (*Service, error) {
 	s := &Service{
-		privKey:       privKey,
-		ethAddress:    ethAddress,
+		ks:            ks,
 		peerType:      peerType,
 		passcode:      passcode,
 		signer:        signer,
@@ -123,7 +121,8 @@ func (h *Service) verifyReq(
 
 func (h *Service) createSignature() ([]byte, error) {
 	unsignedData := []byte(h.peerType.String() + h.passcode)
-	sig, err := h.signer.Sign(h.privKey, unsignedData)
+	hash := crypto.Keccak256Hash(unsignedData)
+	sig, err := h.ks.SignHash(hash.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,7 @@ func (h *Service) setHandshakeReq() error {
 }
 
 func (h *Service) verifyResp(resp *HandshakeResp) error {
-	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ethAddress.Bytes()) {
+	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ks.GetAddress().Bytes()) {
 		return errors.New("observed address mismatch")
 	}
 

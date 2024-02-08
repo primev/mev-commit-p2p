@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient/mockevm"
+	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 )
 
@@ -33,6 +34,8 @@ func TestSendCall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	ks := mockkeysigner.NewMockKeySigner(pk, owner)
 
 	evm := mockevm.NewMockEvm(
 		chainID.Uint64(),
@@ -137,7 +140,7 @@ func TestSendCall(t *testing.T) {
 		),
 	)
 
-	client, err := evmclient.New(owner, pk, evm, util.NewTestLogger(os.Stdout))
+	client, err := evmclient.New(ks, evm, util.NewTestLogger(os.Stdout))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -211,6 +214,8 @@ func TestCancel(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	ks := mockkeysigner.NewMockKeySigner(pk, owner)
+
 	evm := mockevm.NewMockEvm(
 		chainID.Uint64(),
 		mockevm.WithPendingNonceAtFunc(
@@ -280,7 +285,7 @@ func TestCancel(t *testing.T) {
 		),
 	)
 
-	client, err := evmclient.New(owner, pk, evm, util.NewTestLogger(os.Stdout))
+	client, err := evmclient.New(ks, evm, util.NewTestLogger(os.Stdout))
 	if err != nil {
 		t.Fatal(err)
 	}
