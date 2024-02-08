@@ -325,12 +325,12 @@ deploy_standard_bridge_contracts() {
 
 start_standard_bridge() {
     echo "Starting standard bridge..."
-    docker compose -f "$BRIDGE_PATH/standard/v1/docker-compose.yml" up --build -d
+    docker compose -f "$BRIDGE_PATH/standard/bridge-v1/docker-compose.yml" up --build -d
 }
 
 stop_standard_bridge() {
     echo "Stopping standard bridge..."
-    docker compose -f "$BRIDGE_PATH/standard/v1/docker-compose.yml" down
+    docker compose -f "$BRIDGE_PATH/standard/bridge-v1/docker-compose.yml" down
 }
 
 clean() {
