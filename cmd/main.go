@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -21,9 +22,16 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 )
 
+// The following const block contains the name of the cli flags, especially
+// for reuse purposes.
 const (
-	defaultP2PPort = 13522
+	serverTLSCertificateFlagName = "server-tls-certificate"
+	serverTLSPrivateKeyFlagName  = "server-tls-private-key"
+)
+
+const (
 	defaultP2PAddr = "0.0.0.0"
+	defaultP2PPort = 13522
 
 	defaultHTTPPort = 13523
 	defaultRPCPort  = 13524
@@ -37,19 +45,17 @@ const (
 var (
 	portCheck = func(c *cli.Context, p int) error {
 		if p < 0 || p > 65535 {
-			return fmt.Errorf("Invalid port number %d, expected 0 <= port <= 65535", p)
+			return fmt.Errorf("invalid port number %d, expected 0 <= port <= 65535", p)
 		}
 		return nil
 	}
 
 	stringInCheck = func(flag string, opts []string) func(c *cli.Context, p string) error {
 		return func(c *cli.Context, p string) error {
-			for _, opt := range opts {
-				if p == opt {
-					return nil
-				}
+			if !slices.Contains(opts, p) {
+				return fmt.Errorf("invalid %s option %q, expected one of %s", flag, p, strings.Join(opts, ", "))
 			}
-			return fmt.Errorf("Invalid %s option '%s', expected one of %s", flag, p, strings.Join(opts, ", "))
+			return nil
 		}
 	}
 )
@@ -203,6 +209,18 @@ var (
 		EnvVars: []string{"MEV_COMMIT_NAT_PORT"},
 		Value:   defaultP2PPort,
 	})
+
+	optionServerTLSCert = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    serverTLSCertificateFlagName,
+		Usage:   "Path to the server TLS certificate",
+		EnvVars: []string{"MEV_COMMIT_SERVER_TLS_CERTIFICATE"},
+	})
+
+	optionServerTLSPrivateKey = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    serverTLSPrivateKeyFlagName,
+		Usage:   "Path to the server TLS private key",
+		EnvVars: []string{"MEV_COMMIT_SERVER_TLS_PRIVATE_KEY"},
+	})
 )
 
 func main() {
@@ -228,6 +246,8 @@ func main() {
 		optionSettlementRPCEndpoint,
 		optionNATAddr,
 		optionNATPort,
+		optionServerTLSCert,
+		optionServerTLSPrivateKey,
 	}
 
 	app := &cli.App{
@@ -240,47 +260,34 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(app.Writer, "exited with error: %v\n", err)
+		fmt.Fprintln(app.Writer, "exited with error:", err)
 	}
 }
 
 func createKeyIfNotExists(c *cli.Context, path string) error {
-	// check if key already exists
 	if _, err := os.Stat(path); err == nil {
-		fmt.Fprintf(c.App.Writer, "Using existing private key: %s\n", path)
+		fmt.Fprintln(c.App.Writer, "using existing private key:", path)
 		return nil
 	}
 
-	fmt.Fprintf(c.App.Writer, "Creating new private key: %s\n", path)
-
-	// check if parent directory exists
-	if _, err := os.Stat(filepath.Dir(path)); os.IsNotExist(err) {
-		// create parent directory
-		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-			return err
-		}
+	fmt.Fprintln(c.App.Writer, "creating new private key:", path)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
 	}
 
-	privKey, err := crypto.GenerateKey()
+	key, err := crypto.GenerateKey()
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Create(path)
-	if err != nil {
+	if err := crypto.SaveECDSA(path, key); err != nil {
 		return err
 	}
 
-	defer f.Close()
+	addr := libp2p.GetEthAddressFromPubKey(&key.PublicKey)
 
-	if err := crypto.SaveECDSA(path, privKey); err != nil {
-		return err
-	}
-
-	wallet := libp2p.GetEthAddressFromPubKey(&privKey.PublicKey)
-
-	fmt.Fprintf(c.App.Writer, "Private key saved to file: %s\n", path)
-	fmt.Fprintf(c.App.Writer, "Wallet address: %s\n", wallet.Hex())
+	fmt.Fprintln(c.App.Writer, "private key saved to file:", path)
+	fmt.Fprintln(c.App.Writer, "wallet address:", addr.Hex())
 	return nil
 }
 
@@ -343,6 +350,12 @@ func launchNodeWithConfig(c *cli.Context) error {
 		natAddr = fmt.Sprintf("%s:%d", c.String(optionNATAddr.Name), c.Int(optionNATPort.Name))
 	}
 
+	crtFile := c.String(serverTLSCertificateFlagName)
+	keyFile := c.String(serverTLSPrivateKeyFlagName)
+	if (crtFile == "") != (keyFile == "") {
+		return fmt.Errorf("both -%s and -%s must be provided to enable TLS", serverTLSCertificateFlagName, serverTLSPrivateKeyFlagName)
+	}
+
 	nd, err := node.NewNode(&node.Options{
 		KeySigner:                keysigner,
 		Secret:                   c.String(optionSecret.Name),
@@ -358,13 +371,15 @@ func launchNodeWithConfig(c *cli.Context) error {
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
 		NatAddr:                  natAddr,
+		TLSCertificateFile:       crtFile,
+		TLSPrivateKeyFile:        keyFile,
 	})
 	if err != nil {
 		return fmt.Errorf("failed starting node: %w", err)
 	}
 
 	<-c.Done()
-	fmt.Fprintf(c.App.Writer, "shutting down...\n")
+	fmt.Fprintln(c.App.Writer, "shutting down...")
 	closed := make(chan struct{})
 
 	go func() {
@@ -386,31 +401,23 @@ func launchNodeWithConfig(c *cli.Context) error {
 }
 
 func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
-	var (
-		level   = new(slog.LevelVar) // Info by default
-		handler slog.Handler
-	)
-
-	switch lvl {
-	case "debug":
-		level.Set(slog.LevelDebug)
-	case "info":
-		level.Set(slog.LevelInfo)
-	case "warn":
-		level.Set(slog.LevelWarn)
-	case "error":
-		level.Set(slog.LevelError)
-	default:
-		return nil, fmt.Errorf("invalid log level: %s", lvl)
+	level := new(slog.LevelVar)
+	if err := level.UnmarshalText([]byte(lvl)); err != nil {
+		return nil, fmt.Errorf("invalid log level: %w", err)
 	}
 
+	var (
+		handler slog.Handler
+		options = &slog.HandlerOptions{
+			AddSource: true,
+			Level:     level,
+		}
+	)
 	switch logFmt {
 	case "text":
-		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
-	case "none":
-		fallthrough
-	case "json":
-		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{AddSource: true, Level: level})
+		handler = slog.NewTextHandler(sink, options)
+	case "json", "none":
+		handler = slog.NewJSONHandler(sink, options)
 	default:
 		return nil, fmt.Errorf("invalid log format: %s", logFmt)
 	}

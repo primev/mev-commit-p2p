@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	cryptorand "crypto/rand"
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,7 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -75,7 +76,16 @@ func main() {
 		return
 	}
 
-	logger := newLogger(*logLevel)
+	level := new(slog.LevelVar)
+	if err := level.UnmarshalText([]byte(*logLevel)); err != nil {
+		level.Set(slog.LevelDebug)
+		fmt.Printf("Invalid log level: %s; using %q", err, level)
+	}
+
+	logger := slog.New(slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{Level: level},
+	))
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(
@@ -107,7 +117,11 @@ func main() {
 
 	conn, err := grpc.Dial(
 		*serverAddr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(credentials.NewTLS(
+			// Integration tests take place in a controlled environment,
+			// thus we do not expect machine-in-the-middle attacks.
+			&tls.Config{InsecureSkipVerify: true},
+		)),
 	)
 	if err != nil {
 		logger.Error("failed to connect to server", "err", err)
@@ -264,23 +278,4 @@ func sendBid(
 
 	sendBidSuccessDuration.Set(float64(time.Since(start).Milliseconds()))
 	return nil
-}
-
-func newLogger(lvl string) *slog.Logger {
-	var level = new(slog.LevelVar) // debug by default
-
-	switch lvl {
-	case "debug":
-		level.Set(slog.LevelDebug)
-	case "info":
-		level.Set(slog.LevelInfo)
-	case "warn":
-		level.Set(slog.LevelWarn)
-	case "error":
-		level.Set(slog.LevelError)
-	default:
-		level.Set(slog.LevelDebug)
-	}
-
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 }

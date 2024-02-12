@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -9,7 +10,7 @@ import (
 
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 )
 
 type ProviderClient struct {
@@ -24,7 +25,14 @@ func NewProviderClient(
 	serverAddr string,
 	logger *slog.Logger,
 ) (*ProviderClient, error) {
-	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(
+		serverAddr,
+		grpc.WithTransportCredentials(credentials.NewTLS(
+			// Integration tests take place in a controlled environment,
+			// thus we do not expect machine-in-the-middle attacks.
+			&tls.Config{InsecureSkipVerify: true},
+		)),
+	)
 	if err != nil {
 		return nil, err
 	}

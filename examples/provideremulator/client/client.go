@@ -1,5 +1,5 @@
-// package client implements a simple gRPC client which is to be run by the provider
-// in their environment to get a stream of bids that are being gossip'd in the
+// Package client implements a simple gRPC client which is to be run by the provider
+// in their environment to get a stream of bids that are being gossiped in the
 // mev-commit network. The providers can then decide to accept or reject the bid.
 // This status is sent back to the mev-commit node to further take action on the
 // network. The client can be improved by handling connection failures or using
@@ -33,18 +33,17 @@ func NewProviderClient(
 		return nil, err
 	}
 
-	client := providerapiv1.NewProviderClient(conn)
-
 	b := &ProviderClient{
 		conn:         conn,
-		client:       client,
+		client:       providerapiv1.NewProviderClient(conn),
 		logger:       logger,
 		senderC:      make(chan *providerapiv1.BidResponse),
 		senderClosed: make(chan struct{}),
 	}
 
-	b.startSender()
-
+	if err := b.startSender(); err != nil {
+		return nil, err
+	}
 	return b, nil
 }
 
