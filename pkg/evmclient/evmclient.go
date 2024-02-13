@@ -117,9 +117,7 @@ func (c *EvmClient) suggestMaxFeeAndTipCap(
 		}
 	}
 
-	gasFeeCap := gasPrice
-
-	return gasFeeCap, gasTipCap, nil
+	return gasPrice, gasTipCap, nil
 }
 
 func (c *EvmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*types.Transaction, error) {
