@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -15,16 +16,35 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// The following const block contains the name of the cli flags, especially
+// for reuse purposes.
+const (
+	serverAddrFlagName       = "server-addr"
+	logLevelFlagName         = "log-level"
+	httpPortFlagName         = "http-port"
+	errorProbabilityFlagName = "error-probability"
+)
+
 var (
 	serverAddr = flag.String(
-		"server-addr",
+		serverAddrFlagName,
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
-	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
-	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	errorProbablity = flag.Int(
-		"error-probability", 0, "The probability of returning an error when sending a bid response",
+	logLevel = flag.String(
+		logLevelFlagName,
+		"debug",
+		"Verbosity level (debug|info|warn|error)",
+	)
+	httpPort = flag.Int(
+		httpPortFlagName,
+		8080,
+		"The port to serve the HTTP metrics endpoint on",
+	)
+	errorProbability = flag.Int(
+		errorProbabilityFlagName,
+		0,
+		"The probability of returning an error when sending a bid response",
 	)
 )
 
@@ -52,26 +72,34 @@ var (
 func main() {
 	flag.Parse()
 	if *serverAddr == "" {
-		fmt.Println("Please provide a valid server address with the -serverAddr flag")
+		fmt.Printf("please provide a valid server address with the -%s flag\n", serverAddrFlagName)
 		return
 	}
 
-	logger := newLogger(*logLevel)
+	level := new(slog.LevelVar)
+	if err := level.UnmarshalText([]byte(*logLevel)); err != nil {
+		level.Set(slog.LevelDebug)
+		fmt.Printf("invalid log level: %s; using %q", err, level)
+	}
+
+	logger := slog.New(slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{Level: level},
+	))
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(receivedBids, sentBids)
 
-	router := http.NewServeMux()
-	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", *httpPort),
-		Handler: router,
-	}
-
 	go func() {
+		router := http.NewServeMux()
+		router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+
+		server := &http.Server{
+			Addr:    fmt.Sprintf(":%d", *httpPort),
+			Handler: router,
+		}
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("failed to start server", "err", err)
+			logger.Error("failed to start server", "error", err)
 		}
 	}()
 
@@ -98,17 +126,21 @@ func main() {
 
 	for bid := range bidS {
 		receivedBids.Inc()
-		logger.Info("received new bid", "bid", bidString(bid))
+		buf, err := json.Marshal(bid)
+		if err != nil {
+			logger.Error("failed to marshal bid", "error", err)
+		}
+		logger.Info("received new bid", "bid", string(buf))
 
 		status := providerapiv1.BidResponse_STATUS_ACCEPTED
-		if *errorProbablity > 0 {
-			if rand.Intn(100) < *errorProbablity {
+		if *errorProbability > 0 {
+			if rand.Intn(100) < *errorProbability {
 				logger.Warn("sending error response")
 				status = providerapiv1.BidResponse_STATUS_REJECTED
 				rejectedBids.Inc()
 			}
 		}
-		err := providerClient.SendBidResponse(context.Background(), &providerapiv1.BidResponse{
+		err = providerClient.SendBidResponse(context.Background(), &providerapiv1.BidResponse{
 			BidDigest: bid.BidDigest,
 			Status:    status,
 		})
@@ -119,30 +151,4 @@ func main() {
 		sentBids.Inc()
 		logger.Info("sent bid", "status", status.String())
 	}
-}
-
-func bidString(bid *providerapiv1.Bid) string {
-	return fmt.Sprintf(
-		"bid: {txnHashes: %v, block_number: %d, bid_amount: %s, bid_hash: %x}",
-		bid.TxHashes, bid.BlockNumber, bid.BidAmount, bid.BidDigest,
-	)
-}
-
-func newLogger(lvl string) *slog.Logger {
-	var level = new(slog.LevelVar) // debug by default
-
-	switch lvl {
-	case "debug":
-		level.Set(slog.LevelDebug)
-	case "info":
-		level.Set(slog.LevelInfo)
-	case "warn":
-		level.Set(slog.LevelWarn)
-	case "error":
-		level.Set(slog.LevelError)
-	default:
-		level.Set(slog.LevelDebug)
-	}
-
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 }

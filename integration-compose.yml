@@ -7,6 +7,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bootnode
+        service_name: bootnode
     restart: always
     volumes:
       - ./integrationtest/keys/bootnode:/key
@@ -44,6 +45,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+        service_name: provider1
     restart: always
     depends_on:
       - bootnode
@@ -110,6 +112,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+        service_name: provider2
     restart: always
     depends_on:
       - bootnode
@@ -174,6 +177,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: provider
+        service_name: provider3
     restart: always
     depends_on:
       - bootnode
@@ -238,6 +242,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bidder
+        service_name: bidder1
     restart: always
     depends_on:
       - bootnode
@@ -306,6 +311,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bidder
+        service_name: bidder2
     restart: always
     depends_on:
       - bootnode
@@ -372,6 +378,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bidder
+        service_name: bidder3
     restart: always
     depends_on:
       - bootnode
@@ -438,6 +445,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bidder
+        service_name: bidder4
     restart: always
     depends_on:
       - bootnode
@@ -504,6 +512,7 @@ services:
       dockerfile: ./integrationtest/Dockerfile
       args:
         node_type: bidder
+        service_name: bidder5
     restart: always
     depends_on:
       - bootnode

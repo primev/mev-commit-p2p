@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"math/big"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,7 +35,12 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+)
+
+const (
+	grpcServerDialTimeout = 5 * time.Second
 )
 
 type Options struct {
@@ -52,6 +59,8 @@ type Options struct {
 	BidderRegistryContract   string
 	RPCEndpoint              string
 	NatAddr                  string
+	TLSCertificateFile       string
+	TLSPrivateKeyFile        string
 }
 
 type Node struct {
@@ -137,10 +146,19 @@ func NewNode(opts *Options) (*Node, error) {
 			return nil, errors.Join(err, nd.Close())
 		}
 
-		grpcServer := grpc.NewServer()
-		preconfSigner := preconfsigner.NewSigner(
-			opts.KeySigner,
-		)
+		var tlsCredentials credentials.TransportCredentials
+		if opts.TLSCertificateFile != "" && opts.TLSPrivateKeyFile != "" {
+			tlsCredentials, err = credentials.NewServerTLSFromFile(
+				opts.TLSCertificateFile,
+				opts.TLSPrivateKeyFile,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("unable to load TLS credentials: %w", err)
+			}
+		}
+
+		grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials))
+		preconfSigner := preconfsigner.NewSigner(opts.KeySigner)
 		validator, err := protovalidate.New()
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
@@ -223,35 +241,64 @@ func NewNode(opts *Options) (*Node, error) {
 		// Wait for the server to start
 		<-started
 
-		gwMux := runtime.NewServeMux()
-		bgCtx := context.Background()
+		// Since we don't know if the server has TLS enabled on its rpc
+		// endpoint, we try different strategies from most secure to
+		// least secure. In the future, when only TLS-enabled servers
+		// are allowed, only the TLS system pool certificate strategy
+		// should be used.
+		var grpcConn *grpc.ClientConn
+		for _, e := range []struct {
+			strategy   string
+			isSecure   bool
+			credential credentials.TransportCredentials
+		}{
+			{"TLS system pool certificate", true, credentials.NewClientTLSFromCert(nil, "")},
+			{"TLS skip verification", false, credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})},
+			{"TLS disabled", false, insecure.NewCredentials()},
+		} {
+			ctx, cancel := context.WithTimeout(context.Background(), grpcServerDialTimeout)
+			opts.Logger.Info("dialing to grpc server", "strategy", e.strategy)
+			grpcConn, err = grpc.DialContext(
+				ctx,
+				opts.RPCAddr,
+				grpc.WithBlock(),
+				grpc.WithTransportCredentials(e.credential),
+			)
+			if err != nil {
+				opts.Logger.Error("failed to dial grpc server", "err", err)
+				cancel()
+				continue
+			}
 
-		grpcConn, err := grpc.DialContext(
-			bgCtx,
-			opts.RPCAddr,
-			grpc.WithTransportCredentials(insecure.NewCredentials()),
-		)
-		if err != nil {
-			opts.Logger.Error("failed to dial grpc server", "err", err)
-			return nil, errors.Join(err, nd.Close())
+			cancel()
+			if !e.isSecure {
+				opts.Logger.Warn("established connection with the grpc server has potential security risk")
+			}
+			break
+		}
+		if grpcConn == nil {
+			return nil, errors.New("dialing of grpc server failed")
 		}
 
+		gatewayMux := runtime.NewServeMux()
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
-			err := providerapiv1.RegisterProviderHandler(bgCtx, gwMux, grpcConn)
+			err := providerapiv1.RegisterProviderHandler(ctx, gatewayMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register provider handler", "err", err)
 				return nil, errors.Join(err, nd.Close())
 			}
 		case p2p.PeerTypeBidder.String():
-			err := bidderapiv1.RegisterBidderHandler(bgCtx, gwMux, grpcConn)
+			err := bidderapiv1.RegisterBidderHandler(ctx, gatewayMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register bidder handler", "err", err)
 				return nil, errors.Join(err, nd.Close())
 			}
 		}
 
-		srv.ChainHandlers("/", gwMux)
+		srv.ChainHandlers("/", gatewayMux)
 		srv.ChainHandlers(
 			"/health",
 			http.HandlerFunc(
@@ -273,7 +320,20 @@ func NewNode(opts *Options) (*Node, error) {
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		var (
+			err        error
+			tlsEnabled = opts.TLSCertificateFile != "" && opts.TLSPrivateKeyFile != ""
+		)
+		opts.Logger.Info("starting to listen", "tls", tlsEnabled)
+		if tlsEnabled {
+			err = server.ListenAndServeTLS(
+				opts.TLSCertificateFile,
+				opts.TLSPrivateKeyFile,
+			)
+		} else {
+			err = server.ListenAndServe()
+		}
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			opts.Logger.Error("failed to start server", "err", err)
 		}
 	}()
@@ -293,7 +353,7 @@ func (n *Node) Close() error {
 
 type noOpBidProcessor struct{}
 
-// The noOpBidProcesor auto accepts all bids sent
+// ProcessBid auto accepts all bids sent.
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
 	_ *preconfsigner.Bid,
