@@ -421,7 +421,7 @@ while [[ "$#" -gt 0 ]]; do
             sepolia_key="$2"
             shift 2
             ;;
-        start|stop|deploy_contracts|update|clean|init_network)
+        start|stop|deploy_contracts|update|clean|init_network|init)
             command="$1"
             shift
             # If additional arguments are present after the command, they are captured as service names or additional options
@@ -474,6 +474,9 @@ case "$command" in
         ;;
     update)
         update_repos
+        ;;
+    init)
+        initialize_environment
         ;;
     clean)
         clean
