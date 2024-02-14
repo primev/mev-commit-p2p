@@ -22,13 +22,6 @@ import (
 	"github.com/urfave/cli/v2/altsrc"
 )
 
-// The following const block contains the name of the cli flags, especially
-// for reuse purposes.
-const (
-	serverTLSCertificateFlagName = "server-tls-certificate"
-	serverTLSPrivateKeyFlagName  = "server-tls-private-key"
-)
-
 const (
 	defaultP2PAddr = "0.0.0.0"
 	defaultP2PPort = 13522
@@ -211,13 +204,13 @@ var (
 	})
 
 	optionServerTLSCert = altsrc.NewStringFlag(&cli.StringFlag{
-		Name:    serverTLSCertificateFlagName,
+		Name:    "server-tls-certificate",
 		Usage:   "Path to the server TLS certificate",
 		EnvVars: []string{"MEV_COMMIT_SERVER_TLS_CERTIFICATE"},
 	})
 
 	optionServerTLSPrivateKey = altsrc.NewStringFlag(&cli.StringFlag{
-		Name:    serverTLSPrivateKeyFlagName,
+		Name:    "server-tls-private-key",
 		Usage:   "Path to the server TLS private key",
 		EnvVars: []string{"MEV_COMMIT_SERVER_TLS_PRIVATE_KEY"},
 	})
@@ -350,10 +343,10 @@ func launchNodeWithConfig(c *cli.Context) error {
 		natAddr = fmt.Sprintf("%s:%d", c.String(optionNATAddr.Name), c.Int(optionNATPort.Name))
 	}
 
-	crtFile := c.String(serverTLSCertificateFlagName)
-	keyFile := c.String(serverTLSPrivateKeyFlagName)
+	crtFile := c.String(optionServerTLSCert.Name)
+	keyFile := c.String(optionServerTLSPrivateKey.Name)
 	if (crtFile == "") != (keyFile == "") {
-		return fmt.Errorf("both -%s and -%s must be provided to enable TLS", serverTLSCertificateFlagName, serverTLSPrivateKeyFlagName)
+		return fmt.Errorf("both -%s and -%s must be provided to enable TLS", optionServerTLSCert.Name, optionServerTLSPrivateKey.Name)
 	}
 
 	nd, err := node.NewNode(&node.Options{
