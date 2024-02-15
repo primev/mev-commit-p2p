@@ -265,7 +265,7 @@ func NewNode(opts *Options) (*Node, error) {
 				grpc.WithTransportCredentials(e.credential),
 			)
 			if err != nil {
-				opts.Logger.Error("failed to dial grpc server", "err", err)
+				opts.Logger.Error("failed to dial grpc server", "error", err)
 				cancel()
 				continue
 			}

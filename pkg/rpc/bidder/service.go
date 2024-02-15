@@ -3,16 +3,14 @@ package bidderapi
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"log/slog"
 	"math/big"
 	"strings"
 	"time"
 
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
-
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
@@ -62,7 +60,7 @@ func (s *Service) SendBid(
 
 	err := s.validator.Validate(bid)
 	if err != nil {
-		s.logger.Error("bid validation", "err", err)
+		s.logger.Error("bid validation", "error", err)
 		return status.Errorf(codes.InvalidArgument, "validating bid: %v", err)
 	}
 
@@ -81,7 +79,7 @@ func (s *Service) SendBid(
 		big.NewInt(bid.BlockNumber),
 	)
 	if err != nil {
-		s.logger.Error("sending bid", "err", err)
+		s.logger.Error("sending bid", "error", err)
 		return status.Errorf(codes.Internal, "error sending bid: %v", err)
 	}
 
@@ -98,7 +96,7 @@ func (s *Service) SendBid(
 			ProviderAddress:      resp.ProviderAddress.String(),
 		})
 		if err != nil {
-			s.logger.Error("sending preConfirmation", "err", err)
+			s.logger.Error("sending preConfirmation", "error", err)
 			return err
 		}
 		s.metrics.ReceivedPreconfsCount.Inc()
@@ -106,8 +104,6 @@ func (s *Service) SendBid(
 
 	return nil
 }
-
-var ErrInvalidAmount = errors.New("invalid amount for stake")
 
 func (s *Service) PrepayAllowance(
 	ctx context.Context,

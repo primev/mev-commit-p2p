@@ -17,18 +17,30 @@ var (
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
-
-	logLevel = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
+	logLevel = flag.String(
+		"log-level",
+		"debug",
+		"Verbosity level (debug|info|warn|error)",
+	)
 )
 
 func main() {
 	flag.Parse()
 	if *serverAddr == "" {
-		fmt.Println("Please provide a valid server address with the -serverAddr flag")
+		fmt.Println("Please provide a valid server address with the -server-addr flag")
 		return
 	}
 
-	logger := newLogger(*logLevel)
+	level := new(slog.LevelVar)
+	if err := level.UnmarshalText([]byte(*logLevel)); err != nil {
+		level.Set(slog.LevelDebug)
+		fmt.Printf("invalid log level: %s; using %q", err, level)
+	}
+
+	logger := slog.New(slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{Level: level},
+	))
 
 	providerClient, err := client.NewProviderClient(*serverAddr, logger)
 	if err != nil {
@@ -63,23 +75,4 @@ func main() {
 			logger.Info("accepted bid")
 		}
 	}
-}
-
-func newLogger(lvl string) *slog.Logger {
-	var level = new(slog.LevelVar) // debug by default
-
-	switch lvl {
-	case "debug":
-		level.Set(slog.LevelDebug)
-	case "info":
-		level.Set(slog.LevelInfo)
-	case "warn":
-		level.Set(slog.LevelWarn)
-	case "error":
-		level.Set(slog.LevelError)
-	default:
-		level.Set(slog.LevelDebug)
-	}
-
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 }

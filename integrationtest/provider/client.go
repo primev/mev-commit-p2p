@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"math/big"
+	"time"
 
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type ProviderClient struct {
@@ -25,33 +27,59 @@ func NewProviderClient(
 	serverAddr string,
 	logger *slog.Logger,
 ) (*ProviderClient, error) {
-	conn, err := grpc.Dial(
-		serverAddr,
-		grpc.WithTransportCredentials(credentials.NewTLS(
-			// Integration tests take place in a controlled environment,
-			// thus we do not expect machine-in-the-middle attacks.
-			&tls.Config{InsecureSkipVerify: true},
-		)),
+	// Since we don't know if the server has TLS enabled on its rpc
+	// endpoint, we try different strategies from most secure to
+	// least secure. In the future, when only TLS-enabled servers
+	// are allowed, only the TLS system pool certificate strategy
+	// should be used.
+	var (
+		conn *grpc.ClientConn
+		err  error
 	)
-	if err != nil {
-		return nil, err
-	}
+	for _, e := range []struct {
+		strategy   string
+		isSecure   bool
+		credential credentials.TransportCredentials
+	}{
+		{"TLS system pool certificate", true, credentials.NewClientTLSFromCert(nil, "")},
+		{"TLS skip verification", false, credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})},
+		{"TLS disabled", false, insecure.NewCredentials()},
+	} {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		logger.Info("dialing to grpc server", "strategy", e.strategy)
+		conn, err = grpc.DialContext(
+			ctx,
+			serverAddr,
+			grpc.WithBlock(),
+			grpc.WithTransportCredentials(e.credential),
+		)
+		if err != nil {
+			logger.Error("failed to dial grpc server", "error", err)
+			cancel()
+			continue
+		}
 
-	client := providerapiv1.NewProviderClient(conn)
+		cancel()
+		if !e.isSecure {
+			logger.Warn("established connection with the grpc server has potential security risk")
+		}
+		break
+	}
+	if conn == nil {
+		return nil, errors.New("dialing of grpc server failed")
+	}
 
 	b := &ProviderClient{
 		conn:         conn,
-		client:       client,
+		client:       providerapiv1.NewProviderClient(conn),
 		logger:       logger,
 		senderC:      make(chan *providerapiv1.BidResponse),
 		senderClosed: make(chan struct{}),
 	}
 
-	err = b.startSender()
-	if err != nil {
+	if err := b.startSender(); err != nil {
 		return nil, errors.Join(err, b.Close())
 	}
-
 	return b, nil
 }
 

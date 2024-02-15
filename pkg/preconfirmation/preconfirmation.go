@@ -91,7 +91,7 @@ func (p *Preconfirmation) SendBid(
 ) (chan *signer.PreConfirmation, error) {
 	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
-		p.logger.Error("constructing signed bid", "err", err, "txHash", txHash)
+		p.logger.Error("constructing signed bid", "error", err, "txHash", txHash)
 		return nil, err
 	}
 	p.logger.Info("constructed signed bid", "signedBid", signedBid)
@@ -121,7 +121,7 @@ func (p *Preconfirmation) SendBid(
 				"bid",
 			)
 			if err != nil {
-				logger.Error("creating stream", "err", err)
+				logger.Error("creating stream", "error", err)
 				return
 			}
 
@@ -131,7 +131,7 @@ func (p *Preconfirmation) SendBid(
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				_ = providerStream.Reset()
-				logger.Error("writing message", "err", err)
+				logger.Error("writing message", "error", err)
 				return
 			}
 			p.metrics.SentBidsCount.Inc()
@@ -139,7 +139,7 @@ func (p *Preconfirmation) SendBid(
 			preConfirmation, err := r.ReadMsg(ctx)
 			if err != nil {
 				_ = providerStream.Reset()
-				logger.Error("reading message", "err", err)
+				logger.Error("reading message", "error", err)
 				return
 			}
 
@@ -148,7 +148,7 @@ func (p *Preconfirmation) SendBid(
 			// Process preConfirmation as a bidder
 			providerAddress, err := p.signer.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
-				logger.Error("verifying provider signature", "err", err)
+				logger.Error("verifying provider signature", "error", err)
 				return
 			}
 			preConfirmation.ProviderAddress = *providerAddress
@@ -158,7 +158,7 @@ func (p *Preconfirmation) SendBid(
 			select {
 			case preConfirmations <- preConfirmation:
 			case <-ctx.Done():
-				logger.Error("context cancelled", "err", ctx.Err())
+				logger.Error("context cancelled", "error", ctx.Err())
 				return
 			}
 		}(providers[idx])
@@ -229,7 +229,7 @@ func (p *Preconfirmation) handleBid(
 					preConfirmation.Signature,
 				)
 				if err != nil {
-					p.logger.Error("storing commitment", "err", err)
+					p.logger.Error("storing commitment", "error", err)
 					return err
 				}
 				return w.WriteMsg(ctx, preConfirmation)

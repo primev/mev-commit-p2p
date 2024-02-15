@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -37,9 +39,21 @@ var (
 		"localhost:13524",
 		"The server address in the format of host:port",
 	)
-	logLevel        = flag.String("log-level", "debug", "Verbosity level (debug|info|warn|error)")
-	httpPort        = flag.Int("http-port", 8080, "The port to serve the HTTP metrics endpoint on")
-	parallelWorkers = flag.Int("parallel-workers", 7, "The number of parallel workers to run")
+	logLevel = flag.String(
+		"log-level",
+		"debug",
+		"Verbosity level (debug|info|warn|error)",
+	)
+	httpPort = flag.Int(
+		"http-port",
+		8080,
+		"The port to serve the HTTP metrics endpoint on",
+	)
+	parallelWorkers = flag.Int(
+		"parallel-workers",
+		7,
+		"The number of parallel workers to run",
+	)
 )
 
 var (
@@ -105,26 +119,53 @@ func main() {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("failed to start server", "err", err)
+			logger.Error("failed to start server", "error", err)
 		}
 	}()
 
 	rpcClient, err := ethclient.Dial(*rpcAddr)
 	if err != nil {
-		logger.Error("failed to connect to rpc", "err", err)
+		logger.Error("failed to connect to rpc", "error", err)
 		return
 	}
 
-	conn, err := grpc.Dial(
-		*serverAddr,
-		grpc.WithTransportCredentials(credentials.NewTLS(
-			// Integration tests take place in a controlled environment,
-			// thus we do not expect machine-in-the-middle attacks.
-			&tls.Config{InsecureSkipVerify: true},
-		)),
-	)
-	if err != nil {
-		logger.Error("failed to connect to server", "err", err)
+	// Since we don't know if the server has TLS enabled on its rpc
+	// endpoint, we try different strategies from most secure to
+	// least secure. In the future, when only TLS-enabled servers
+	// are allowed, only the TLS system pool certificate strategy
+	// should be used.
+	var conn *grpc.ClientConn
+	for _, e := range []struct {
+		strategy   string
+		isSecure   bool
+		credential credentials.TransportCredentials
+	}{
+		{"TLS system pool certificate", true, credentials.NewClientTLSFromCert(nil, "")},
+		{"TLS skip verification", false, credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})},
+		{"TLS disabled", false, insecure.NewCredentials()},
+	} {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		logger.Info("dialing to grpc server", "strategy", e.strategy)
+		conn, err = grpc.DialContext(
+			ctx,
+			*serverAddr,
+			grpc.WithBlock(),
+			grpc.WithTransportCredentials(e.credential),
+		)
+		if err != nil {
+			logger.Error("failed to dial grpc server", "error", err)
+			cancel()
+			continue
+		}
+
+		cancel()
+		if !e.isSecure {
+			logger.Warn("established connection with the grpc server has potential security risk")
+		}
+		break
+	}
+	if conn == nil {
+		logger.Error("dialing of grpc server failed")
 		return
 	}
 	defer conn.Close()
@@ -142,7 +183,7 @@ func main() {
 		for {
 			err = checkOrPrepay(bidderClient, logger)
 			if err != nil {
-				logger.Error("failed to check or stake", "err", err)
+				logger.Error("failed to check or stake", "error", err)
 			}
 			<-ticker.C
 		}
@@ -155,7 +196,7 @@ func main() {
 			for {
 				err = sendBid(bidderClient, logger, rpcClient)
 				if err != nil {
-					logger.Error("failed to send bid", "err", err)
+					logger.Error("failed to send bid", "error", err)
 				}
 				time.Sleep(1 * time.Second)
 			}
@@ -171,7 +212,7 @@ func checkOrPrepay(
 ) error {
 	allowance, err := bidderClient.GetAllowance(context.Background(), &pb.EmptyMessage{})
 	if err != nil {
-		logger.Error("failed to get allowance", "err", err)
+		logger.Error("failed to get allowance", "error", err)
 		return err
 	}
 
@@ -179,7 +220,7 @@ func checkOrPrepay(
 
 	minAllowance, err := bidderClient.GetMinAllowance(context.Background(), &pb.EmptyMessage{})
 	if err != nil {
-		logger.Error("failed to get min allowance", "err", err)
+		logger.Error("failed to get min allowance", "error", err)
 		return err
 	}
 
@@ -206,7 +247,7 @@ func checkOrPrepay(
 		Amount: topup.String(),
 	})
 	if err != nil {
-		logger.Error("failed to prepay allowance", "err", err)
+		logger.Error("failed to prepay allowance", "error", err)
 		return err
 	}
 
@@ -222,7 +263,7 @@ func sendBid(
 ) error {
 	blkNum, err := rpcClient.BlockNumber(context.Background())
 	if err != nil {
-		logger.Error("failed to get block number", "err", err)
+		logger.Error("failed to get block number", "error", err)
 		return err
 	}
 
@@ -245,7 +286,7 @@ func sendBid(
 	)
 
 	bid := &pb.Bid{
-		TxHashes:    []string{txHash.Hex()},
+		TxHashes:    []string{strings.TrimPrefix(txHash.Hex(), "0x")},
 		Amount:      strconv.Itoa(int(amount)),
 		BlockNumber: int64(blkNum) + 5,
 	}
@@ -255,7 +296,7 @@ func sendBid(
 	start := time.Now()
 	rcv, err := bidderClient.SendBid(context.Background(), bid)
 	if err != nil {
-		logger.Error("failed to send bid", "err", err)
+		logger.Error("failed to send bid", "error", err)
 		return err
 	}
 
