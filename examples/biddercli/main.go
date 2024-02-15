@@ -230,31 +230,23 @@ func checkConfig(cfg *config) error {
 }
 
 func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
-	var (
-		level   = new(slog.LevelVar)
-		handler slog.Handler
-	)
-
-	switch lvl {
-	case "debug":
-		level.Set(slog.LevelDebug)
-	case "info":
-		level.Set(slog.LevelInfo)
-	case "warn":
-		level.Set(slog.LevelWarn)
-	case "error":
-		level.Set(slog.LevelError)
-	default:
-		return nil, fmt.Errorf("invalid log level: %s", lvl)
+	level := new(slog.LevelVar)
+	if err := level.UnmarshalText([]byte(lvl)); err != nil {
+		return nil, fmt.Errorf("invalid log level: %w", err)
 	}
 
+	var (
+		handler slog.Handler
+		options = &slog.HandlerOptions{
+			AddSource: true,
+			Level:     level,
+		}
+	)
 	switch logFmt {
 	case "text":
-		handler = slog.NewTextHandler(sink, &slog.HandlerOptions{Level: level})
-	case "none":
-		fallthrough
-	case "json":
-		handler = slog.NewJSONHandler(sink, &slog.HandlerOptions{Level: level})
+		handler = slog.NewTextHandler(sink, options)
+	case "json", "none":
+		handler = slog.NewJSONHandler(sink, options)
 	default:
 		return nil, fmt.Errorf("invalid log format: %s", logFmt)
 	}
