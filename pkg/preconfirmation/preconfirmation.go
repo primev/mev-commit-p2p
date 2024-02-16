@@ -235,6 +235,9 @@ func (p *Preconfirmation) handleBid(
 				return w.WriteMsg(ctx, preConfirmation)
 			}
 		}
+	} else {
+		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
+		return errors.New("bidder not allowed")
 	}
 
 	return nil
