@@ -47,8 +47,8 @@ func (pks *privateKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return pks.privKey, nil
 }
 
-// ZeroPrivateKey doing nothing, bcs private key for pks persists in memory
-// and shouldn't be deleted
+// ZeroPrivateKey does nothing because the private key for PKS persists in memory
+// and should not be deleted.
 func (pks *privateKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
 
 type keystoreSigner struct {
