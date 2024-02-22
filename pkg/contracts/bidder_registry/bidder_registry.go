@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/primevprotocol/contracts-abi/clients/BidderRegistry"
+	bidderregistry "github.com/primevprotocol/contracts-abi/clients/BidderRegistry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
@@ -22,11 +22,11 @@ var bidderRegistryABI = func() abi.ABI {
 }
 
 type Interface interface {
-	// PrepayAllowance registers a provider with the provider_registry contract.
+	// PrepayAllowance registers a bidder with the bidder_registry contract.
 	PrepayAllowance(ctx context.Context, amount *big.Int) error
-	// GetAllowance returns the stake of a provider.
+	// GetAllowance returns the stake of a bidder.
 	GetAllowance(ctx context.Context, address common.Address) (*big.Int, error)
-	// GetMinAllowance returns the minimum stake required to register as a provider.
+	// GetMinAllowance returns the minimum stake required to register as a bidder.
 	GetMinAllowance(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
 	CheckBidderAllowance(ctx context.Context, address common.Address) bool

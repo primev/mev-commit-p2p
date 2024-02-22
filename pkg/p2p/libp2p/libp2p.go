@@ -72,7 +72,7 @@ func New(opts *Options) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get priv key: %w", err)
 	}
-	defer keysigner.ZeroPrivateKey(privKey)
+	defer opts.KeySigner.ZeroPrivateKey(privKey)
 
 	padded32BytePrivKey := util.PadKeyTo32Bytes(privKey.D)
 	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)
