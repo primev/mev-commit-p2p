@@ -33,3 +33,5 @@ func (m *mockKeySigner) GetAddress() common.Address {
 func (m *mockKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return m.privKey, nil
 }
+
+func (m *mockKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}

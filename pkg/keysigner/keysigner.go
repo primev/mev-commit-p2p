@@ -18,6 +18,7 @@ type KeySigner interface {
 	SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
 	GetAddress() common.Address
 	GetPrivateKey() (*ecdsa.PrivateKey, error)
+	ZeroPrivateKey(key *ecdsa.PrivateKey)
 }
 
 type privateKeySigner struct {
@@ -45,6 +46,10 @@ func (pks *privateKeySigner) GetAddress() common.Address {
 func (pks *privateKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return pks.privKey, nil
 }
+
+// ZeroPrivateKey does nothing because the private key for PKS persists in memory
+// and should not be deleted.
+func (pks *privateKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
 
 type keystoreSigner struct {
 	keystore *keystore.KeyStore
@@ -76,6 +81,15 @@ func (kss *keystoreSigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return extractPrivateKey(kss.account.URL.Path, kss.password)
 }
 
+func (kss *keystoreSigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {
+	b := key.D.Bits()
+	for i := range b {
+		b[i] = 0
+	}
+	// Force garbage collection to remove the key from memory
+	runtime.GC()
+}
+
 func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, error) {
 	keyjson, err := os.ReadFile(keystoreFile)
 	if err != nil {
@@ -94,13 +108,4 @@ func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, erro
 	}
 
 	return key.PrivateKey, nil
-}
-
-func ZeroPrivateKey(key *ecdsa.PrivateKey) {
-	b := key.D.Bits()
-	for i := range b {
-		b[i] = 0
-	}
-	// Force garbage collection to remove the key from memory
-	runtime.GC()
 }
