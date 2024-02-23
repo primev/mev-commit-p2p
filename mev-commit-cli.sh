@@ -106,8 +106,9 @@ EOF
 
     DD_KEY=nil docker compose --profile settlement -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
 
-    # Deploy create2 proxy on settlement layer
+    # Wait for settlement layer to be up before deploying create2
     sleep 10
+
     deploy_create2
 }
 
@@ -189,15 +190,9 @@ build_contract_deployer() {
     docker build -t contract-deployer "$CONTRACTS_PATH"
 }
 
-# Deploy create2 proxy from alpine container.
-# This script is able to handle the proxy already being deployed.
 deploy_create2() {
-    # Use default rpc_url if not provided as arg
     local rpc_url=${1:-$DEFAULT_RPC_URL}
-
-    # Use default DOCKER_NETWORK_NAME if not provided as arg
     local network_name=${2:-"$DOCKER_NETWORK_NAME"}
-
     chmod +x "$GETH_POA_PATH/geth-poa/util/deploy_create2.sh"
     docker run \
         --rm \
@@ -276,6 +271,7 @@ stop_hyperlane(){
 
 start_local_l1() {
     DD_KEY=nil docker compose --profile local_l1 -f "$GETH_POA_PATH/geth-poa/docker-compose.yml" up -d --build
+    # wait for l1 to be up before deploying create2
     sleep 10
     deploy_create2 "http://l1-bootnode:8545" "geth-poa_l1_net"
 }
@@ -286,13 +282,12 @@ stop_local_l1() {
 
 deploy_standard_bridge_contracts() {
     # These params only apply to settlement layer
-    local rpc_url=${1:-$DEFAULT_RPC_URL}
-    local chain_id=${2:-17864}
-    local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
+    local rpc_url=$DEFAULT_RPC_URL
+    local chain_id="17864"
+    local private_key="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
     build_contract_deployer
 
-    # Deploy gateway contract on settlement layer
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
@@ -301,8 +296,7 @@ deploy_standard_bridge_contracts() {
         -e RELAYER_ADDR="0x0DCaa27B9E4Db92F820189345792f8eC5Ef148F6" \
         contract-deployer 
 
-    # Deploy whitelist contract on settlement layer given address of gateway contract
-    local settlement_gateway_addr="0xc1f93bE11D7472c9B9a4d87B41dD0a491F1fbc75" # TODO: obtain as deploy artifact from above
+    local settlement_gateway_addr="0xc1f93bE11D7472c9B9a4d87B41dD0a491F1fbc75"
     docker run --rm --network "$DOCKER_NETWORK_NAME" \
         -e RPC_URL="$rpc_url" \
         -e CHAIN_ID="$chain_id" \
@@ -311,7 +305,6 @@ deploy_standard_bridge_contracts() {
         -e HYP_ERC20_ADDR="$settlement_gateway_addr" \
         contract-deployer
 
-    # Deploy gateway contract on local l1
     docker run --rm --network "geth-poa_l1_net" \
         -e RPC_URL="http://l1-bootnode:8545" \
         -e CHAIN_ID="39999" \
