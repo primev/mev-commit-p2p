@@ -4,6 +4,7 @@
 L1_RPC_BASE_URL=https://sepolia.infura.io/v3
 DEFAULT_RPC_URL="http://sl-bootnode:8545"
 PRIMEV_DIR="$HOME/.primev"
+DEFAULT_CHAIN_ID="17864"
 
 GETH_REPO_NAME="mev-commit-geth"
 CONTRACT_REPO_NAME="contracts"
@@ -205,7 +206,7 @@ deploy_create2() {
 
 deploy_contracts() {
     local rpc_url=${1:-$DEFAULT_RPC_URL}
-    local chain_id=${2:-17864}  # Default chain ID
+    local chain_id=${2:-$DEFAULT_CHAIN_ID}
     local private_key=${3:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"} # Default private key
 
     # Wait for the Geth POA network to be up and running
@@ -238,7 +239,7 @@ stop_oracle(){
 start_hyperlane(){
     local public_rpc_url=${1:-$DEFAULT_RPC_URL}
     local rpc_url=${2:-$DEFAULT_RPC_URL}
-    local chain_id=${3:-17864}  # Default chain ID
+    local chain_id=${3:-$DEFAULT_CHAIN_ID}
     local private_key=${4:-"0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"}
     AGENT_BASE_IMAGE=gcr.io/abacus-labs-dev/hyperlane-agent@sha256:854f92966eac6b49e5132e152cc58168ecdddc76c2d390e657b81bdaf1396af0 \
         PUBLIC_SETTLEMENT_RPC_URL="$public_rpc_url" \
@@ -281,9 +282,9 @@ stop_local_l1() {
 }
 
 deploy_standard_bridge_contracts() {
-    # These params only apply to settlement layer
     local rpc_url=$DEFAULT_RPC_URL
-    local chain_id="17864"
+    local chain_id=$DEFAULT_CHAIN_ID
+    # Pre-funded account for deployment on settlement layer
     local private_key="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
     build_contract_deployer
