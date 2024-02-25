@@ -10,14 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/crypto"
 	contracts "github.com/primevprotocol/contracts-abi/config"
 	mevcommit "github.com/primevprotocol/mev-commit"
 	ks "github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/node"
-	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )
@@ -257,50 +253,6 @@ func main() {
 	}
 }
 
-func createKeyIfNotExists(c *cli.Context, path string) error {
-	if _, err := os.Stat(path); err == nil {
-		fmt.Fprintln(c.App.Writer, "using existing private key:", path)
-		return nil
-	}
-
-	fmt.Fprintln(c.App.Writer, "creating new private key:", path)
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-
-	key, err := crypto.GenerateKey()
-	if err != nil {
-		return err
-	}
-
-	if err := crypto.SaveECDSA(path, key); err != nil {
-		return err
-	}
-
-	addr := libp2p.GetEthAddressFromPubKey(&key.PublicKey)
-
-	fmt.Fprintln(c.App.Writer, "private key saved to file:", path)
-	fmt.Fprintln(c.App.Writer, "wallet address:", addr.Hex())
-	return nil
-}
-
-func resolveFilePath(path string) (string, error) {
-	if path == "" {
-		return "", fmt.Errorf("path is empty")
-	}
-
-	if strings.HasPrefix(path, "~") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-
-		return filepath.Join(home, path[1:]), nil
-	}
-
-	return path, nil
-}
-
 func initializeApplication(c *cli.Context) error {
 	if err := verifyKeystorePasswordPresence(c); err != nil {
 		return err
@@ -322,9 +274,9 @@ func verifyKeystorePasswordPresence(c *cli.Context) error {
 
 // launchNodeWithConfig configures and starts the p2p node based on the CLI context.
 func launchNodeWithConfig(c *cli.Context) error {
-	keysigner, err := setupKeySigner(c)
+	keysigner, err := newKeySigner(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create keysigner: %w", err)
 	}
 
 	logger, err := newLogger(
@@ -418,50 +370,9 @@ func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
 	return slog.New(handler), nil
 }
 
-func setupKeySigner(c *cli.Context) (ks.KeySigner, error) {
+func newKeySigner(c *cli.Context) (ks.KeySigner, error) {
 	if c.IsSet(optionKeystorePath.Name) {
-		return setupKeystoreSigner(c)
+		return ks.NewKeystoreSigner(c.App.Writer, c.String(optionKeystorePath.Name), c.String(optionKeystorePassword.Name))
 	}
-	return setupPrivateKeySigner(c)
-}
-
-func setupPrivateKeySigner(c *cli.Context) (ks.KeySigner, error) {
-	privKeyFile, err := resolveFilePath(c.String(optionPrivKeyFile.Name))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get private key file path: %w", err)
-	}
-
-	if err := createKeyIfNotExists(c, privKeyFile); err != nil {
-		return nil, fmt.Errorf("failed to create private key: %w", err)
-	}
-
-	privKey, err := crypto.LoadECDSA(privKeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load private key from file '%s': %w", privKeyFile, err)
-	}
-
-	return ks.NewPrivateKeySigner(privKey), nil
-}
-
-func setupKeystoreSigner(c *cli.Context) (ks.KeySigner, error) {
-	// lightscripts are using 4MB memory and taking approximately 100ms CPU time on a modern processor to decrypt
-	keystore := keystore.NewKeyStore(c.String(optionKeystorePath.Name), keystore.LightScryptN, keystore.LightScryptP)
-	password := c.String(optionKeystorePassword.Name)
-	ksAccounts := keystore.Accounts()
-
-	var account accounts.Account
-	if len(ksAccounts) == 0 {
-		var err error
-		account, err = keystore.NewAccount(password)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create account: %w", err)
-		}
-	} else {
-		account = ksAccounts[0]
-	}
-
-	fmt.Fprintf(c.App.Writer, "Public address of the key: %s\n", account.Address.Hex())
-	fmt.Fprintf(c.App.Writer, "Path of the secret key file: %s\n", account.URL.Path)
-
-	return ks.NewKeystoreSigner(keystore, password, account), nil
+	return ks.NewPrivateKeySigner(c.App.Writer, c.String(optionPrivKeyFile.Name))
 }
