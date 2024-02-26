@@ -273,19 +273,19 @@ clean() {
     echo "Cleaning up..."
     # Docker cleanup script
     echo "Stopping all Docker containers..."
-    docker stop $(docker ps -aq)
+    docker ps -aq | xargs -r docker stop
 
     echo "Removing all Docker containers..."
-    docker rm $(docker ps -aq)
+    docker ps -aq | xargs -r docker rm
 
     echo "Removing all Docker images..."
-    docker rmi $(docker images -q)
+    docker images -q | xargs -r docker rmi
 
     echo "Removing all Docker volumes..."
-    docker volume rm $(docker volume ls -q)
+    docker volume ls -q | xargs -r docker volume rm
 
     echo "Removing all Docker networks..."
-    docker network ls | grep "bridge\|none\|host" -v | awk '{if(NR>1)print $1}' | xargs -r docker network rm
+    docker network ls | grep "bridge\|none\|host" -v | awk '{if(NR>1)print $1}' | xargs -r -I {} docker network rm {}
 
     echo "Pruning Docker system..."
     docker system prune -a -f --volumes
