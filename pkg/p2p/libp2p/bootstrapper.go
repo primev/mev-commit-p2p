@@ -61,7 +61,7 @@ func (p *Service) startBootstrapper(addrs []string) {
 					p.logger.Error("failed to parse peer ID", "addr", addr, "err", err)
 					continue
 				}
-				p.logger.Info("resolved bootstrap address", "addr", addr, "addrs", resolvedAddrs, "peerID", pID.String())
+				p.logger.Debug("resolved bootstrap address", "addr", addr, "addrs", resolvedAddrs, "peerID", pID.String())
 				addrInfo = &peer.AddrInfo{
 					ID:    pID,
 					Addrs: resolvedAddrs,
