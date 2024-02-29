@@ -102,11 +102,13 @@ func (c *EvmClient) suggestMaxFeeAndTipCap(
 	ctx context.Context,
 	gasPrice *big.Int,
 ) (*big.Int, *big.Int, error) {
+	// Returns priority fee per gas
 	gasTipCap, err := c.ethClient.SuggestGasTipCap(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to suggest gas tip cap: %w", err)
 	}
 
+	// Returns priority fee per gas + base fee per gas
 	if gasPrice == nil {
 		gasPrice, err = c.ethClient.SuggestGasPrice(ctx)
 		if err != nil {
@@ -114,9 +116,7 @@ func (c *EvmClient) suggestMaxFeeAndTipCap(
 		}
 	}
 
-	gasFeeCap := new(big.Int).Add(gasTipCap, gasPrice)
-
-	return gasFeeCap, gasTipCap, nil
+	return gasPrice, gasTipCap, nil
 }
 
 func (c *EvmClient) newTx(ctx context.Context, req *TxRequest, nonce uint64) (*types.Transaction, error) {
