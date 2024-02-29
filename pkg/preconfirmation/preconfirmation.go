@@ -88,8 +88,10 @@ func (p *Preconfirmation) SendBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
+	decayStartTimestamp uint64,
+	decayEndTimestamp uint64,
 ) (chan *signer.PreConfirmation, error) {
-	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
+	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber, decayStartTimestamp, decayEndTimestamp)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "error", err, "txHash", txHash)
 		return nil, err
