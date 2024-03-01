@@ -42,6 +42,8 @@ func (s *testSender) SendBid(
 	txHex string,
 	amount *big.Int,
 	blockNum *big.Int,
+	decayStartTimestamp uint64,
+	decayEndTimestamp uint64,
 ) (chan *preconfsigner.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
@@ -53,11 +55,13 @@ func (s *testSender) SendBid(
 	for i := 0; i < s.noOfPreconfs; i++ {
 		preconfs <- &preconfsigner.PreConfirmation{
 			Bid: preconfsigner.Bid{
-				TxHash:      txHex,
-				BidAmt:      amount,
-				BlockNumber: blockNum,
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              txHex,
+				BidAmt:              amount,
+				BlockNumber:         blockNum,
+				DecayStartTimeStamp: decayStartTimestamp,
+				DecayEndTimeStamp:   decayEndTimestamp,
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
 			},
 			Digest:          []byte("digest"),
 			Signature:       []byte("signature"),

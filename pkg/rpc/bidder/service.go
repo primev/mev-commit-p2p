@@ -77,6 +77,8 @@ func (s *Service) SendBid(
 		txnsStr,
 		amtVal,
 		big.NewInt(bid.BlockNumber),
+		bid.DecayStartTimestamp,
+		bid.DecayEndTimestamp,
 	)
 	if err != nil {
 		s.logger.Error("sending bid", "error", err)

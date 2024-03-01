@@ -106,8 +106,8 @@ func TestHashing(t *testing.T) {
 	})
 
 	t.Run("preConfirmation", func(t *testing.T) {
-		bidHash := "86ac45fb1e987a6c8115494cd4fd82f6756d359022cdf5ea19fd2fac1df6e7f0"
-		bidSignature := "33683da4605067c9491d665864b2e4e7ade8bc57921da9f192a1b8246a941eaa2fb90f72031a2bf6008fa590158591bb5218c9aace78ad8cf4d1f2f4d74bc3e901"
+		bidHash := "a0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100"
+		bidSignature := "876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b"
 
 		bidHashBytes, err := hex.DecodeString(bidHash)
 		if err != nil {
@@ -119,11 +119,13 @@ func TestHashing(t *testing.T) {
 		}
 
 		bid := &preconfsigner.Bid{
-			TxHash:      "0xkartik",
-			BidAmt:      big.NewInt(2),
-			BlockNumber: big.NewInt(2),
-			Digest:      bidHashBytes,
-			Signature:   bidSigBytes,
+			TxHash:              "0xkartik",
+			BidAmt:              big.NewInt(2),
+			BlockNumber:         big.NewInt(2),
+			DecayStartTimeStamp: 10,
+			DecayEndTimeStamp:   20,
+			Digest:              bidHashBytes,
+			Signature:           bidSigBytes,
 		}
 
 		preConfirmation := &preconfsigner.PreConfirmation{
@@ -136,7 +138,7 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc"
+		expHash := "54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}
