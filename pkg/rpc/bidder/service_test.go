@@ -214,11 +214,13 @@ func TestSendBid(t *testing.T) {
 	client := startServer(t)
 
 	type testCase struct {
-		name     string
-		txHexs   []string
-		amount   string
-		blockNum int64
-		err      string
+		name                string
+		txHexs              []string
+		amount              string
+		blockNum            int64
+		decayStartTimestamp int64
+		decayEndTimestamp   int64
+		err                 string
 	}
 
 	for _, tc := range []testCase{
@@ -260,9 +262,11 @@ func TestSendBid(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rcv, err := client.SendBid(context.Background(), &bidderapiv1.Bid{
-				TxHashes:    tc.txHexs,
-				Amount:      tc.amount,
-				BlockNumber: tc.blockNum,
+				TxHashes:            tc.txHexs,
+				Amount:              tc.amount,
+				BlockNumber:         tc.blockNum,
+				DecayStartTimestamp: 10,
+				DecayEndTimestamp:   19,
 			})
 			if err != nil {
 				t.Fatalf("error sending bid: %v", err)

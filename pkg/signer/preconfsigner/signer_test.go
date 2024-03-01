@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
@@ -23,7 +24,7 @@ func TestBids(t *testing.T) {
 		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
 		signer := preconfsigner.NewSigner(keySigner)
 
-		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), uint64(time.Now().UnixMilli()), uint64(time.Now().UnixMilli()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -60,7 +61,7 @@ func TestBids(t *testing.T) {
 		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
 		providerSigner := preconfsigner.NewSigner(keySigner)
 
-		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), 1, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,9 +85,11 @@ func TestHashing(t *testing.T) {
 
 	t.Run("bid", func(t *testing.T) {
 		bid := &preconfsigner.Bid{
-			TxHash:      "0xkartik",
-			BidAmt:      big.NewInt(2),
-			BlockNumber: big.NewInt(2),
+			TxHash:              "0xkartik",
+			BidAmt:              big.NewInt(200),
+			BlockNumber:         big.NewInt(3000),
+			DecayStartTimeStamp: 10,
+			DecayEndTimeStamp:   30,
 		}
 
 		hash, err := preconfsigner.GetBidHash(bid)
@@ -95,7 +98,8 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "86ac45fb1e987a6c8115494cd4fd82f6756d359022cdf5ea19fd2fac1df6e7f0"
+		// This hash is sourced from the solidity contract to ensure interoperability
+		expHash := "a837b0c680d4b9b11011ac6225670498d845e65f1dc340b00694d74a6ca0a049"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}

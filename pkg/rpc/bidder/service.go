@@ -45,7 +45,7 @@ func NewService(
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
+	SendBid(context.Context, string, *big.Int, *big.Int, uint64, uint64) (chan *preconfsigner.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
