@@ -1,8 +1,6 @@
 syntax = "proto3";
 
-package rpc.providerapi.v1;
-
-option go_package = "github.com/primevprotocol/mev-commit/rpc/providerapi/v1;providerapiv1";
+package providerapi.v1;
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/api/annotations.proto";

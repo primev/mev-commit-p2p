@@ -8,3 +8,7 @@ build: bin
 
 bin:
 	mkdir $@
+
+bufgen:
+	cd rpc && buf generate -o ../
+	cd messages && buf generate -o ../

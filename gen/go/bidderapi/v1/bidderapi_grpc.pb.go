@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: rpc/bidderapi/v1/bidderapi.proto
+// source: bidderapi/v1/bidderapi.proto
 
 package bidderapiv1
 
@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Bidder_SendBid_FullMethodName         = "/rpc.bidderapi.v1.Bidder/SendBid"
-	Bidder_PrepayAllowance_FullMethodName = "/rpc.bidderapi.v1.Bidder/PrepayAllowance"
-	Bidder_GetAllowance_FullMethodName    = "/rpc.bidderapi.v1.Bidder/GetAllowance"
-	Bidder_GetMinAllowance_FullMethodName = "/rpc.bidderapi.v1.Bidder/GetMinAllowance"
+	Bidder_SendBid_FullMethodName         = "/bidderapi.v1.Bidder/SendBid"
+	Bidder_PrepayAllowance_FullMethodName = "/bidderapi.v1.Bidder/PrepayAllowance"
+	Bidder_GetAllowance_FullMethodName    = "/bidderapi.v1.Bidder/GetAllowance"
+	Bidder_GetMinAllowance_FullMethodName = "/bidderapi.v1.Bidder/GetMinAllowance"
 )
 
 // BidderClient is the client API for Bidder service.
@@ -245,7 +245,7 @@ func _Bidder_GetMinAllowance_Handler(srv interface{}, ctx context.Context, dec f
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Bidder_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "rpc.bidderapi.v1.Bidder",
+	ServiceName: "bidderapi.v1.Bidder",
 	HandlerType: (*BidderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -268,5 +268,5 @@ var Bidder_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "rpc/bidderapi/v1/bidderapi.proto",
+	Metadata: "bidderapi/v1/bidderapi.proto",
 }

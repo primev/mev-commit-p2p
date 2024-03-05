@@ -86,10 +86,10 @@ paths:
             type: object
             properties:
               result:
-                $ref: '#/definitions/rpcproviderapiv1Bid'
+                $ref: '#/definitions/providerapiv1Bid'
               error:
                 $ref: '#/definitions/googlerpcStatus'
-            title: Stream result of rpcproviderapiv1Bid
+            title: Stream result of providerapiv1Bid
         default:
           description: An unexpected error response.
           schema:
@@ -125,7 +125,7 @@ paths:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/rpcproviderapiv1EmptyMessage'
+            $ref: '#/definitions/providerapiv1EmptyMessage'
         default:
           description: An unexpected error response.
           schema:
@@ -157,7 +157,7 @@ definitions:
       '@type':
         type: string
     additionalProperties: {}
-  rpcproviderapiv1Bid:
+  providerapiv1Bid:
     type: object
     example:
       amount: "1000000000000000000"
@@ -200,7 +200,7 @@ definitions:
       - bidAmount
       - blockNumber
       - bidDigest
-  rpcproviderapiv1EmptyMessage:
+  providerapiv1EmptyMessage:
     type: object
   v1BidResponse:
     type: object

@@ -36,7 +36,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/rpcbidderapiv1Bid'
+            $ref: '#/definitions/bidderapiv1Bid'
   /v1/bidder/get_allowance:
     get:
       summary: GetAllowance
@@ -86,26 +86,7 @@ paths:
           required: true
           type: string
 definitions:
-  googlerpcStatus:
-    type: object
-    properties:
-      code:
-        type: integer
-        format: int32
-      message:
-        type: string
-      details:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/protobufAny'
-  protobufAny:
-    type: object
-    properties:
-      '@type':
-        type: string
-    additionalProperties: {}
-  rpcbidderapiv1Bid:
+  bidderapiv1Bid:
     type: object
     example:
       amount: "1000000000000000000"
@@ -142,6 +123,25 @@ definitions:
       - txHashes
       - amount
       - blockNumber
+  googlerpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
   v1Commitment:
     type: object
     properties:

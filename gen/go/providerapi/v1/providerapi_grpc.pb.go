@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: rpc/providerapi/v1/providerapi.proto
+// source: providerapi/v1/providerapi.proto
 
 package providerapiv1
 
@@ -19,13 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Provider_ReceiveBids_FullMethodName       = "/rpc.providerapi.v1.Provider/ReceiveBids"
-	Provider_SendProcessedBids_FullMethodName = "/rpc.providerapi.v1.Provider/SendProcessedBids"
-	Provider_RegisterStake_FullMethodName     = "/rpc.providerapi.v1.Provider/RegisterStake"
-	Provider_GetStake_FullMethodName          = "/rpc.providerapi.v1.Provider/GetStake"
-	Provider_GetMinStake_FullMethodName       = "/rpc.providerapi.v1.Provider/GetMinStake"
-	Provider_GetPendingTxns_FullMethodName    = "/rpc.providerapi.v1.Provider/GetPendingTxns"
-	Provider_CancelTransaction_FullMethodName = "/rpc.providerapi.v1.Provider/CancelTransaction"
+	Provider_ReceiveBids_FullMethodName       = "/providerapi.v1.Provider/ReceiveBids"
+	Provider_SendProcessedBids_FullMethodName = "/providerapi.v1.Provider/SendProcessedBids"
+	Provider_RegisterStake_FullMethodName     = "/providerapi.v1.Provider/RegisterStake"
+	Provider_GetStake_FullMethodName          = "/providerapi.v1.Provider/GetStake"
+	Provider_GetMinStake_FullMethodName       = "/providerapi.v1.Provider/GetMinStake"
+	Provider_GetPendingTxns_FullMethodName    = "/providerapi.v1.Provider/GetPendingTxns"
+	Provider_CancelTransaction_FullMethodName = "/providerapi.v1.Provider/CancelTransaction"
 )
 
 // ProviderClient is the client API for Provider service.
@@ -399,7 +399,7 @@ func _Provider_CancelTransaction_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Provider_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "rpc.providerapi.v1.Provider",
+	ServiceName: "providerapi.v1.Provider",
 	HandlerType: (*ProviderServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -435,5 +435,5 @@ var Provider_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "rpc/providerapi/v1/providerapi.proto",
+	Metadata: "providerapi/v1/providerapi.proto",
 }
