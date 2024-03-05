@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"time"
 
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"

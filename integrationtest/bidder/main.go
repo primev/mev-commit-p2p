@@ -20,7 +20,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	pb "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

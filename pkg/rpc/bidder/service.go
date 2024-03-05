@@ -10,7 +10,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"

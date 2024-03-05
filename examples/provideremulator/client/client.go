@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"google.golang.org/grpc"
 )
 

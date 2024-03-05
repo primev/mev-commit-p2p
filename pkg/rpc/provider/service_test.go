@@ -11,7 +11,7 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"

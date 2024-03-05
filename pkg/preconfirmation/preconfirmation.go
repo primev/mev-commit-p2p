@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
