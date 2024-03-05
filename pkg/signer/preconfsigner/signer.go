@@ -285,7 +285,7 @@ func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
 	data = append(data, math.U256Bytes(c.Bid.BidAmt)...)
 	data = append(data, math.U256Bytes(c.Bid.BlockNumber)...)
 	data = append(data, math.U256Bytes(new(big.Int).SetUint64(c.Bid.DecayStartTimeStamp))...)
-	data = append(data, math.U256Bytes(big.NewInt(int64(c.Bid.DecayEndTimeStamp)))...)
+	data = append(data, math.U256Bytes(new(big.Int).SetUint64(c.Bid.DecayEndTimeStamp))...)
 	data = append(data, bidDigestHash.Bytes()...)
 	data = append(data, bidSigHash.Bytes()...)
 	dataHash := crypto.Keccak256Hash(data)
