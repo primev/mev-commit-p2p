@@ -246,8 +246,8 @@ func GetBidHash(bid *Bid) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(bid.BidAmt)...)
 	data = append(data, math.U256Bytes(bid.BlockNumber)...)
-	data = append(data, math.U256Bytes(big.NewInt(int64(bid.DecayStartTimeStamp)))...)
-	data = append(data, math.U256Bytes(big.NewInt(int64(bid.DecayEndTimeStamp)))...)
+	data = append(data, math.U256Bytes(new(big.Int).SetUint64(bid.DecayStartTimeStamp))...)
+	data = append(data, math.U256Bytes(new(big.Int).SetUint64(bid.DecayEndTimeStamp))...)
 	dataHash := crypto.Keccak256Hash(data)
 
 	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
