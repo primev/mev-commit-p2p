@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,13 +41,35 @@ var (
 		return nil
 	}
 
-	stringInCheck = func(flag string, opts []string) func(c *cli.Context, p string) error {
-		return func(c *cli.Context, p string) error {
-			if !slices.Contains(opts, p) {
-				return fmt.Errorf("invalid %s option %q, expected one of %s", flag, p, strings.Join(opts, ", "))
+	stringInCheck = func(flag string, opts []string) func(c *cli.Context, s string) error {
+		return func(c *cli.Context, s string) error {
+			if !slices.Contains(opts, s) {
+				return fmt.Errorf("invalid %s option %q, expected one of %s", flag, s, strings.Join(opts, ", "))
 			}
 			return nil
 		}
+	}
+
+	addressPortCheck = func(c *cli.Context, s string) error {
+		host, port, err := net.SplitHostPort(s)
+		if err != nil {
+			return fmt.Errorf("invalid value %q: %w", s, err)
+		}
+
+		p, err := strconv.Atoi(port)
+		if err != nil {
+			return fmt.Errorf("invalid value %q: invalid port: %w", s, err)
+		}
+
+		if err := portCheck(c, p); err != nil {
+			return fmt.Errorf("invalid value %q: invalid port: %w", s, err)
+		}
+
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return fmt.Errorf("invalid value %q: incorrect ip address", s)
+		}
+		return nil
 	}
 )
 
@@ -158,6 +182,13 @@ var (
 		Action:  stringInCheck("log-level", []string{"debug", "info", "warn", "error"}),
 	})
 
+	optionLogSinkTCP = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "log-sink-tcp",
+		Usage:   "log sink tcp configures the logger to also send log messages to the specified <address:port> using the TCP protocol",
+		EnvVars: []string{"MEV_COMMIT_LOG_SINK_TCP"},
+		Action:  addressPortCheck,
+	})
+
 	optionBidderRegistryAddr = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "bidder-registry-contract",
 		Usage:   "address of the bidder registry contract",
@@ -229,6 +260,7 @@ func main() {
 		optionSecret,
 		optionLogFmt,
 		optionLogLevel,
+		optionLogSinkTCP,
 		optionBidderRegistryAddr,
 		optionProviderRegistryAddr,
 		optionPreconfStoreAddr,
@@ -254,12 +286,29 @@ func main() {
 }
 
 func initializeApplication(c *cli.Context) error {
+	if c.IsSet(optionLogSinkTCP.Name) {
+		if err := addTCPSink(c); err != nil {
+			return err
+		}
+	}
 	if err := verifyKeystorePasswordPresence(c); err != nil {
 		return err
 	}
 	if err := launchNodeWithConfig(c); err != nil {
 		return err
 	}
+	return nil
+}
+
+// addTCPSink configures the cli.App.Writer and cli.App.ErrWriter to also send
+// log messages to the specified address and port using the TCP protocol.
+func addTCPSink(c *cli.Context) error {
+	conn, err := net.Dial("tcp", c.String(optionLogSinkTCP.Name))
+	if err != nil {
+		return fmt.Errorf("failed to connect to TCP server: %w", err)
+	}
+	c.App.Writer = io.MultiWriter(c.App.Writer, conn)
+	c.App.ErrWriter = io.MultiWriter(c.App.ErrWriter, conn)
 	return nil
 }
 
@@ -340,6 +389,14 @@ func launchNodeWithConfig(c *cli.Context) error {
 	case <-closed:
 	case <-time.After(5 * time.Second):
 		logger.Error("failed to close node in time")
+	}
+
+	// We check if the logger was writing
+	// to a TCP stream and close it properly.
+	if conn, ok := c.App.Writer.(net.Conn); ok {
+		if err := conn.Close(); err != nil {
+			return fmt.Errorf("faild to close TCP connection: %w", err)
+		}
 	}
 
 	return nil
