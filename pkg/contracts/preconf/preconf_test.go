@@ -23,15 +23,19 @@ func TestPreconfContract(t *testing.T) {
 		txHash := common.HexToHash("abcdef")
 		bid := big.NewInt(1000000000000000000)
 		blockNum := uint64(100)
-		bidHash := "abcdef"
+		// bidHash := "abcdef"
 		bidSig := []byte("abcdef")
 		commitment := []byte("abcdef")
+		decayStart := uint64(1710095453035)
+		decayEnd := uint64(1710095454035)
 
 		expCallData, err := preconfcontract.PreConfABI().Pack(
 			"storeCommitment",
 			uint64(bid.Int64()),
 			blockNum,
-			bidHash,
+			txHash.String(),
+			decayStart,
+			decayEnd,
 			bidSig,
 			commitment,
 		)
@@ -77,7 +81,9 @@ func TestPreconfContract(t *testing.T) {
 			context.Background(),
 			bid,
 			blockNum,
-			bidHash,
+			txHash.String(),
+			decayStart,
+			decayEnd,
 			bidSig,
 			commitment,
 		)

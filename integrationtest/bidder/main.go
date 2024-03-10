@@ -296,8 +296,8 @@ func sendBid(
 		TxHashes:            []string{strings.TrimPrefix(txHash.Hex(), "0x")},
 		Amount:              strconv.Itoa(int(amount)),
 		BlockNumber:         int64(blkNum) + 5,
-		DecayStartTimestamp: uint64(time.Now().UnixMilli()) - uint64(time.Duration(8*time.Second).Milliseconds()),
-		DecayEndTimestamp:   uint64(time.Now().UnixMilli()),
+		DecayStartTimestamp: time.Now().UnixMilli() - (time.Duration(8 * time.Second).Milliseconds()),
+		DecayEndTimestamp:   time.Now().UnixMilli(),
 	}
 
 	logger.Info("sending bid", "bid", bid)

@@ -24,7 +24,7 @@ func TestBids(t *testing.T) {
 		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
 		signer := preconfsigner.NewSigner(keySigner)
 
-		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), uint64(time.Now().UnixMilli()), uint64(time.Now().UnixMilli()))
+		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(time.Now().UnixMilli()), big.NewInt(time.Now().UnixMilli()))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,7 +61,7 @@ func TestBids(t *testing.T) {
 		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
 		providerSigner := preconfsigner.NewSigner(keySigner)
 
-		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), 1, 2)
+		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(1), big.NewInt(2))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -88,8 +88,8 @@ func TestHashing(t *testing.T) {
 			TxHash:              "0xkartik",
 			BidAmt:              big.NewInt(200),
 			BlockNumber:         big.NewInt(3000),
-			DecayStartTimeStamp: 10,
-			DecayEndTimeStamp:   30,
+			DecayStartTimeStamp: big.NewInt(10),
+			DecayEndTimeStamp:   big.NewInt(30),
 		}
 
 		hash, err := preconfsigner.GetBidHash(bid)
@@ -122,8 +122,8 @@ func TestHashing(t *testing.T) {
 			TxHash:              "0xkartik",
 			BidAmt:              big.NewInt(2),
 			BlockNumber:         big.NewInt(2),
-			DecayStartTimeStamp: 10,
-			DecayEndTimeStamp:   20,
+			DecayStartTimeStamp: big.NewInt(10),
+			DecayEndTimeStamp:   big.NewInt(20),
 			Digest:              bidHashBytes,
 			Signature:           bidSigBytes,
 		}
@@ -155,7 +155,7 @@ func TestSignature(t *testing.T) {
 	keySigner := mockkeysigner.NewMockKeySigner(pkey, crypto.PubkeyToAddress(pkey.PublicKey))
 	bidder := preconfsigner.NewSigner(keySigner)
 
-	bid, err := bidder.ConstructSignedBid("0xkartik", big.NewInt(2), big.NewInt(2), 10, 20)
+	bid, err := bidder.ConstructSignedBid("0xkartik", big.NewInt(2), big.NewInt(2), big.NewInt(10), big.NewInt(20))
 	if err != nil {
 		t.Fatal(err)
 	}

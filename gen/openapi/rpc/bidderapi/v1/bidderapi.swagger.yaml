@@ -130,11 +130,11 @@ definitions:
         description: Max block number that the bidder wants to include the transaction in.
       decayStartTimestamp:
         type: string
-        format: uint64
+        format: int64
         description: Timestamp at which the bid starts decaying.
       decayEndTimestamp:
         type: string
-        format: uint64
+        format: int64
         description: Timestamp at which the bid ends decaying.
     description: Unsigned bid message from bidders to the bidder mev-commit node.
     title: Bid message

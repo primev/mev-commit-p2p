@@ -31,8 +31,8 @@ type Bid struct {
 	BlockNumber *big.Int `json:"block_number"`
 
 	// The format for these timestamps is unix timestamp in milliseconds
-	DecayStartTimeStamp uint64 `json:"decay_start_timestamp"`
-	DecayEndTimeStamp   uint64 `json:"decay_end_timestamp"`
+	DecayStartTimeStamp *big.Int `json:"decay_start_timestamp"`
+	DecayEndTimeStamp   *big.Int `json:"decay_end_timestamp"`
 
 	Digest    []byte `json:"bid_digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"bid_signature"`
@@ -48,7 +48,7 @@ func (b Bid) String() string {
 type PreConfirmation struct {
 	Bid Bid `json:"bid"`
 
-	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
+	Digest    []byte `json:"digest"`
 	Signature []byte `json:"signature"`
 
 	ProviderAddress common.Address `json:"provider_address"`
@@ -62,7 +62,7 @@ func (p PreConfirmation) String() string {
 }
 
 type Signer interface {
-	ConstructSignedBid(string, *big.Int, *big.Int, uint64, uint64) (*Bid, error)
+	ConstructSignedBid(string, *big.Int, *big.Int, *big.Int, *big.Int) (*Bid, error)
 	ConstructPreConfirmation(*Bid) (*PreConfirmation, error)
 	VerifyBid(*Bid) (*common.Address, error)
 	VerifyPreConfirmation(*PreConfirmation) (*common.Address, error)
@@ -82,8 +82,8 @@ func (p *privateKeySigner) ConstructSignedBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-	decayStartTimeStamp uint64,
-	decayEndTimeStamp uint64,
+	decayStartTimeStamp *big.Int,
+	decayEndTimeStamp *big.Int,
 ) (*Bid, error) {
 	if txHash == "" || bidAmt == nil || blockNumber == nil {
 		return nil, errors.New("missing required fields")
@@ -246,8 +246,8 @@ func GetBidHash(bid *Bid) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(bid.BidAmt)...)
 	data = append(data, math.U256Bytes(bid.BlockNumber)...)
-	data = append(data, math.U256Bytes(new(big.Int).SetUint64(bid.DecayStartTimeStamp))...)
-	data = append(data, math.U256Bytes(new(big.Int).SetUint64(bid.DecayEndTimeStamp))...)
+	data = append(data, math.U256Bytes(bid.DecayStartTimeStamp)...)
+	data = append(data, math.U256Bytes(bid.DecayEndTimeStamp)...)
 	dataHash := crypto.Keccak256Hash(data)
 
 	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
@@ -284,8 +284,8 @@ func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(c.Bid.BidAmt)...)
 	data = append(data, math.U256Bytes(c.Bid.BlockNumber)...)
-	data = append(data, math.U256Bytes(new(big.Int).SetUint64(c.Bid.DecayStartTimeStamp))...)
-	data = append(data, math.U256Bytes(new(big.Int).SetUint64(c.Bid.DecayEndTimeStamp))...)
+	data = append(data, math.U256Bytes(c.Bid.DecayStartTimeStamp)...)
+	data = append(data, math.U256Bytes(c.Bid.DecayEndTimeStamp)...)
 	data = append(data, bidDigestHash.Bytes()...)
 	data = append(data, bidSigHash.Bytes()...)
 	dataHash := crypto.Keccak256Hash(data)

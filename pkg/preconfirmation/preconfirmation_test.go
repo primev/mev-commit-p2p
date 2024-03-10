@@ -39,7 +39,7 @@ type testSigner struct {
 	preConfirmationSigner common.Address
 }
 
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int, _ uint64, _ uint64) (*preconfsigner.Bid, error) {
+func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
 	return t.bid, nil
 }
 
@@ -74,6 +74,8 @@ func (t *testCommitmentDA) StoreCommitment(
 	_ *big.Int,
 	_ uint64,
 	_ string,
+	_ uint64,
+	_ uint64,
 	_ []byte,
 	_ []byte,
 ) error {
@@ -110,8 +112,8 @@ func TestPreconfBidSubmission(t *testing.T) {
 			TxHash:              "test",
 			BidAmt:              big.NewInt(10),
 			BlockNumber:         big.NewInt(10),
-			DecayStartTimeStamp: uint64(time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds()),
-			DecayEndTimeStamp:   uint64(time.Now().UnixMilli()),
+			DecayStartTimeStamp: big.NewInt(time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds()),
+			DecayEndTimeStamp:   big.NewInt(time.Now().UnixMilli()),
 			Digest:              []byte("test"),
 			Signature:           []byte("test"),
 		}
