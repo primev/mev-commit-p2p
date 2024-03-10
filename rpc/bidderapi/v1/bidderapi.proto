@@ -155,10 +155,10 @@ message Commitment {
   string provider_address = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the address of the provider that signed the commitment signature."
   }];
-  uint64 decay_start_timestamp = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  int64 decay_start_timestamp = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Timestamp at which the bid starts decaying."
   }];
-  uint64 decay_end_timestamp = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  int64 decay_end_timestamp = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Timestamp at which the bid ends decaying."
   }];
 };

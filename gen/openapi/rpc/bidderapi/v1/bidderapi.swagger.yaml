@@ -176,11 +176,11 @@ definitions:
         description: Hex string encoding of the address of the provider that signed the commitment signature.
       decayStartTimestamp:
         type: string
-        format: uint64
+        format: int64
         description: Timestamp at which the bid starts decaying.
       decayEndTimestamp:
         type: string
-        format: uint64
+        format: int64
         description: Timestamp at which the bid ends decaying.
   v1PrepayResponse:
     type: object
