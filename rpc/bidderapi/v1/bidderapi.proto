@@ -140,25 +140,25 @@ message Commitment {
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Max block number that the bidder wants to include the transaction in."
   }];
-  uint64 decay_start_timestamp = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp at which the bid starts decaying."
-  }];
-  uint64 decay_end_timestamp = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
-    description: "Timestamp at which the bid ends decaying."
-  }];
-  string received_bid_digest = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string received_bid_digest = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of digest of the bid message signed by the bidder."
   }];
-  string received_bid_signature = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string received_bid_signature = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of signature of the bidder that sent this bid."
   }];
-  string commitment_digest = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string commitment_digest = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of digest of the commitment."
   }];
-  string commitment_signature = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string commitment_signature = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of signature of the commitment signed by the provider confirming this transaction."
   }];
-  string provider_address = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string provider_address = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the address of the provider that signed the commitment signature."
+  }];
+  uint64 decay_start_timestamp = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp at which the bid starts decaying."
+  }];
+  uint64 decay_end_timestamp = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Timestamp at which the bid ends decaying."
   }];
 };

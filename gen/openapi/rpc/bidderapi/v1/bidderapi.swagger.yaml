@@ -159,14 +159,6 @@ definitions:
         type: string
         format: int64
         description: Max block number that the bidder wants to include the transaction in.
-      decayStartTimestamp:
-        type: string
-        format: uint64
-        description: Timestamp at which the bid starts decaying.
-      decayEndTimestamp:
-        type: string
-        format: uint64
-        description: Timestamp at which the bid ends decaying.
       receivedBidDigest:
         type: string
         description: Hex string encoding of digest of the bid message signed by the bidder.
@@ -182,6 +174,14 @@ definitions:
       providerAddress:
         type: string
         description: Hex string encoding of the address of the provider that signed the commitment signature.
+      decayStartTimestamp:
+        type: string
+        format: uint64
+        description: Timestamp at which the bid starts decaying.
+      decayEndTimestamp:
+        type: string
+        format: uint64
+        description: Timestamp at which the bid ends decaying.
   v1PrepayResponse:
     type: object
     example:
