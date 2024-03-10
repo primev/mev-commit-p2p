@@ -161,7 +161,7 @@ func RegisterBidderHandlerServer(ctx context.Context, mux *runtime.ServeMux, ser
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/PrepayAllowance", runtime.WithHTTPPathPattern("/v1/bidder/prepay/{amount}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/PrepayAllowance", runtime.WithHTTPPathPattern("/v1/bidder/provide_allowance/{amount}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -297,7 +297,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/PrepayAllowance", runtime.WithHTTPPathPattern("/v1/bidder/prepay/{amount}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rpc.bidderapi.v1.Bidder/PrepayAllowance", runtime.WithHTTPPathPattern("/v1/bidder/provide_allowance/{amount}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -363,7 +363,7 @@ func RegisterBidderHandlerClient(ctx context.Context, mux *runtime.ServeMux, cli
 var (
 	pattern_Bidder_SendBid_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "bidder", "bid"}, ""))
 
-	pattern_Bidder_PrepayAllowance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "bidder", "prepay", "amount"}, ""))
+	pattern_Bidder_PrepayAllowance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"v1", "bidder", "provide_allowance", "amount"}, ""))
 
 	pattern_Bidder_GetAllowance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "bidder", "get_allowance"}, ""))
 
