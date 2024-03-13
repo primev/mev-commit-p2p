@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/primevprotocol/mev-commit/pkg/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 	"github.com/prometheus/client_golang/prometheus"
 )
 

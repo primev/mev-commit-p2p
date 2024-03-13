@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core"
-	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
+	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p/internal/handshake"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"

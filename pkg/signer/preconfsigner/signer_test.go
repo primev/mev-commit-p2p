@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
+	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/stretchr/testify/assert"
 )

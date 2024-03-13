@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/primevprotocol/mev-commit/pkg/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 )
 
 var (

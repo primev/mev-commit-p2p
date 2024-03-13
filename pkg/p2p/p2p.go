@@ -2,10 +2,12 @@ package p2p
 
 import (
 	"context"
+	"crypto/ecdh"
 	"errors"
 	"io"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
 )
 
 // PeerType is the type of a peer
@@ -51,9 +53,15 @@ var (
 	ErrNoAddresses  = errors.New("no addresses")
 )
 
+type Keys struct {
+	PKEPublicKey  *ecies.PublicKey
+	NIKEPublicKey *ecdh.PublicKey
+}
+
 type Peer struct {
 	EthAddress common.Address
 	Type       PeerType
+	Keys       *Keys
 }
 
 type PeerInfo struct {

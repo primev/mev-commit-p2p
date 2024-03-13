@@ -11,7 +11,7 @@ import (
 
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
-	"github.com/primevprotocol/mev-commit/pkg/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 
 	"github.com/ethereum/go-ethereum/common"

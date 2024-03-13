@@ -25,12 +25,15 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
-	"github.com/primevprotocol/mev-commit/pkg/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keyexchange"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
+	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
@@ -201,6 +204,19 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			// Only register handler for provider
 			p2pSvc.AddProtocol(preconfProto.Protocol())
+
+			providerKK, err := keykeeper.NewProviderKeyKeeper(opts.KeySigner)
+			if err != nil {
+				return nil, errors.Join(err, nd.Close())
+			}
+			keyexchange := keyexchange.New(
+				topo,
+				p2pSvc,
+				providerKK,
+				opts.Logger.With("component", "keyexchange_protocol"),
+				signer.New(),
+			)
+			p2pSvc.AddProtocol(keyexchange.Protocol())
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 		case p2p.PeerTypeBidder.String():
@@ -223,6 +239,20 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "bidderapi"),
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)
+
+			bidderKK, err := keykeeper.NewBidderKeyKeeper(opts.KeySigner)
+			if err != nil {
+				return nil, errors.Join(err, nd.Close())
+			}
+			keyexchange := keyexchange.New(
+				topo,
+				p2pSvc,
+				bidderKK,
+				opts.Logger.With("component", "keyexchange_protocol"),
+				signer.New(),
+			)
+			keyexchange.SendTimestampMessage()
+
 			srv.RegisterMetricsCollectors(bidderAPI.Metrics()...)
 		}
 

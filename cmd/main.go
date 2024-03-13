@@ -12,7 +12,7 @@ import (
 
 	contracts "github.com/primevprotocol/contracts-abi/config"
 	mevcommit "github.com/primevprotocol/mev-commit"
-	ks "github.com/primevprotocol/mev-commit/pkg/keysigner"
+	ks "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/node"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
