@@ -110,8 +110,23 @@ func NewNode(opts *Options) (*Node, error) {
 		opts.Logger.With("component", "providerregistry"),
 	)
 
+	var keyKeeper keykeeper.KeyKeeper
+	switch opts.PeerType {
+	case p2p.PeerTypeProvider.String():
+		keyKeeper, err = keykeeper.NewBidderKeyKeeper(opts.KeySigner)
+		if err != nil {
+			return nil, errors.Join(err, nd.Close())
+		}
+	case p2p.PeerTypeBidder.String():
+		keyKeeper, err = keykeeper.NewProviderKeyKeeper(opts.KeySigner)
+		if err != nil {
+			return nil, errors.Join(err, nd.Close())
+		}
+	default:
+		keyKeeper = keykeeper.NewBootnodeKeyKeeper(opts.KeySigner)
+	}
 	p2pSvc, err := libp2p.New(&libp2p.Options{
-		KeySigner:      opts.KeySigner,
+		KeyKeeper:      keyKeeper,
 		Secret:         opts.Secret,
 		PeerType:       peerType,
 		Register:       providerRegistry,
@@ -205,14 +220,10 @@ func NewNode(opts *Options) (*Node, error) {
 			// Only register handler for provider
 			p2pSvc.AddProtocol(preconfProto.Protocol())
 
-			providerKK, err := keykeeper.NewProviderKeyKeeper(opts.KeySigner)
-			if err != nil {
-				return nil, errors.Join(err, nd.Close())
-			}
 			keyexchange := keyexchange.New(
 				topo,
 				p2pSvc,
-				providerKK,
+				keyKeeper,
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)
@@ -240,14 +251,10 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			bidderapiv1.RegisterBidderServer(grpcServer, bidderAPI)
 
-			bidderKK, err := keykeeper.NewBidderKeyKeeper(opts.KeySigner)
-			if err != nil {
-				return nil, errors.Join(err, nd.Close())
-			}
 			keyexchange := keyexchange.New(
 				topo,
 				p2pSvc,
-				bidderKK,
+				keyKeeper,
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)

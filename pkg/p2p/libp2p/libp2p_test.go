@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
@@ -45,8 +46,12 @@ func newTestService(t *testing.T) *libp2p.Service {
 	}
 	address := crypto.PubkeyToAddress(privKey.PublicKey)
 	ks := mockkeysigner.NewMockKeySigner(privKey, address)
+	pkk, err := keykeeper.NewProviderKeyKeeper(ks)
+	if err != nil {
+		t.Fatal(err)
+	}
 	svc, err := libp2p.New(&libp2p.Options{
-		KeySigner:  ks,
+		KeyKeeper:  pkk,
 		Secret:     "test",
 		ListenPort: 0,
 		ListenAddr: "0.0.0.0",
@@ -247,7 +252,7 @@ func TestBootstrap(t *testing.T) {
 	ks := mockkeysigner.NewMockKeySigner(privKey, address)
 
 	bnOpts := testDefaultOptions
-	bnOpts.KeySigner = ks
+	bnOpts.KeyKeeper = keykeeper.NewBootnodeKeyKeeper(ks)
 	bnOpts.PeerType = p2p.PeerTypeBootnode
 
 	bootnode, err := libp2p.New(&bnOpts)
@@ -268,8 +273,10 @@ func TestBootstrap(t *testing.T) {
 
 	n1Opts := testDefaultOptions
 	n1Opts.BootstrapAddrs = []string{bootnode.AddrString()}
-	n1Opts.KeySigner = ks
-
+	n1Opts.KeyKeeper, err = keykeeper.NewProviderKeyKeeper(ks)
+	if err != nil {
+		t.Fatal(err)
+	}
 	p1, err := libp2p.New(&n1Opts)
 	if err != nil {
 		t.Fatal(err)

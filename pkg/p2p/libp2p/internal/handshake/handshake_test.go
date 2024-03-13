@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p/core"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p/internal/handshake"
@@ -46,7 +47,10 @@ func TestHandshake(t *testing.T) {
 		}
 		address1 := common.HexToAddress("0x1")
 		ks1 := mockkeysigner.NewMockKeySigner(privKey1, address1)
-
+		kk1, err := keykeeper.NewProviderKeyKeeper(ks1)
+		if err != nil {
+			t.Fatal(err)
+		}
 		privKey2, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		if err != nil {
 			t.Fatal(err)
@@ -54,9 +58,12 @@ func TestHandshake(t *testing.T) {
 
 		address2 := common.HexToAddress("0x2")
 		ks2 := mockkeysigner.NewMockKeySigner(privKey2, address2)
-
+		kk2, err := keykeeper.NewProviderKeyKeeper(ks2)
+		if err != nil {
+			t.Fatal(err)
+		}
 		hs1, err := handshake.New(
-			ks1,
+			kk1,
 			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: address2},
@@ -70,7 +77,7 @@ func TestHandshake(t *testing.T) {
 		}
 
 		hs2, err := handshake.New(
-			ks2,
+			kk2,
 			p2p.PeerTypeProvider,
 			"test",
 			&testSigner{address: address1},
@@ -103,6 +110,14 @@ func TestHandshake(t *testing.T) {
 			}
 			if p.Type != p2p.PeerTypeProvider {
 				t.Errorf("expected peer type %s, got %s", p2p.PeerTypeProvider, p.Type)
+				return
+			}
+			if !p.Keys.NIKEPublicKey.Equal(kk2.GetNIKEPublicKey()) {
+				t.Errorf("expected nike pk %s, got %s", p.Keys.NIKEPublicKey.Bytes(), kk2.GetNIKEPublicKey().Bytes())
+				return
+			}
+			if !p.Keys.PKEPublicKey.ExportECDSA().Equal(kk2.GetECIESPublicKey().ExportECDSA()) {
+				t.Error("expected pke pk is not equal to present")
 				return
 			}
 		}()

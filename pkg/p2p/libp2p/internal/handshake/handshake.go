@@ -3,13 +3,14 @@ package handshake
 import (
 	"bytes"
 	"context"
+	"crypto/ecdh"
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
@@ -33,7 +34,7 @@ type ProviderRegistry interface {
 
 // Handshake is the handshake protocol
 type Service struct {
-	ks            keysigner.KeySigner
+	kk            keykeeper.KeyKeeper
 	peerType      p2p.PeerType
 	passcode      string
 	signer        signer.Signer
@@ -43,7 +44,7 @@ type Service struct {
 }
 
 func New(
-	ks keysigner.KeySigner,
+	kk keykeeper.KeyKeeper,
 	peerType p2p.PeerType,
 	passcode string,
 	signer signer.Signer,
@@ -51,7 +52,7 @@ func New(
 	getEthAddress func(core.PeerID) (common.Address, error),
 ) (*Service, error) {
 	s := &Service{
-		ks:            ks,
+		kk:            kk,
 		peerType:      peerType,
 		passcode:      passcode,
 		signer:        signer,
@@ -75,10 +76,15 @@ func ProtocolID() protocol.ID {
 	))
 }
 
+type SerializedKeys struct {
+	PKEPublicKey, NIKEPublicKey []byte
+}
+
 type HandshakeReq struct {
 	PeerType string
 	Token    string
 	Sig      []byte
+	Keys     *SerializedKeys
 }
 
 type HandshakeResp struct {
@@ -122,7 +128,7 @@ func (h *Service) verifyReq(
 func (h *Service) createSignature() ([]byte, error) {
 	unsignedData := []byte(h.peerType.String() + h.passcode)
 	hash := crypto.Keccak256Hash(unsignedData)
-	sig, err := h.ks.SignHash(hash.Bytes())
+	sig, err := h.kk.SignHash(hash.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +148,22 @@ func (h *Service) setHandshakeReq() error {
 		Sig:      sig,
 	}
 
+	if h.peerType == p2p.PeerTypeProvider {
+		providerKK := h.kk.(*keykeeper.ProviderKeyKeeper)
+		ppk := keykeeper.SerializePublicKey(providerKK.GetECIESPublicKey())
+		npk := providerKK.GetNIKEPublicKey().Bytes()
+		req.Keys = &SerializedKeys{
+			PKEPublicKey:  ppk,
+			NIKEPublicKey: npk,
+		}
+	}
+
 	h.handshakeReq = req
 	return nil
 }
 
 func (h *Service) verifyResp(resp *HandshakeResp) error {
-	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ks.GetAddress().Bytes()) {
+	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.kk.GetAddress().Bytes()) {
 		return errors.New("observed address mismatch")
 	}
 
@@ -200,10 +216,26 @@ func (h *Service) Handle(
 		return p2p.Peer{}, err
 	}
 
-	return p2p.Peer{
+	p := p2p.Peer{
 		EthAddress: ethAddress,
 		Type:       p2p.FromString(req.PeerType),
-	}, nil
+	}
+
+	if req.PeerType == p2p.PeerTypeProvider.String() {
+		ppk, err := keykeeper.DeserializePublicKey(req.Keys.PKEPublicKey)
+		if err != nil {
+			return p2p.Peer{}, err
+		}
+		npk, err := ecdh.P256().NewPublicKey(req.Keys.NIKEPublicKey)
+		if err != nil {
+			return p2p.Peer{}, err
+		}
+		p.Keys = &p2p.Keys{
+			PKEPublicKey:  ppk,
+			NIKEPublicKey: npk,
+		}
+	}
+	return p, nil
 }
 
 func (h *Service) Handshake(

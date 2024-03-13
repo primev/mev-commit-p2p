@@ -2,13 +2,19 @@ package keykeeper
 
 import (
 	"crypto/ecdh"
+	"crypto/ecdsa"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 )
 
-type KeyKeeper interface{}
+type KeyKeeper interface {
+	SignHash(data []byte) ([]byte, error)
+	GetAddress() common.Address
+	GetPrivateKey() (*ecdsa.PrivateKey, error)
+	ZeroPrivateKey(key *ecdsa.PrivateKey)
+}
 
 type ProviderKeys struct {
 	EncryptionPrivateKey *ecies.PrivateKey
@@ -25,5 +31,9 @@ type ProviderKeyKeeper struct {
 
 type BidderKeyKeeper struct {
 	AESKey    []byte
+	KeySigner keysigner.KeySigner
+}
+
+type BootnodeKeyKeeper struct {
 	KeySigner keysigner.KeySigner
 }
