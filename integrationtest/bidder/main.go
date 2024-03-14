@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"math/big"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -55,11 +54,6 @@ var (
 		7,
 		"The number of parallel workers to run",
 	)
-	logSinkTCP = flag.String(
-		"log-sink-tcp",
-		"",
-		"The TCP address:port for additional log sink",
-	)
 )
 
 var (
@@ -102,18 +96,8 @@ func main() {
 		fmt.Printf("Invalid log level: %s; using %q", err, level)
 	}
 
-	var sink io.Writer = os.Stdout
-	if *logSinkTCP != "" {
-		conn, err := net.Dial("tcp", *logSinkTCP)
-		if err != nil {
-			fmt.Printf("Failed to connect to TCP server: %v\n", err)
-			return
-		}
-		sink = io.MultiWriter(sink, conn)
-	}
-
 	logger := slog.New(slog.NewTextHandler(
-		sink,
+		os.Stdout,
 		&slog.HandlerOptions{Level: level},
 	))
 
