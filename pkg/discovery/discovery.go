@@ -66,10 +66,6 @@ func (d *Discovery) Streams() []p2p.StreamDesc {
 	return []p2p.StreamDesc{d.peerListStream()}
 }
 
-type peersList struct {
-	Peers []p2p.PeerInfo
-}
-
 func (d *Discovery) handlePeersList(ctx context.Context, peer p2p.Peer, s p2p.Stream) error {
 	peers := new(discoverypb.PeerList)
 	err := s.ReadMsg(ctx, peers)
