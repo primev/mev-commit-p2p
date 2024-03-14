@@ -14,7 +14,7 @@ import (
 
 const (
 	ProtocolName    = "discovery"
-	ProtocolVersion = "1.0.0"
+	ProtocolVersion = "2.0.0"
 	checkWorkers    = 10
 )
 
