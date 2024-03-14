@@ -92,7 +92,7 @@ type Header map[string]*structpb.Value
 type HandlerFunc func(ctx context.Context, peer Peer, stream Stream) error
 
 // HeaderFunc is a function that handles a header.
-type HeaderFunc func(ctx context.Context, peer Peer, hdr Header) (Header, error)
+type HeaderFunc func(ctx context.Context, peer Peer, hdr Header) Header
 
 // StreamDesc describes a stream handler.
 type StreamDesc struct {

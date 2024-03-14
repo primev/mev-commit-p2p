@@ -313,18 +313,7 @@ func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
 
 				respHdrs := p2p.Header{}
 				if ss.Header != nil {
-					respHdrs, err = ss.Header(ctx, p, headers)
-					if err != nil {
-						s.logger.Error("handling headers", "err", err)
-						retErr, _ := status.FromError(err)
-						err = mtdtStream.WriteError(ctx, retErr)
-						if err != nil {
-							s.logger.Error("writing error", "err", err)
-							_ = streamlibp2p.Reset()
-							return
-						}
-						return
-					}
+					respHdrs = ss.Header(ctx, p, headers)
 				}
 
 				err = mtdtStream.WriteHeader(ctx, respHdrs)
