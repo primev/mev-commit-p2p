@@ -55,7 +55,6 @@ func main() {
 
 	app.Before = func(c *cli.Context) error {
 		configFile := c.String(optionConfig.Name)
-		fmt.Printf("using configuration file: %s\n", configFile)
 
 		buf, err := os.ReadFile(configFile)
 		if err != nil {

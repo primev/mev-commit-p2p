@@ -2,6 +2,7 @@ package keysigner
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,6 +10,8 @@ import (
 )
 
 type KeySigner interface {
+	fmt.Stringer
+
 	SignHash(data []byte) ([]byte, error)
 	SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error)
 	GetAddress() common.Address

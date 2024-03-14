@@ -9,29 +9,33 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-type mockKeySigner struct {
+type MockKeySigner struct {
 	privKey *ecdsa.PrivateKey
 	address common.Address
 }
 
-func NewMockKeySigner(privKey *ecdsa.PrivateKey, address common.Address) *mockKeySigner {
-	return &mockKeySigner{privKey: privKey, address: address}
+func NewMockKeySigner(privKey *ecdsa.PrivateKey, address common.Address) *MockKeySigner {
+	return &MockKeySigner{privKey: privKey, address: address}
 }
 
-func (m *mockKeySigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (m *MockKeySigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	return tx, nil
 }
 
-func (m *mockKeySigner) SignHash(hash []byte) ([]byte, error) {
+func (m *MockKeySigner) SignHash(hash []byte) ([]byte, error) {
 	return crypto.Sign(hash, m.privKey)
 }
 
-func (m *mockKeySigner) GetAddress() common.Address {
+func (m *MockKeySigner) GetAddress() common.Address {
 	return m.address
 }
 
-func (m *mockKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
+func (m *MockKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return m.privKey, nil
 }
 
-func (m *mockKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
+func (m *MockKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
+
+func (m *MockKeySigner) String() string {
+	return "mock"
+}

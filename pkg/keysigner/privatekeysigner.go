@@ -3,7 +3,6 @@ package keysigner
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"io"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -15,17 +14,18 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-type privateKeySigner struct {
+type PrivateKeySigner struct {
+	path    string
 	privKey *ecdsa.PrivateKey
 }
 
-func NewPrivateKeySigner(wr io.Writer, path string) (*privateKeySigner, error) {
+func NewPrivateKeySigner(path string) (*PrivateKeySigner, error) {
 	privKeyFile, err := resolveFilePath(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get private key file path: %w", err)
 	}
 
-	if err := createKeyIfNotExists(wr, privKeyFile); err != nil {
+	if err := createKeyIfNotExists(privKeyFile); err != nil {
 		return nil, fmt.Errorf("failed to create private key: %w", err)
 	}
 
@@ -34,30 +34,35 @@ func NewPrivateKeySigner(wr io.Writer, path string) (*privateKeySigner, error) {
 		return nil, fmt.Errorf("failed to load private key from file '%s': %w", privKeyFile, err)
 	}
 
-	return &privateKeySigner{
+	return &PrivateKeySigner{
+		path:    privKeyFile,
 		privKey: privKey,
 	}, nil
 }
 
-func (pks *privateKeySigner) SignHash(hash []byte) ([]byte, error) {
+func (pks *PrivateKeySigner) SignHash(hash []byte) ([]byte, error) {
 	return crypto.Sign(hash, pks.privKey)
 }
 
-func (pks *privateKeySigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (pks *PrivateKeySigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	return types.SignTx(tx, types.NewLondonSigner(chainID), pks.privKey)
 }
 
-func (pks *privateKeySigner) GetAddress() common.Address {
+func (pks *PrivateKeySigner) GetAddress() common.Address {
 	return crypto.PubkeyToAddress(pks.privKey.PublicKey)
 }
 
-func (pks *privateKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
+func (pks *PrivateKeySigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return pks.privKey, nil
 }
 
 // ZeroPrivateKey does nothing because the private key for PKS persists in memory
 // and should not be deleted.
-func (pks *privateKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
+func (pks *PrivateKeySigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {}
+
+func (pks *PrivateKeySigner) String() string {
+	return pks.path
+}
 
 func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, error) {
 	keyjson, err := os.ReadFile(keystoreFile)
@@ -79,13 +84,11 @@ func extractPrivateKey(keystoreFile, passphrase string) (*ecdsa.PrivateKey, erro
 	return key.PrivateKey, nil
 }
 
-func createKeyIfNotExists(wr io.Writer, path string) error {
+func createKeyIfNotExists(path string) error {
 	if _, err := os.Stat(path); err == nil {
-		fmt.Fprintln(wr, "using existing private key:", path)
 		return nil
 	}
 
-	fmt.Fprintln(wr, "creating new private key:", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
@@ -95,16 +98,7 @@ func createKeyIfNotExists(wr io.Writer, path string) error {
 		return err
 	}
 
-	if err := crypto.SaveECDSA(path, key); err != nil {
-		return err
-	}
-
-	addr := crypto.PubkeyToAddress(key.PublicKey)
-
-	fmt.Fprintln(wr, "private key saved to file:", path)
-	fmt.Fprintln(wr, "wallet address:", addr.Hex())
-
-	return nil
+	return crypto.SaveECDSA(path, key)
 }
 
 func resolveFilePath(path string) (string, error) {
