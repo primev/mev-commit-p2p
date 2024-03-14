@@ -11,10 +11,10 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -181,7 +181,7 @@ func TestBidHandling(t *testing.T) {
 
 	type testCase struct {
 		name       string
-		bid        *preconfsigner.Bid
+		bid        *preconfpb.Bid
 		status     providerapiv1.BidResponse_Status
 		noStatus   bool
 		processErr string
@@ -190,85 +190,85 @@ func TestBidHandling(t *testing.T) {
 	for _, tc := range []testCase{
 		{
 			name: "accepted bid",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash: strings.Join(
 					[]string{
 						common.HexToHash("0x00001").Hex()[2:], // remove 0x
 						common.HexToHash("0x00002").Hex()[2:], // remove 0x
 					}, ",", // join with comma
 				),
-				BidAmt:              big.NewInt(1000000000000000000),
-				BlockNumber:         big.NewInt(1),
+				BidAmount:           "1000000000000000000",
+				BlockNumber:         1,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		},
 		{
 			name: "rejected bid",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash:              common.HexToHash("0x00003").Hex()[2:], // remove 0x
-				BidAmt:              big.NewInt(1000000000000000000),
-				BlockNumber:         big.NewInt(1),
+				BidAmount:           "1000000000000000000",
+				BlockNumber:         1,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			status: providerapiv1.BidResponse_STATUS_REJECTED,
 		},
 		{
 			name: "invalid bid status",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash:              common.HexToHash("0x00003").Hex()[2:], // remove 0x
-				BidAmt:              big.NewInt(1000000000000000000),
-				BlockNumber:         big.NewInt(1),
+				BidAmount:           "1000000000000000000",
+				BlockNumber:         1,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			status:   providerapiv1.BidResponse_STATUS_UNSPECIFIED,
 			noStatus: true,
 		},
 		{
 			name: "invalid bid txHash",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash:              "asdf",
-				BidAmt:              big.NewInt(1000000000000000000),
-				BlockNumber:         big.NewInt(1),
+				BidAmount:           "1000000000000000000",
+				BlockNumber:         1,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			processErr: "tx_hashes: tx_hashes must be a valid array of transaction hashes",
 		},
 		{
 			name: "invalid bid amount",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash:              common.HexToHash("0x00004").Hex()[2:], // remove 0x
-				BidAmt:              big.NewInt(0000000000000000000),
-				BlockNumber:         big.NewInt(1),
+				BidAmount:           "0000000000000000000",
+				BlockNumber:         1,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			processErr: "bid_amount: bid_amount must be a valid integer",
 		},
 		{
 			name: "invalid bid block number",
-			bid: &preconfsigner.Bid{
+			bid: &preconfpb.Bid{
 				TxHash:              common.HexToHash("0x00004").Hex()[2:], // remove 0x
-				BidAmt:              big.NewInt(1000000000000000000),
-				BlockNumber:         big.NewInt(0),
+				BidAmount:           "1000000000000000000",
+				BlockNumber:         0,
 				Digest:              []byte("digest"),
 				Signature:           []byte("signature"),
-				DecayStartTimeStamp: big.NewInt(199),
-				DecayEndTimeStamp:   big.NewInt(299),
+				DecayStartTimeStamp: 199,
+				DecayEndTimeStamp:   299,
 			},
 			processErr: "block_number: value must be greater than 0",
 		},
@@ -298,11 +298,11 @@ func TestBidHandling(t *testing.T) {
 							t.Errorf("expected tx hash %v to be %v, got %v", i, sentBidHash, bid.TxHashes[i])
 						}
 					}
-					if bid.BidAmount != tc.bid.BidAmt.String() {
-						t.Errorf("expected bid amount to be %v, got %v", tc.bid.BidAmt.String(), bid.BidAmount)
+					if bid.BidAmount != tc.bid.BidAmount {
+						t.Errorf("expected bid amount to be %v, got %v", tc.bid.BidAmount, bid.BidAmount)
 					}
-					if bid.BlockNumber != tc.bid.BlockNumber.Int64() {
-						t.Errorf("expected block number to be %v, got %v", tc.bid.BlockNumber.Int64(), bid.BlockNumber)
+					if bid.BlockNumber != tc.bid.BlockNumber {
+						t.Errorf("expected block number to be %v, got %v", tc.bid.BlockNumber, bid.BlockNumber)
 					}
 					bidCh <- bid
 				}

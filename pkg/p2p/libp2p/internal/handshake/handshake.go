@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	handshakepb "github.com/primevprotocol/mev-commit/gen/go/handshake/v1"
 	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
-	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 )
 
@@ -38,7 +39,7 @@ type Service struct {
 	passcode      string
 	signer        signer.Signer
 	register      ProviderRegistry
-	handshakeReq  *HandshakeReq
+	handshakeReq  *handshakepb.HandshakeReq
 	getEthAddress func(core.PeerID) (common.Address, error)
 }
 
@@ -68,11 +69,7 @@ func New(
 }
 
 func ProtocolID() protocol.ID {
-	return protocol.ID(p2p.NewStreamName(
-		ProtocolName,
-		ProtocolVersion,
-		StreamName,
-	))
+	return protocol.ID(fmt.Sprintf("%s/%s", ProtocolName, ProtocolVersion))
 }
 
 type HandshakeReq struct {
@@ -87,7 +84,7 @@ type HandshakeResp struct {
 }
 
 func (h *Service) verifyReq(
-	req *HandshakeReq,
+	req *handshakepb.HandshakeReq,
 	peerID core.PeerID,
 ) (common.Address, error) {
 	unsignedData := []byte(req.PeerType + req.Token)
@@ -136,7 +133,7 @@ func (h *Service) setHandshakeReq() error {
 		return err
 	}
 
-	req := &HandshakeReq{
+	req := &handshakepb.HandshakeReq{
 		PeerType: h.peerType.String(),
 		Token:    h.passcode,
 		Sig:      sig,
@@ -146,8 +143,8 @@ func (h *Service) setHandshakeReq() error {
 	return nil
 }
 
-func (h *Service) verifyResp(resp *HandshakeResp) error {
-	if !bytes.Equal(resp.ObservedAddress.Bytes(), h.ks.GetAddress().Bytes()) {
+func (h *Service) verifyResp(resp *handshakepb.HandshakeResp) error {
+	if !bytes.Equal(resp.ObservedAddress, h.ks.GetAddress().Bytes()) {
 		return errors.New("observed address mismatch")
 	}
 
@@ -164,8 +161,8 @@ func (h *Service) Handle(
 	peerID core.PeerID,
 ) (p2p.Peer, error) {
 
-	r, w := msgpack.NewReaderWriter[HandshakeReq, HandshakeResp](stream)
-	req, err := r.ReadMsg(ctx)
+	req := new(handshakepb.HandshakeReq)
+	err := stream.ReadMsg(ctx, req)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
@@ -175,23 +172,22 @@ func (h *Service) Handle(
 		return p2p.Peer{}, err
 	}
 
-	resp := &HandshakeResp{
-		ObservedAddress: ethAddress,
+	resp := &handshakepb.HandshakeResp{
+		ObservedAddress: ethAddress.Bytes(),
 		PeerType:        req.PeerType,
 	}
 
-	if err := w.WriteMsg(ctx, resp); err != nil {
+	if err := stream.WriteMsg(ctx, resp); err != nil {
 		return p2p.Peer{}, err
 	}
 
-	ar, aw := msgpack.NewReaderWriter[HandshakeResp, HandshakeReq](stream)
-
-	err = aw.WriteMsg(ctx, h.handshakeReq)
+	err = stream.WriteMsg(ctx, h.handshakeReq)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
 
-	ack, err := ar.ReadMsg(ctx)
+	ack := new(handshakepb.HandshakeResp)
+	err = stream.ReadMsg(ctx, ack)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
@@ -212,13 +208,12 @@ func (h *Service) Handshake(
 	stream p2p.Stream,
 ) (p2p.Peer, error) {
 
-	r, w := msgpack.NewReaderWriter[HandshakeResp, HandshakeReq](stream)
-
-	if err := w.WriteMsg(ctx, h.handshakeReq); err != nil {
+	if err := stream.WriteMsg(ctx, h.handshakeReq); err != nil {
 		return p2p.Peer{}, err
 	}
 
-	resp, err := r.ReadMsg(ctx)
+	resp := new(handshakepb.HandshakeResp)
+	err := stream.ReadMsg(ctx, resp)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
@@ -227,9 +222,8 @@ func (h *Service) Handshake(
 		return p2p.Peer{}, err
 	}
 
-	ar, aw := msgpack.NewReaderWriter[HandshakeReq, HandshakeResp](stream)
-
-	ack, err := ar.ReadMsg(ctx)
+	ack := new(handshakepb.HandshakeReq)
+	err = stream.ReadMsg(ctx, ack)
 	if err != nil {
 		return p2p.Peer{}, err
 	}
@@ -239,8 +233,8 @@ func (h *Service) Handshake(
 		return p2p.Peer{}, err
 	}
 
-	err = aw.WriteMsg(ctx, &HandshakeResp{
-		ObservedAddress: ethAddress,
+	err = stream.WriteMsg(ctx, &handshakepb.HandshakeResp{
+		ObservedAddress: ethAddress.Bytes(),
 		PeerType:        ack.PeerType,
 	})
 	if err != nil {

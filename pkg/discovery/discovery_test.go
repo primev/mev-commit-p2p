@@ -86,7 +86,7 @@ func TestDiscovery(t *testing.T) {
 			}
 		})
 
-		svc.SetPeerHandler(server, d.Protocol())
+		svc.SetPeerHandler(server, d.Streams()[0])
 
 		err := d.BroadcastPeers(context.Background(), server, []p2p.PeerInfo{
 			{

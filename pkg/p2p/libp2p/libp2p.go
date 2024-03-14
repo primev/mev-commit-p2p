@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
 	"github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
+	"google.golang.org/grpc/status"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/libp2p/go-libp2p"
@@ -210,7 +213,7 @@ func (s *Service) SetNotifier(n p2p.Notifier) {
 func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 	peerID := streamlibp2p.Conn().RemotePeer()
 
-	stream := newStream(streamlibp2p)
+	stream := newStream(streamlibp2p, nil, nil)
 	peer, err := s.hsSvc.Handle(s.baseCtx, stream, peerID)
 	if err != nil {
 		s.logger.Error("error handling handshake", "err", err)
@@ -244,7 +247,6 @@ func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 func (s *Service) disconnected(p p2p.Peer) {
 	if s.notifier != nil {
 		s.notifier.Disconnected(p)
-
 	}
 }
 
@@ -257,44 +259,104 @@ func (s *Service) Self() map[string]interface{} {
 	}
 }
 
-func (s *Service) AddProtocol(spec p2p.ProtocolSpec) {
-	for _, streamSpec := range spec.StreamSpecs {
-		ss := streamSpec
-		id := protocol.ID(p2p.NewStreamName(spec.Name, spec.Version, ss.Name))
+func matchProtocolIDWithSemver(protoID string, supportedVersion string) bool {
+	// Extract the version part from the protocol ID.
+	parts := strings.Split(protoID, "/")
+	if len(parts) != 3 {
+		return false
+	}
+	protocolVersion := parts[2]
 
-		// TODO: If we need semantic versioning, we need to use the
-		// SetStreamHandlerMatch function instead of SetStreamHandler
-		s.host.SetStreamHandler(id, func(streamlibp2p network.Stream) {
-			peerID := streamlibp2p.Conn().RemotePeer()
-			p, found := s.peers.getPeer(peerID)
-			if !found {
-				s.logger.Error("received stream from unknown peer", "peer", peerID)
-				_ = streamlibp2p.Reset()
-				return
-			}
+	// Parse the supported version and the protocol version.
+	supportedSemver, err := semver.NewVersion(supportedVersion)
+	if err != nil {
+		return false
+	}
+	protoSemver, err := semver.NewVersion(protocolVersion)
+	if err != nil {
+		return false
+	}
 
-			ctx, cancel := context.WithCancel(s.baseCtx)
-			s.peers.addStream(peerID, streamlibp2p, cancel)
-			defer s.peers.removeStream(peerID, streamlibp2p)
+	return supportedSemver.Major() == protoSemver.Major() && supportedSemver.Minor() >= protoSemver.Minor()
+}
 
-			stream := newStream(streamlibp2p)
+func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
+	for _, stream := range streams {
+		ss := stream
 
-			if err := ss.Handler(ctx, p, stream); err != nil {
-				_ = stream.Reset()
-				s.logger.Error("error handling stream", "err", err)
-			} else {
+		s.host.SetStreamHandlerMatch(
+			protocol.ID(ss.Name),
+			func(p protocol.ID) bool {
+				return matchProtocolIDWithSemver(string(p), ss.Version)
+			},
+			func(streamlibp2p network.Stream) {
+				peerID := streamlibp2p.Conn().RemotePeer()
+				p, found := s.peers.getPeer(peerID)
+				if !found {
+					s.logger.Error("received stream from unknown peer", "peer", peerID)
+					_ = streamlibp2p.Reset()
+					return
+				}
+
+				// Keep track of the stream so we can cancel the handler if the peer disconnects.
+				ctx, cancel := context.WithCancel(s.baseCtx)
+				s.peers.addStream(peerID, streamlibp2p, cancel)
+				defer s.peers.removeStream(peerID, streamlibp2p)
+
+				mtdtStream := newMetadataStream(streamlibp2p)
+				headers, err := mtdtStream.ReadHeader(ctx)
+				if err != nil {
+					_ = streamlibp2p.Reset()
+					s.logger.Error("reading headers", "err", err)
+					return
+				}
+
+				respHdrs := p2p.Header{}
+				if ss.Header != nil {
+					respHdrs, err = ss.Header(ctx, p, headers)
+					if err != nil {
+						s.logger.Error("handling headers", "err", err)
+						retErr, _ := status.FromError(err)
+						err = mtdtStream.WriteError(ctx, retErr)
+						if err != nil {
+							s.logger.Error("writing error", "err", err)
+							_ = streamlibp2p.Reset()
+							return
+						}
+						return
+					}
+				}
+
+				err = mtdtStream.WriteHeader(ctx, respHdrs)
+				if err != nil {
+					_ = streamlibp2p.Reset()
+					s.logger.Error("writing headers", "err", err)
+					return
+				}
+
+				stream := newStream(streamlibp2p, headers, respHdrs)
+
+				err = ss.Handler(ctx, p, stream)
+				if err != nil {
+					s.logger.Error("stream handler", "err", err)
+					retErr, _ := status.FromError(err)
+					err = mtdtStream.WriteError(ctx, retErr)
+					if err != nil {
+						s.logger.Error("writing error", "err", err)
+						_ = stream.Reset()
+						return
+					}
+				}
 				_ = stream.Close()
-			}
-		})
+			})
 	}
 }
 
 func (s *Service) NewStream(
 	ctx context.Context,
 	peer p2p.Peer,
-	proto string,
-	version string,
-	streamName string,
+	headers p2p.Header,
+	stream p2p.StreamDesc,
 ) (p2p.Stream, error) {
 
 	peerID, found := s.peers.getPeerID(peer.EthAddress)
@@ -302,13 +364,25 @@ func (s *Service) NewStream(
 		return nil, p2p.ErrPeerNotFound
 	}
 
-	streamID := protocol.ID(p2p.NewStreamName(proto, version, streamName))
+	streamID := protocol.ID(fmt.Sprintf("/%s/%s", stream.Name, stream.Version))
 	streamlibp2p, err := s.host.NewStream(ctx, peerID, streamID)
 	if err != nil {
 		return nil, err
 	}
 
-	return newStream(streamlibp2p), nil
+	mtdtStream := newMetadataStream(streamlibp2p)
+	if err := mtdtStream.WriteHeader(ctx, headers); err != nil {
+		_ = streamlibp2p.Reset()
+		return nil, err
+	}
+
+	respHdrs, err := mtdtStream.ReadHeader(ctx)
+	if err != nil {
+		_ = streamlibp2p.Reset()
+		return nil, err
+	}
+
+	return newStream(streamlibp2p, headers, respHdrs), nil
 }
 
 func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
@@ -333,7 +407,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 	if err != nil {
 		return p2p.Peer{}, err
 	}
-	stream := newStream(streamlibp2p)
+	stream := newStream(streamlibp2p, nil, nil)
 
 	p, err := s.hsSvc.Handshake(ctx, addrInfo.ID, stream)
 	if err != nil {

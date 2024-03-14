@@ -5,9 +5,11 @@ import (
 	"log/slog"
 
 	"github.com/ethereum/go-ethereum/common"
+	discoverypb "github.com/primevprotocol/mev-commit/gen/go/discovery/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
-	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"golang.org/x/sync/semaphore"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -30,7 +32,7 @@ type Discovery struct {
 	topo       Topology
 	streamer   P2PService
 	logger     *slog.Logger
-	checkPeers chan p2p.PeerInfo
+	checkPeers chan *discoverypb.PeerInfo
 	sem        *semaphore.Weighted
 	quit       chan struct{}
 }
@@ -45,24 +47,23 @@ func New(
 		streamer:   streamer,
 		logger:     logger.With("protocol", ProtocolName),
 		sem:        semaphore.NewWeighted(checkWorkers),
-		checkPeers: make(chan p2p.PeerInfo),
+		checkPeers: make(chan *discoverypb.PeerInfo),
 		quit:       make(chan struct{}),
 	}
 	go d.checkAndAddPeers()
 	return d
 }
 
-func (d *Discovery) Protocol() p2p.ProtocolSpec {
-	return p2p.ProtocolSpec{
+func (d *Discovery) peerListStream() p2p.StreamDesc {
+	return p2p.StreamDesc{
 		Name:    ProtocolName,
 		Version: ProtocolVersion,
-		StreamSpecs: []p2p.StreamSpec{
-			{
-				Name:    "peersList",
-				Handler: d.handlePeersList,
-			},
-		},
+		Handler: d.handlePeersList,
 	}
+}
+
+func (d *Discovery) Streams() []p2p.StreamDesc {
+	return []p2p.StreamDesc{d.peerListStream()}
 }
 
 type peersList struct {
@@ -70,16 +71,15 @@ type peersList struct {
 }
 
 func (d *Discovery) handlePeersList(ctx context.Context, peer p2p.Peer, s p2p.Stream) error {
-	r, _ := msgpack.NewReaderWriter[peersList, peersList](s)
-
-	peers, err := r.ReadMsg(ctx)
+	peers := new(discoverypb.PeerList)
+	err := s.ReadMsg(ctx, peers)
 	if err != nil {
 		d.logger.Error("failed to read peers list", "err", err, "from_peer", peer)
-		return err
+		return status.Errorf(codes.InvalidArgument, "failed to read peers list: %v", err)
 	}
 
 	for _, p := range peers.Peers {
-		if d.topo.IsConnected(p.EthAddress) {
+		if d.topo.IsConnected(common.BytesToAddress(p.EthAddress)) {
 			continue
 		}
 		select {
@@ -99,15 +99,22 @@ func (d *Discovery) BroadcastPeers(
 	peer p2p.Peer,
 	peers []p2p.PeerInfo,
 ) error {
-	stream, err := d.streamer.NewStream(ctx, peer, ProtocolName, ProtocolVersion, "peersList")
+	stream, err := d.streamer.NewStream(ctx, peer, nil, d.peerListStream())
 	if err != nil {
 		d.logger.Error("failed to create stream", "err", err, "to_peer", peer)
 		return err
 	}
 	defer stream.Close()
 
-	_, w := msgpack.NewReaderWriter[peersList, peersList](stream)
-	if err := w.WriteMsg(ctx, &peersList{Peers: peers}); err != nil {
+	peersToSend := make([]*discoverypb.PeerInfo, 0, len(peers))
+	for _, p := range peers {
+		peersToSend = append(peersToSend, &discoverypb.PeerInfo{
+			EthAddress: p.EthAddress.Bytes(),
+			Underlay:   p.Underlay,
+		})
+	}
+
+	if err := stream.WriteMsg(ctx, &discoverypb.PeerList{Peers: peersToSend}); err != nil {
 		d.logger.Error("failed to write peers list", "err", err, "to_peer", peer)
 		return err
 	}

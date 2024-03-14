@@ -5,7 +5,7 @@ package preconfirmation.v1;
 message Bid {
   string tx_hash = 1;
   string bid_amount = 2;
-  string block_number = 3;
+  int64 block_number = 3;
   bytes digest = 4;
   bytes signature = 5;
 };

@@ -16,6 +16,7 @@ import (
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type testRegistry struct{}
@@ -86,40 +87,39 @@ func TestP2PService(t *testing.T) {
 		})
 
 		done := make(chan struct{})
-		svc.AddProtocol(p2p.ProtocolSpec{
+		stream := p2p.StreamDesc{
 			Name:    "test",
 			Version: "1.0.0",
-			StreamSpecs: []p2p.StreamSpec{
-				{
-					Name: "test",
-					Handler: func(ctx context.Context, peer p2p.Peer, str p2p.Stream) error {
-						if peer.EthAddress.Hex() != client.Peer().EthAddress.Hex() {
-							t.Fatalf(
-								"expected eth address %s, got %s",
-								client.Peer().EthAddress.Hex(), peer.EthAddress.Hex(),
-							)
-						}
+			Handler: func(ctx context.Context, peer p2p.Peer, str p2p.Stream) error {
+				if peer.EthAddress.Hex() != client.Peer().EthAddress.Hex() {
+					t.Fatalf(
+						"expected eth address %s, got %s",
+						client.Peer().EthAddress.Hex(), peer.EthAddress.Hex(),
+					)
+				}
 
-						if peer.Type != client.Peer().Type {
-							t.Fatalf(
-								"expected peer type %s, got %s",
-								client.Peer().Type, peer.Type,
-							)
-						}
+				if peer.Type != client.Peer().Type {
+					t.Fatalf(
+						"expected peer type %s, got %s",
+						client.Peer().Type, peer.Type,
+					)
+				}
 
-						buf, err := str.ReadMsg()
-						if err != nil {
-							t.Fatal(err)
-						}
-						if string(buf) != "test" {
-							t.Fatalf("expected message %s, got %s", "test", string(buf))
-						}
-						close(done)
-						return nil
-					},
-				},
+				strMsg := new(wrapperspb.StringValue)
+
+				err := str.ReadMsg(ctx, strMsg)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if strMsg.Value != "test" {
+					t.Fatalf("expected message %s, got %s", "test", strMsg.Value)
+				}
+				close(done)
+				return nil
 			},
-		})
+		}
+
+		svc.AddStreamHandlers(stream)
 
 		svAddr, err := svc.Addrs()
 		if err != nil {
@@ -145,12 +145,12 @@ func TestP2PService(t *testing.T) {
 			)
 		}
 
-		str, err := client.NewStream(context.Background(), p, "test", "1.0.0", "test")
+		str, err := client.NewStream(context.Background(), p, nil, stream)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		err = str.WriteMsg([]byte("test"))
+		err = str.WriteMsg(context.Background(), &wrapperspb.StringValue{Value: "test"})
 		if err != nil {
 			t.Fatal(err)
 		}

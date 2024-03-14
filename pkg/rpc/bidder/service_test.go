@@ -14,8 +14,8 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,8 +28,8 @@ const (
 
 type bid struct {
 	txHex    string
-	amount   *big.Int
-	blockNum *big.Int
+	amount   string
+	blockNum int64
 }
 
 type testSender struct {
@@ -40,23 +40,23 @@ type testSender struct {
 func (s *testSender) SendBid(
 	ctx context.Context,
 	txHex string,
-	amount *big.Int,
-	blockNum *big.Int,
-	decayStartTimestamp *big.Int,
-	decayEndTimestamp *big.Int,
-) (chan *preconfsigner.PreConfirmation, error) {
+	amount string,
+	blockNum int64,
+	decayStartTimestamp int64,
+	decayEndTimestamp int64,
+) (chan *preconfpb.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
 		amount:   amount,
 		blockNum: blockNum,
 	})
 
-	preconfs := make(chan *preconfsigner.PreConfirmation, s.noOfPreconfs)
+	preconfs := make(chan *preconfpb.PreConfirmation, s.noOfPreconfs)
 	for i := 0; i < s.noOfPreconfs; i++ {
-		preconfs <- &preconfsigner.PreConfirmation{
-			Bid: preconfsigner.Bid{
+		preconfs <- &preconfpb.PreConfirmation{
+			Bid: &preconfpb.Bid{
 				TxHash:              txHex,
-				BidAmt:              amount,
+				BidAmount:           amount,
 				BlockNumber:         blockNum,
 				DecayStartTimeStamp: decayStartTimestamp,
 				DecayEndTimeStamp:   decayEndTimestamp,
@@ -65,7 +65,7 @@ func (s *testSender) SendBid(
 			},
 			Digest:          []byte("digest"),
 			Signature:       []byte("signature"),
-			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)),
+			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)).Bytes(),
 		}
 	}
 

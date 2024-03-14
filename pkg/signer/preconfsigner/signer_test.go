@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ func TestBids(t *testing.T) {
 
 		start := time.Now().UnixMilli()
 		end := start + 100000
-		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(start), big.NewInt(end))
+		bid, err := signer.ConstructSignedBid("0xkartik", "10", 2, start, end)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -63,7 +64,7 @@ func TestBids(t *testing.T) {
 		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
 		providerSigner := preconfsigner.NewSigner(keySigner)
 
-		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(1), big.NewInt(2))
+		bid, err := bidderSigner.ConstructSignedBid("0xkartik", "10", 2, 1, 2)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,12 +87,12 @@ func TestHashing(t *testing.T) {
 	t.Parallel()
 
 	t.Run("bid", func(t *testing.T) {
-		bid := &preconfsigner.Bid{
+		bid := &preconfpb.Bid{
 			TxHash:              "0xkartik",
-			BidAmt:              big.NewInt(200),
-			BlockNumber:         big.NewInt(3000),
-			DecayStartTimeStamp: big.NewInt(10),
-			DecayEndTimeStamp:   big.NewInt(30),
+			BidAmount:           "2",
+			BlockNumber:         2,
+			DecayStartTimeStamp: 10,
+			DecayEndTimeStamp:   30,
 		}
 
 		hash, err := preconfsigner.GetBidHash(bid)
@@ -120,18 +121,18 @@ func TestHashing(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bid := &preconfsigner.Bid{
+		bid := &preconfpb.Bid{
 			TxHash:              "0xkartik",
-			BidAmt:              big.NewInt(2),
-			BlockNumber:         big.NewInt(2),
-			DecayStartTimeStamp: big.NewInt(10),
-			DecayEndTimeStamp:   big.NewInt(20),
+			BidAmount:           "2",
+			BlockNumber:         2,
+			DecayStartTimeStamp: 10,
+			DecayEndTimeStamp:   20,
 			Digest:              bidHashBytes,
 			Signature:           bidSigBytes,
 		}
 
-		preConfirmation := &preconfsigner.PreConfirmation{
-			Bid: *bid,
+		preConfirmation := &preconfpb.PreConfirmation{
+			Bid: bid,
 		}
 
 		hash, err := preconfsigner.GetPreConfirmationHash(preConfirmation)

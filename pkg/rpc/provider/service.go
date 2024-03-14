@@ -12,10 +12,10 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -66,15 +66,15 @@ func toString(bid *providerapiv1.Bid) string {
 
 func (s *Service) ProcessBid(
 	ctx context.Context,
-	bid *preconfsigner.Bid,
+	bid *preconfpb.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
 	bidMsg := &providerapiv1.Bid{
 		TxHashes:            strings.Split(bid.TxHash, ","),
-		BidAmount:           bid.BidAmt.String(),
-		BlockNumber:         bid.BlockNumber.Int64(),
+		BidAmount:           bid.BidAmount,
+		BlockNumber:         bid.BlockNumber,
 		BidDigest:           bid.Digest,
-		DecayStartTimestamp: bid.DecayStartTimeStamp.Int64(),
-		DecayEndTimestamp:   bid.DecayEndTimeStamp.Int64(),
+		DecayStartTimestamp: bid.DecayStartTimeStamp,
+		DecayEndTimestamp:   bid.DecayEndTimeStamp,
 	}
 
 	err := s.validator.Validate(bidMsg)
