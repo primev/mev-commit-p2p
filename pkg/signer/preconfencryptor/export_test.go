@@ -1,4 +1,4 @@
-package preconfsigner
+package preconfencryptor
 
 import (
 	"crypto/ecdsa"
@@ -9,8 +9,8 @@ import (
 
 var EIPVerify = eipVerify
 
-func (p *privateKeySigner) BidOriginator(bid *Bid) (*common.Address, *ecdsa.PublicKey, error) {
-	_, err := p.VerifyBid(bid)
+func (e *encryptor) BidOriginator(bid *Bid) (*common.Address, *ecdsa.PublicKey, error) {
+	_, err := e.VerifyBid(bid)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -31,7 +31,7 @@ func (p *privateKeySigner) BidOriginator(bid *Bid) (*common.Address, *ecdsa.Publ
 	return &address, pubkey, nil
 }
 
-func (p *privateKeySigner) PreConfirmationOriginator(
+func (p *encryptor) PreConfirmationOriginator(
 	c *PreConfirmation,
 ) (*common.Address, *ecdsa.PublicKey, error) {
 	_, err := p.VerifyPreConfirmation(c)

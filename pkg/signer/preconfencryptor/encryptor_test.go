@@ -1,4 +1,4 @@
-package preconfsigner_test
+package preconfencryptor_test
 
 import (
 	"encoding/hex"
@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,21 +21,21 @@ func TestBids(t *testing.T) {
 		}
 
 		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
-		signer := preconfsigner.NewSigner(keySigner)
+		encryptor := preconfencryptor.NewEncryptor(keySigner)
 
-		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		bid, err := encryptor.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		address, err := signer.VerifyBid(bid)
+		address, err := encryptor.VerifyBid(bid)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		expectedAddress := crypto.PubkeyToAddress(key.PublicKey)
 
-		originatorAddress, pubkey, err := signer.BidOriginator(bid)
+		originatorAddress, pubkey, err := encryptor.BidOriginator(bid)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -51,14 +51,14 @@ func TestBids(t *testing.T) {
 
 		keySigner := mockkeysigner.NewMockKeySigner(bidderKey, crypto.PubkeyToAddress(bidderKey.PublicKey))
 
-		bidderSigner := preconfsigner.NewSigner(keySigner)
+		bidderSigner := preconfencryptor.NewEncryptor(keySigner)
 		providerKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
-		providerSigner := preconfsigner.NewSigner(keySigner)
+		providerSigner := preconfencryptor.NewEncryptor(keySigner)
 
 		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
@@ -83,13 +83,13 @@ func TestHashing(t *testing.T) {
 	t.Parallel()
 
 	t.Run("bid", func(t *testing.T) {
-		bid := &preconfsigner.Bid{
+		bid := &preconfencryptor.Bid{
 			TxHash:      "0xkartik",
 			BidAmt:      big.NewInt(2),
 			BlockNumber: big.NewInt(2),
 		}
 
-		hash, err := preconfsigner.GetBidHash(bid)
+		hash, err := preconfencryptor.GetBidHash(bid)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +114,7 @@ func TestHashing(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bid := &preconfsigner.Bid{
+		bid := &preconfencryptor.Bid{
 			TxHash:      "0xkartik",
 			BidAmt:      big.NewInt(2),
 			BlockNumber: big.NewInt(2),
@@ -122,11 +122,11 @@ func TestHashing(t *testing.T) {
 			Signature:   bidSigBytes,
 		}
 
-		preConfirmation := &preconfsigner.PreConfirmation{
+		preConfirmation := &preconfencryptor.PreConfirmation{
 			Bid: *bid,
 		}
 
-		hash, err := preconfsigner.GetPreConfirmationHash(preConfirmation)
+		hash, err := preconfencryptor.GetPreConfirmationHash(preConfirmation)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,7 +160,7 @@ func TestVerify(t *testing.T) {
 		bidSigBytes[64] -= 27
 	}
 
-	owner, err := preconfsigner.EIPVerify(bidHashBytes, bidHashBytes, bidSigBytes)
+	owner, err := preconfencryptor.EIPVerify(bidHashBytes, bidHashBytes, bidSigBytes)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -34,7 +34,7 @@ import (
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -176,7 +176,7 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials))
-		preconfSigner := preconfsigner.NewSigner(opts.KeySigner)
+		preconfEncryptor := preconfencryptor.NewEncryptor(opts.KeySigner)
 		validator, err := protovalidate.New()
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
@@ -211,7 +211,7 @@ func NewNode(opts *Options) (*Node, error) {
 			preconfProto := preconfirmation.New(
 				topo,
 				p2pSvc,
-				preconfSigner,
+				preconfEncryptor,
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
@@ -234,7 +234,7 @@ func NewNode(opts *Options) (*Node, error) {
 			preconfProto := preconfirmation.New(
 				topo,
 				p2pSvc,
-				preconfSigner,
+				preconfEncryptor,
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
@@ -393,7 +393,7 @@ type noOpBidProcessor struct{}
 // ProcessBid auto accepts all bids sent.
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconfsigner.Bid,
+	_ *preconfencryptor.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
 	statusC := make(chan providerapiv1.BidResponse_Status, 5)
 	statusC <- providerapiv1.BidResponse_STATUS_ACCEPTED

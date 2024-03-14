@@ -1,4 +1,4 @@
-package preconfsigner
+package preconfencryptor
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 )
 
 var (
@@ -57,24 +57,24 @@ func (p PreConfirmation) String() string {
 	)
 }
 
-type Signer interface {
+type Encryptor interface {
 	ConstructSignedBid(string, *big.Int, *big.Int) (*Bid, error)
 	ConstructPreConfirmation(*Bid) (*PreConfirmation, error)
 	VerifyBid(*Bid) (*common.Address, error)
 	VerifyPreConfirmation(*PreConfirmation) (*common.Address, error)
 }
 
-type privateKeySigner struct {
-	keySigner keysigner.KeySigner
+type encryptor struct {
+	keyKeeper keykeeper.KeyKeeper
 }
 
-func NewSigner(keySigner keysigner.KeySigner) *privateKeySigner {
-	return &privateKeySigner{
-		keySigner: keySigner,
+func NewEncryptor(keyKeeper keykeeper.KeyKeeper) *encryptor {
+	return &encryptor{
+		keyKeeper: keyKeeper,
 	}
 }
 
-func (p *privateKeySigner) ConstructSignedBid(
+func (e *encryptor) ConstructSignedBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
@@ -94,7 +94,7 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, err
 	}
 
-	sig, err := p.keySigner.SignHash(bidHash)
+	sig, err := e.keyKeeper.SignHash(bidHash)
 	if err != nil {
 		return nil, err
 	}
@@ -109,8 +109,8 @@ func (p *privateKeySigner) ConstructSignedBid(
 	return bid, nil
 }
 
-func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation, error) {
-	_, err := p.VerifyBid(bid)
+func (e *encryptor) ConstructPreConfirmation(bid *Bid) (*PreConfirmation, error) {
+	_, err := e.VerifyBid(bid)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 		return nil, err
 	}
 
-	sig, err := p.keySigner.SignHash(preConfirmationHash)
+	sig, err := e.keyKeeper.SignHash(preConfirmationHash)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (p *privateKeySigner) ConstructPreConfirmation(bid *Bid) (*PreConfirmation,
 	return preConfirmation, nil
 }
 
-func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
+func (e *encryptor) VerifyBid(bid *Bid) (*common.Address, error) {
 	if bid.Digest == nil || bid.Signature == nil {
 		return nil, ErrMissingHashSignature
 	}
@@ -158,12 +158,12 @@ func (p *privateKeySigner) VerifyBid(bid *Bid) (*common.Address, error) {
 
 // VerifyPreConfirmation verifies the preconfirmation message, and returns the address of the provider
 // that signed the preconfirmation.
-func (p *privateKeySigner) VerifyPreConfirmation(c *PreConfirmation) (*common.Address, error) {
+func (e *encryptor) VerifyPreConfirmation(c *PreConfirmation) (*common.Address, error) {
 	if c.Digest == nil || c.Signature == nil {
 		return nil, ErrMissingHashSignature
 	}
 
-	_, err := p.VerifyBid(&c.Bid)
+	_, err := e.VerifyBid(&c.Bid)
 	if err != nil {
 		return nil, err
 	}

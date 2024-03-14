@@ -13,7 +13,7 @@ import (
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
-	signer "github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	encryptor "github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -23,7 +23,7 @@ const (
 )
 
 type Preconfirmation struct {
-	signer       signer.Signer
+	encryptor    encryptor.Encryptor
 	topo         Topology
 	streamer     p2p.Streamer
 	us           BidderStore
@@ -42,13 +42,13 @@ type BidderStore interface {
 }
 
 type BidProcessor interface {
-	ProcessBid(context.Context, *signer.Bid) (chan providerapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *encryptor.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
 
 func New(
 	topo Topology,
 	streamer p2p.Streamer,
-	signer signer.Signer,
+	encryptor encryptor.Encryptor,
 	us BidderStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
@@ -57,7 +57,7 @@ func New(
 	return &Preconfirmation{
 		topo:         topo,
 		streamer:     streamer,
-		signer:       signer,
+		encryptor:    encryptor,
 		us:           us,
 		processer:    processor,
 		commitmentDA: commitmentDA,
@@ -88,8 +88,8 @@ func (p *Preconfirmation) SendBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
-) (chan *signer.PreConfirmation, error) {
-	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
+) (chan *encryptor.PreConfirmation, error) {
+	signedBid, err := p.encryptor.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "error", err, "txHash", txHash)
 		return nil, err
@@ -103,7 +103,7 @@ func (p *Preconfirmation) SendBid(
 	}
 
 	// Create a new channel to receive preConfirmations
-	preConfirmations := make(chan *signer.PreConfirmation, len(providers))
+	preConfirmations := make(chan *encryptor.PreConfirmation, len(providers))
 
 	wg := sync.WaitGroup{}
 	for idx := range providers {
@@ -127,7 +127,7 @@ func (p *Preconfirmation) SendBid(
 
 			logger.Info("sending signed bid", "signedBid", signedBid)
 
-			r, w := msgpack.NewReaderWriter[signer.PreConfirmation, signer.Bid](providerStream)
+			r, w := msgpack.NewReaderWriter[encryptor.PreConfirmation, encryptor.Bid](providerStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				_ = providerStream.Reset()
@@ -146,7 +146,7 @@ func (p *Preconfirmation) SendBid(
 			_ = providerStream.Close()
 
 			// Process preConfirmation as a bidder
-			providerAddress, err := p.signer.VerifyPreConfirmation(preConfirmation)
+			providerAddress, err := p.encryptor.VerifyPreConfirmation(preConfirmation)
 			if err != nil {
 				logger.Error("verifying provider signature", "error", err)
 				return
@@ -185,7 +185,7 @@ func (p *Preconfirmation) handleBid(
 		return ErrInvalidBidderTypeForBid
 	}
 
-	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
+	r, w := msgpack.NewReaderWriter[encryptor.Bid, encryptor.PreConfirmation](stream)
 	bid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
@@ -193,7 +193,7 @@ func (p *Preconfirmation) handleBid(
 
 	p.logger.Info("received bid", "bid", bid)
 
-	ethAddress, err := p.signer.VerifyBid(bid)
+	ethAddress, err := p.encryptor.VerifyBid(bid)
 	if err != nil {
 		return err
 	}
@@ -215,7 +215,7 @@ func (p *Preconfirmation) handleBid(
 			case providerapiv1.BidResponse_STATUS_REJECTED:
 				return errors.New("bid rejected")
 			case providerapiv1.BidResponse_STATUS_ACCEPTED:
-				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
+				preConfirmation, err := p.encryptor.ConstructPreConfirmation(bid)
 				if err != nil {
 					return err
 				}

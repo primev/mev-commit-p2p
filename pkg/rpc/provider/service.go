@@ -15,7 +15,7 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -66,7 +66,7 @@ func toString(bid *providerapiv1.Bid) string {
 
 func (s *Service) ProcessBid(
 	ctx context.Context,
-	bid *preconfsigner.Bid,
+	bid *preconfencryptor.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
 	bidMsg := &providerapiv1.Bid{
 		TxHashes:    strings.Split(bid.TxHash, ","),

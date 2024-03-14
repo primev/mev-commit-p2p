@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -42,17 +42,17 @@ func (s *testSender) SendBid(
 	txHex string,
 	amount *big.Int,
 	blockNum *big.Int,
-) (chan *preconfsigner.PreConfirmation, error) {
+) (chan *preconfencryptor.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
 		amount:   amount,
 		blockNum: blockNum,
 	})
 
-	preconfs := make(chan *preconfsigner.PreConfirmation, s.noOfPreconfs)
+	preconfs := make(chan *preconfencryptor.PreConfirmation, s.noOfPreconfs)
 	for i := 0; i < s.noOfPreconfs; i++ {
-		preconfs <- &preconfsigner.PreConfirmation{
-			Bid: preconfsigner.Bid{
+		preconfs <- &preconfencryptor.PreConfirmation{
+			Bid: preconfencryptor.Bid{
 				TxHash:      txHex,
 				BidAmt:      amount,
 				BlockNumber: blockNum,

@@ -14,7 +14,7 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -181,7 +181,7 @@ func TestBidHandling(t *testing.T) {
 
 	type testCase struct {
 		name       string
-		bid        *preconfsigner.Bid
+		bid        *preconfencryptor.Bid
 		status     providerapiv1.BidResponse_Status
 		noStatus   bool
 		processErr string
@@ -190,7 +190,7 @@ func TestBidHandling(t *testing.T) {
 	for _, tc := range []testCase{
 		{
 			name: "accepted bid",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash: strings.Join(
 					[]string{
 						common.HexToHash("0x00001").Hex()[2:], // remove 0x
@@ -206,7 +206,7 @@ func TestBidHandling(t *testing.T) {
 		},
 		{
 			name: "rejected bid",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash:      common.HexToHash("0x00003").Hex()[2:], // remove 0x
 				BidAmt:      big.NewInt(1000000000000000000),
 				BlockNumber: big.NewInt(1),
@@ -217,7 +217,7 @@ func TestBidHandling(t *testing.T) {
 		},
 		{
 			name: "invalid bid status",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash:      common.HexToHash("0x00003").Hex()[2:], // remove 0x
 				BidAmt:      big.NewInt(1000000000000000000),
 				BlockNumber: big.NewInt(1),
@@ -229,7 +229,7 @@ func TestBidHandling(t *testing.T) {
 		},
 		{
 			name: "invalid bid txHash",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash:      "asdf",
 				BidAmt:      big.NewInt(1000000000000000000),
 				BlockNumber: big.NewInt(1),
@@ -240,7 +240,7 @@ func TestBidHandling(t *testing.T) {
 		},
 		{
 			name: "invalid bid amount",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash:      common.HexToHash("0x00004").Hex()[2:], // remove 0x
 				BidAmt:      big.NewInt(0000000000000000000),
 				BlockNumber: big.NewInt(1),
@@ -251,7 +251,7 @@ func TestBidHandling(t *testing.T) {
 		},
 		{
 			name: "invalid bid block number",
-			bid: &preconfsigner.Bid{
+			bid: &preconfencryptor.Bid{
 				TxHash:      common.HexToHash("0x00004").Hex()[2:], // remove 0x
 				BidAmt:      big.NewInt(1000000000000000000),
 				BlockNumber: big.NewInt(0),

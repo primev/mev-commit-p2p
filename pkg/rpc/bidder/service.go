@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
+	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,7 +45,7 @@ func NewService(
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
+	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfencryptor.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
