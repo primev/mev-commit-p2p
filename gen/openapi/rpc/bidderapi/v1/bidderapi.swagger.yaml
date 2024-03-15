@@ -128,6 +128,9 @@ definitions:
         type: string
         format: int64
         description: Max block number that the bidder wants to include the transaction in.
+      isBlob:
+        type: boolean
+        description: Boolean flag to indicate if the bid is for a blob.
     description: Unsigned bid message from bidders to the bidder mev-commit node.
     title: Bid message
     required:
@@ -166,6 +169,11 @@ definitions:
       providerAddress:
         type: string
         description: Hex string encoding of the address of the provider that signed the commitment signature.
+      blobCommitters:
+        type: array
+        items:
+          type: string
+        description: Hex string encoding of the addresses of the committers that immediately the blob commitment.
   v1PrepayResponse:
     type: object
     example:

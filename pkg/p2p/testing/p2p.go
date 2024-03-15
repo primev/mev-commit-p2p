@@ -3,6 +3,7 @@ package p2ptest
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 )
@@ -27,10 +28,17 @@ func newStream() *testStream {
 }
 
 func (s *testStream) ReadMsg() ([]byte, error) {
-	return <-s.in, nil
+	b, ok := <-s.in
+	if !ok {
+		return nil, io.EOF
+	}
+	return b, nil
 }
 
 func (s *testStream) WriteMsg(msg []byte) error {
+	if s.out == nil {
+		return io.EOF
+	}
 	s.out <- msg
 	return nil
 }
@@ -45,8 +53,20 @@ func (s *testStream) Reset() error {
 	return nil
 }
 
+func (s *testStream) CloseWrite() error {
+	close(s.out)
+	s.out = nil
+	return nil
+}
+
+func (s *testStream) CloseRead() error {
+	close(s.in)
+	return nil
+}
+
 func pipe(a, b *testStream) {
 	go func() {
+		defer close(b.in)
 		for {
 			msg, ok := <-a.out
 			if !ok {
@@ -57,6 +77,7 @@ func pipe(a, b *testStream) {
 	}()
 
 	go func() {
+		defer close(a.in)
 		for {
 			msg, ok := <-b.out
 			if !ok {

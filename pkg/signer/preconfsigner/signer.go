@@ -47,13 +47,15 @@ type PreConfirmation struct {
 	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"signature"`
 
-	ProviderAddress common.Address `json:"provider_address"`
+	CommitterAddress common.Address   `json:"committer_address"`
+	BlobCommitters   []common.Address `json:"blob_committers"`
 }
 
 func (p PreConfirmation) String() string {
 	return fmt.Sprintf(
-		"Bid: %s, Digest: %s, Signature: %s",
+		"Bid: %s, Digest: %s, Signature: %s, CommitterAddress: %s, BlobCommitters: %s",
 		p.Bid, hex.EncodeToString(p.Digest), hex.EncodeToString(p.Signature),
+		p.CommitterAddress, p.BlobCommitters,
 	)
 }
 

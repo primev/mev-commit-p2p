@@ -79,6 +79,7 @@ func startServer(t *testing.T, evm *testEVMClient) (providerapiv1.ProviderClient
 		owner,
 		evm,
 		validator,
+		nil,
 	)
 
 	baseServer := grpc.NewServer()

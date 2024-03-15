@@ -45,7 +45,7 @@ func NewService(
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
+	SendBid(context.Context, string, *big.Int, *big.Int, bool) (chan *preconfsigner.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
@@ -77,6 +77,7 @@ func (s *Service) SendBid(
 		txnsStr,
 		amtVal,
 		big.NewInt(bid.BlockNumber),
+		bid.IsBlob,
 	)
 	if err != nil {
 		s.logger.Error("sending bid", "error", err)
@@ -85,6 +86,14 @@ func (s *Service) SendBid(
 
 	for resp := range respC {
 		b := resp.Bid
+		var blobCommitters []string
+		if len(resp.BlobCommitters) > 0 {
+			blobCommitters := make([]string, 0, len(resp.BlobCommitters))
+			for _, committer := range resp.BlobCommitters {
+				blobCommitters = append(blobCommitters, committer.String())
+			}
+		}
+
 		err := srv.Send(&bidderapiv1.Commitment{
 			TxHashes:             strings.Split(b.TxHash, ","),
 			BidAmount:            b.BidAmt.Int64(),
@@ -93,7 +102,8 @@ func (s *Service) SendBid(
 			ReceivedBidSignature: hex.EncodeToString(b.Signature),
 			CommitmentDigest:     hex.EncodeToString(resp.Digest),
 			CommitmentSignature:  hex.EncodeToString(resp.Signature),
-			ProviderAddress:      resp.ProviderAddress.String(),
+			ProviderAddress:      resp.CommitterAddress.String(),
+			BlobCommitters:       blobCommitters,
 		})
 		if err != nil {
 			s.logger.Error("sending preConfirmation", "error", err)

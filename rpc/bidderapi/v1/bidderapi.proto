@@ -113,6 +113,9 @@ message Bid {
       message: "block_number must be a valid integer.",
       expression: "uint(this) > 0"
   }];
+  bool is_blob = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Boolean flag to indicate if the bid is for a blob."
+  }];
 };
 
 message Commitment {
@@ -140,5 +143,8 @@ message Commitment {
   }];
   string provider_address = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Hex string encoding of the address of the provider that signed the commitment signature."
+  }];
+  repeated string blob_committers = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex string encoding of the addresses of the committers that immediately the blob commitment."
   }];
 };
