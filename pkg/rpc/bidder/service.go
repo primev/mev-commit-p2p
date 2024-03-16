@@ -88,7 +88,7 @@ func (s *Service) SendBid(
 		b := resp.Bid
 		var blobCommitters []string
 		if len(resp.BlobCommitters) > 0 {
-			blobCommitters := make([]string, 0, len(resp.BlobCommitters))
+			blobCommitters = make([]string, 0, len(resp.BlobCommitters))
 			for _, committer := range resp.BlobCommitters {
 				blobCommitters = append(blobCommitters, committer.String())
 			}
