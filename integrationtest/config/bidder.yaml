@@ -6,8 +6,8 @@ rpc-port: 13524
 secret: hello
 log-fmt: json
 log-level: debug
-server-tls-certificate: /server-cert.pem
-server-tls-private-key: /server-key.pem
+# server-tls-certificate: /server-cert.pem
+# server-tls-private-key: /server-key.pem
 bidder-registry-contract: <BIDDER_REGISTRY>
 provider-registry-contract: <PROVIDER_REGISTRY>
 settlement-rpc-endpoint: <RPC_URL>
