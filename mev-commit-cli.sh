@@ -22,7 +22,7 @@ DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="hackathon.0"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
-ORACLE_BRANCH="main"
+ORACLE_BRANCH="hackathon.0"
 BRIDGE_BRANCH="main"
 
 # Default values for optional arguments
