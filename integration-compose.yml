@@ -652,6 +652,7 @@ services:
     profiles:
       - minimal-setup
       - integration-test
+      - hackathon
 
   datadog-agent:
     image: gcr.io/datadoghq/agent:latest
