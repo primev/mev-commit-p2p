@@ -250,7 +250,7 @@ func (s *Service) CancelTransaction(
 	return &providerapiv1.CancelResponse{TxHash: cHash.Hex()}, nil
 }
 
-func (s *Service) GetInclusionLists(
+func (s *Service) GetBlockInclusionList(
 	ctx context.Context,
 	req *providerapiv1.InclusionListReq,
 ) (*providerapiv1.InclusionListResp, error) {
