@@ -19,7 +19,7 @@ ORACLE_PATH="$PRIMEV_DIR/$ORACLE_REPO_NAME"
 BRIDGE_PATH="$PRIMEV_DIR/$BRIDGE_REPO_NAME"
 
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="main"
+MEV_COMMIT_BRANCH="hackathon.0"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
 ORACLE_BRANCH="main"
@@ -120,6 +120,11 @@ stop_settlement_layer() {
 start_mev_commit_minimal() {
     echo "Starting MEV-Commit..."
     docker compose --profile minimal-setup -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
+}
+
+start_mev_commit_hackathon() {
+    echo "Starting MEV-Commit..."
+    docker compose --profile hackathon -f "$MEV_COMMIT_PATH/integration-compose.yml" up --build -d
 }
 
 start_mev_commit_e2e() {
@@ -428,6 +433,12 @@ start_service() {
             start_settlement_layer "$datadog_key"
             deploy_contracts "$rpc_url"
             start_mev_commit_minimal
+            ;;
+        "hackathon")
+            initialize_environment
+            start_settlement_layer "$datadog_key"
+            deploy_contracts "$rpc_url"
+            start_mev_commit_hackathon
             ;;
         "local_l1")
             start_local_l1

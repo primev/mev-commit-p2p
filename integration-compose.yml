@@ -23,6 +23,7 @@ services:
     profiles:
       - minimal-setup
       - integration-test
+      - hackathon
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -60,6 +61,7 @@ services:
     profiles:
       - minimal-setup
       - integration-test
+      - hackathon
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -92,6 +94,7 @@ services:
     profiles:
       - minimal-setup
       - integration-test
+      - hackathon
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
@@ -236,6 +239,71 @@ services:
           }
         ]
 
+  relay-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/Dockerfile
+      args:
+        node_type: relay
+        service_name: relay1
+    restart: always
+    depends_on:
+      - bootnode
+    volumes:
+      - ./integrationtest/keys/relay1:/key
+    networks:
+      - primev_net
+    ports:
+      - "8083:13523"
+    env_file:
+      - integrationtest/.env
+    profiles:
+      - hackathon
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:13523/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*",
+              "go*",
+              "libp2p*"
+            ]
+          }
+        ]
+
+  relay-emulator-1:
+    build:
+      context: .
+      dockerfile: ./integrationtest/provider/Dockerfile
+    restart: always
+    depends_on:
+      - relay-1
+    environment:
+      - PROVIDER_IP=relay-1:13524
+    networks:
+      - primev_net
+    ports:
+      - "8084:8080"
+    profiles:
+      - hackathon
+    labels:
+      com.datadoghq.ad.check_names: '["openmetrics"]'
+      com.datadoghq.ad.init_configs: '[{}]'
+      com.datadoghq.ad.instances: |
+        [
+          {
+            "openmetrics_endpoint": "http://%%host%%:8080/metrics",
+            "namespace": "integrationtest",
+            "metrics": [
+              "mev_commit*"
+            ]
+          }
+        ]
+
   bidder-1:
     build:
       context: .
@@ -257,6 +325,7 @@ services:
     profiles:
       - minimal-setup
       - integration-test
+      - hackathon
     labels:
       com.datadoghq.ad.check_names: '["openmetrics"]'
       com.datadoghq.ad.init_configs: '[{}]'
