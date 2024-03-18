@@ -12,6 +12,27 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner"
 )
 
+// NewBaseKeyKeeper creates a new BaseKeyKeeper.
+func NewBaseKeyKeeper(keysigner keysigner.KeySigner) *BaseKeyKeeper {
+	return &BaseKeyKeeper{KeySigner: keysigner}
+}
+
+func (bkk *BaseKeyKeeper) SignHash(data []byte) ([]byte, error) {
+	return bkk.KeySigner.SignHash(data)
+}
+
+func (bkk *BaseKeyKeeper) GetAddress() common.Address {
+	return bkk.KeySigner.GetAddress()
+}
+
+func (bkk *BaseKeyKeeper) GetPrivateKey() (*ecdsa.PrivateKey, error) {
+	return bkk.KeySigner.GetPrivateKey()
+}
+
+func (bkk *BaseKeyKeeper) ZeroPrivateKey(key *ecdsa.PrivateKey) {
+	bkk.KeySigner.ZeroPrivateKey(key)
+}
+
 func NewBidderKeyKeeper(keysigner keysigner.KeySigner) (*BidderKeyKeeper, error) {
 	aesKey, err := generateAESKey()
 	if err != nil {
@@ -21,26 +42,10 @@ func NewBidderKeyKeeper(keysigner keysigner.KeySigner) (*BidderKeyKeeper, error)
 	bidHashesToNIKE := make(map[string]*ecdh.PrivateKey)
 
 	return &BidderKeyKeeper{
-		KeySigner:       keysigner,
+		BaseKeyKeeper:   NewBaseKeyKeeper(keysigner),
 		AESKey:          aesKey,
 		BidHashesToNIKE: bidHashesToNIKE,
 	}, nil
-}
-
-func (bkk *BidderKeyKeeper) SignHash(data []byte) ([]byte, error) {
-	return bkk.KeySigner.SignHash(data)
-}
-
-func (bkk *BidderKeyKeeper) GetAddress() common.Address {
-	return bkk.KeySigner.GetAddress()
-}
-
-func (bkk *BidderKeyKeeper) GetPrivateKey() (*ecdsa.PrivateKey, error) {
-	return bkk.KeySigner.GetPrivateKey()
-}
-
-func (bkk *BidderKeyKeeper) ZeroPrivateKey(key *ecdsa.PrivateKey) {
-	bkk.KeySigner.ZeroPrivateKey(key)
 }
 
 func (bkk *BidderKeyKeeper) GenerateNIKEKeys(bidHash []byte) (*ecdh.PublicKey, error) {
@@ -67,7 +72,7 @@ func NewProviderKeyKeeper(keysigner keysigner.KeySigner) (*ProviderKeyKeeper, er
 	}
 
 	return &ProviderKeyKeeper{
-		KeySigner:      keysigner,
+		BaseKeyKeeper:  NewBaseKeyKeeper(keysigner),
 		BiddersAESKeys: biddersAESKeys,
 		keys: ProviderKeys{
 			EncryptionPrivateKey: encryptionPrivateKey,
@@ -90,44 +95,6 @@ func (pkk *ProviderKeyKeeper) DecryptWithECIES(message []byte) ([]byte, error) {
 	return pkk.keys.EncryptionPrivateKey.Decrypt(message, nil, nil)
 }
 
-func (pkk *ProviderKeyKeeper) SignHash(data []byte) ([]byte, error) {
-	return pkk.KeySigner.SignHash(data)
-}
-
-func (pkk *ProviderKeyKeeper) GetAddress() common.Address {
-	return pkk.KeySigner.GetAddress()
-}
-
-func (pkk *ProviderKeyKeeper) GetPrivateKey() (*ecdsa.PrivateKey, error) {
-	return pkk.KeySigner.GetPrivateKey()
-}
-
-func (pkk *ProviderKeyKeeper) ZeroPrivateKey(key *ecdsa.PrivateKey) {
-	pkk.KeySigner.ZeroPrivateKey(key)
-}
-
 func (pkk *ProviderKeyKeeper) GetNIKEPrivateKey() *ecdh.PrivateKey {
 	return pkk.keys.NIKEPrivateKey
-}
-
-func NewBootnodeKeyKeeper(keysigner keysigner.KeySigner) *BootnodeKeyKeeper {
-	return &BootnodeKeyKeeper{
-		KeySigner: keysigner,
-	}
-}
-
-func (btkk *BootnodeKeyKeeper) SignHash(data []byte) ([]byte, error) {
-	return btkk.KeySigner.SignHash(data)
-}
-
-func (btkk *BootnodeKeyKeeper) GetAddress() common.Address {
-	return btkk.KeySigner.GetAddress()
-}
-
-func (btkk *BootnodeKeyKeeper) GetPrivateKey() (*ecdsa.PrivateKey, error) {
-	return btkk.KeySigner.GetPrivateKey()
-}
-
-func (btkk *BootnodeKeyKeeper) ZeroPrivateKey(key *ecdsa.PrivateKey) {
-	btkk.KeySigner.ZeroPrivateKey(key)
 }

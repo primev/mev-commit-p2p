@@ -123,7 +123,7 @@ func NewNode(opts *Options) (*Node, error) {
 			return nil, errors.Join(err, nd.Close())
 		}
 	default:
-		keyKeeper = keykeeper.NewBootnodeKeyKeeper(opts.KeySigner)
+		keyKeeper = keykeeper.NewBaseKeyKeeper(opts.KeySigner)
 	}
 	p2pSvc, err := libp2p.New(&libp2p.Options{
 		KeyKeeper:      keyKeeper,

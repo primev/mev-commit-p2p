@@ -252,7 +252,7 @@ func TestBootstrap(t *testing.T) {
 	ks := mockkeysigner.NewMockKeySigner(privKey, address)
 
 	bnOpts := testDefaultOptions
-	bnOpts.KeyKeeper = keykeeper.NewBootnodeKeyKeeper(ks)
+	bnOpts.KeyKeeper = keykeeper.NewBaseKeyKeeper(ks)
 	bnOpts.PeerType = p2p.PeerTypeBootnode
 
 	bootnode, err := libp2p.New(&bnOpts)

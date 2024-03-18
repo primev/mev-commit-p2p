@@ -16,6 +16,10 @@ type KeyKeeper interface {
 	ZeroPrivateKey(key *ecdsa.PrivateKey)
 }
 
+type BaseKeyKeeper struct {
+	KeySigner keysigner.KeySigner
+}
+
 type ProviderKeys struct {
 	EncryptionPrivateKey *ecies.PrivateKey
 	EncryptionPublicKey  *ecies.PublicKey
@@ -24,17 +28,13 @@ type ProviderKeys struct {
 }
 
 type ProviderKeyKeeper struct {
+	*BaseKeyKeeper
 	keys           ProviderKeys
-	KeySigner      keysigner.KeySigner
 	BiddersAESKeys map[common.Address][]byte
 }
 
 type BidderKeyKeeper struct {
+	*BaseKeyKeeper
 	AESKey          []byte
-	KeySigner       keysigner.KeySigner
 	BidHashesToNIKE map[string]*ecdh.PrivateKey
-}
-
-type BootnodeKeyKeeper struct {
-	KeySigner keysigner.KeySigner
 }
