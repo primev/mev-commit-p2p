@@ -89,7 +89,7 @@ func (p *Preconfirmation) SendBid(
 	bidAmt *big.Int,
 	blockNumber *big.Int,
 ) (chan *encryptor.PreConfirmation, error) {
-	signedBid, err := p.encryptor.ConstructSignedBid(txHash, bidAmt, blockNumber)
+	bid, signedBid, err := p.encryptor.ConstructEncryptedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "error", err, "txHash", txHash)
 		return nil, err
@@ -127,7 +127,7 @@ func (p *Preconfirmation) SendBid(
 
 			logger.Info("sending signed bid", "signedBid", signedBid)
 
-			r, w := msgpack.NewReaderWriter[encryptor.PreConfirmation, encryptor.Bid](providerStream)
+			r, w := msgpack.NewReaderWriter[encryptor.EncryptedPreConfirmation, encryptor.EncryptedBid](providerStream)
 			err = w.WriteMsg(ctx, signedBid)
 			if err != nil {
 				_ = providerStream.Reset()
@@ -136,7 +136,7 @@ func (p *Preconfirmation) SendBid(
 			}
 			p.metrics.SentBidsCount.Inc()
 
-			preConfirmation, err := r.ReadMsg(ctx)
+			encryptedPreConfirmation, err := r.ReadMsg(ctx)
 			if err != nil {
 				_ = providerStream.Reset()
 				logger.Error("reading message", "error", err)
@@ -146,12 +146,19 @@ func (p *Preconfirmation) SendBid(
 			_ = providerStream.Close()
 
 			// Process preConfirmation as a bidder
-			providerAddress, err := p.encryptor.VerifyPreConfirmation(preConfirmation)
+			providerAddress, err := p.encryptor.VerifyEncryptedPreConfirmation(provider.Keys.NIKEPublicKey, bid.Digest, encryptedPreConfirmation)
 			if err != nil {
 				logger.Error("verifying provider signature", "error", err)
 				return
 			}
-			preConfirmation.ProviderAddress = *providerAddress
+
+			preConfirmation := &encryptor.PreConfirmation{
+				Bid:             *bid,
+				Digest:          encryptedPreConfirmation.Commitment,
+				Signature:       encryptedPreConfirmation.Signature,
+				ProviderAddress: *providerAddress,
+			}
+
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
 
@@ -185,19 +192,23 @@ func (p *Preconfirmation) handleBid(
 		return ErrInvalidBidderTypeForBid
 	}
 
-	r, w := msgpack.NewReaderWriter[encryptor.Bid, encryptor.PreConfirmation](stream)
-	bid, err := r.ReadMsg(ctx)
+	r, w := msgpack.NewReaderWriter[encryptor.EncryptedBid, encryptor.EncryptedPreConfirmation](stream)
+	encryptedBid, err := r.ReadMsg(ctx)
 	if err != nil {
 		return err
 	}
 
-	p.logger.Info("received bid", "bid", bid)
-
+	p.logger.Info("received bid", "encryptedBid", encryptedBid)
+	bid, err := p.encryptor.DecryptBidData(peer.EthAddress, encryptedBid)
+	if err != nil {
+		return err
+	}
 	ethAddress, err := p.encryptor.VerifyBid(bid)
 	if err != nil {
 		return err
 	}
 
+	// todo: change to take care of double spend
 	if p.us.CheckBidderAllowance(ctx, *ethAddress) {
 		// try to enqueue for 5 seconds
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -215,23 +226,24 @@ func (p *Preconfirmation) handleBid(
 			case providerapiv1.BidResponse_STATUS_REJECTED:
 				return errors.New("bid rejected")
 			case providerapiv1.BidResponse_STATUS_ACCEPTED:
-				preConfirmation, err := p.encryptor.ConstructPreConfirmation(bid)
+				preConfirmation, err := p.encryptor.ConstructEncryptedPreConfirmation(bid)
 				if err != nil {
 					return err
 				}
 				p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
-				err = p.commitmentDA.StoreCommitment(
-					ctx,
-					preConfirmation.Bid.BidAmt,
-					uint64(preConfirmation.Bid.BlockNumber.Int64()),
-					preConfirmation.Bid.TxHash,
-					preConfirmation.Bid.Signature,
-					preConfirmation.Signature,
-				)
-				if err != nil {
-					p.logger.Error("storing commitment", "error", err)
-					return err
-				}
+				// todo: update SC
+				// err = p.commitmentDA.StoreCommitment(
+				// 	ctx,
+				// 	preConfirmation.Bid.BidAmt,
+				// 	uint64(preConfirmation.Bid.BlockNumber.Int64()),
+				// 	preConfirmation.Bid.TxHash,
+				// 	preConfirmation.Bid.Signature,
+				// 	preConfirmation.Signature,
+				// )
+				// if err != nil {
+				// 	p.logger.Error("storing commitment", "error", err)
+				// 	return err
+				// }
 				return w.WriteMsg(ctx, preConfirmation)
 			}
 		}

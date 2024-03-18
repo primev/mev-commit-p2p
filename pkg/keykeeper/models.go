@@ -30,8 +30,9 @@ type ProviderKeyKeeper struct {
 }
 
 type BidderKeyKeeper struct {
-	AESKey    []byte
-	KeySigner keysigner.KeySigner
+	AESKey          []byte
+	KeySigner       keysigner.KeySigner
+	BidHashesToNIKE map[string]*ecdh.PrivateKey
 }
 
 type BootnodeKeyKeeper struct {

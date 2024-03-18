@@ -2,6 +2,9 @@ package preconfirmation_test
 
 import (
 	"context"
+	"crypto/ecdh"
+	"crypto/elliptic"
+	"crypto/rand"
 	"io"
 	"log/slog"
 	"math/big"
@@ -9,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto/ecies"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
@@ -31,26 +35,36 @@ func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Addre
 	return true
 }
 
-type testSigner struct {
+type testEncryptor struct {
+	bidHash               []byte
+	encryptedBid          *preconfencryptor.EncryptedBid
 	bid                   *preconfencryptor.Bid
-	preConfirmation       *preconfencryptor.PreConfirmation
+	preConfirmation       *preconfencryptor.EncryptedPreConfirmation
 	bidSigner             common.Address
 	preConfirmationSigner common.Address
 }
 
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*preconfencryptor.Bid, error) {
-	return t.bid, nil
+func (t *testEncryptor) ConstructEncryptedBid(_ string, _ *big.Int, _ *big.Int) (*preconfencryptor.Bid, *preconfencryptor.EncryptedBid, error) {
+	return t.bid, t.encryptedBid, nil
 }
 
-func (t *testSigner) ConstructPreConfirmation(_ *preconfencryptor.Bid) (*preconfencryptor.PreConfirmation, error) {
+func (t *testEncryptor) ConstructEncryptedPreConfirmation(_ *preconfencryptor.Bid) (*preconfencryptor.EncryptedPreConfirmation, error) {
 	return t.preConfirmation, nil
 }
 
-func (t *testSigner) VerifyBid(_ *preconfencryptor.Bid) (*common.Address, error) {
+func (t *testEncryptor) VerifyBid(_ *preconfencryptor.Bid) (*common.Address, error) {
 	return &t.bidSigner, nil
 }
 
-func (t *testSigner) VerifyPreConfirmation(_ *preconfencryptor.PreConfirmation) (*common.Address, error) {
+func (t *testEncryptor) DecryptBidData(_ common.Address, _ *preconfencryptor.EncryptedBid) (*preconfencryptor.Bid, error) {
+	return t.bid, nil
+}
+
+func (t *testEncryptor) VerifyPreConfirmation(_ *preconfencryptor.PreConfirmation) (*common.Address, error) {
+	return &t.preConfirmationSigner, nil
+}
+
+func (t *testEncryptor) VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfencryptor.EncryptedPreConfirmation) (*common.Address, error) {
 	return &t.preConfirmationSigner, nil
 }
 
@@ -100,9 +114,24 @@ func TestPreconfBidSubmission(t *testing.T) {
 			EthAddress: common.HexToAddress("0x1"),
 			Type:       p2p.PeerTypeBidder,
 		}
+
+		encryptionPrivateKey, err := ecies.GenerateKey(rand.Reader, elliptic.P256(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		nikePrivateKey, err := ecdh.P256().GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		server := p2p.Peer{
 			EthAddress: common.HexToAddress("0x2"),
 			Type:       p2p.PeerTypeProvider,
+			Keys: &p2p.Keys{
+				PKEPublicKey:  &encryptionPrivateKey.PublicKey,
+				NIKEPublicKey: nikePrivateKey.PublicKey(),
+			},
 		}
 
 		bid := &preconfencryptor.Bid{
@@ -113,12 +142,20 @@ func TestPreconfBidSubmission(t *testing.T) {
 			Signature:   []byte("test"),
 		}
 
-		preConfirmation := &preconfencryptor.PreConfirmation{
-			Bid:       *bid,
-			Digest:    []byte("test"),
-			Signature: []byte("test"),
+		encryptedBid := &preconfencryptor.EncryptedBid{
+			Ciphertext: []byte("test"),
 		}
 
+		// preConfirmation := &preconfencryptor.PreConfirmation{
+		// 	Bid:       *bid,
+		// 	Digest:    []byte("test"),
+		// 	Signature: []byte("test"),
+		// }
+
+		encryptedPreConfirmation := &preconfencryptor.EncryptedPreConfirmation{
+			Commitment: []byte("test"),
+			Signature:  []byte("test"),
+		}
 		svc := p2ptest.New(
 			&client,
 		)
@@ -128,9 +165,11 @@ func TestPreconfBidSubmission(t *testing.T) {
 		proc := &testProcessor{
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}
-		signer := &testSigner{
+		signer := &testEncryptor{
+			bidHash:               bid.Digest,
+			encryptedBid:          encryptedBid,
 			bid:                   bid,
-			preConfirmation:       preConfirmation,
+			preConfirmation:       encryptedPreConfirmation,
 			bidSigner:             common.HexToAddress("0x1"),
 			preConfirmationSigner: common.HexToAddress("0x2"),
 		}

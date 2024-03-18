@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/stretchr/testify/assert"
@@ -20,27 +21,41 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
-		encryptor := preconfencryptor.NewEncryptor(keySigner)
+		address := crypto.PubkeyToAddress(key.PublicKey)
+		keySigner := mockkeysigner.NewMockKeySigner(key, address)
+		keyKeeper, err := keykeeper.NewBidderKeyKeeper(keySigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encryptor := preconfencryptor.NewEncryptor(keyKeeper)
 
-		bid, err := encryptor.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		_, encryptedBid, err := encryptor.ConstructEncryptedBid("0xkartik", big.NewInt(10), big.NewInt(2))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		address, err := encryptor.VerifyBid(bid)
+		providerKeyKeeper, err := keykeeper.NewProviderKeyKeeper(keySigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		providerKeyKeeper.BiddersAESKeys[address] = keyKeeper.AESKey
+		encryptorProvider := preconfencryptor.NewEncryptor(providerKeyKeeper)
+		bid, err := encryptorProvider.DecryptBidData(address, encryptedBid)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		expectedAddress := crypto.PubkeyToAddress(key.PublicKey)
+		bidAddress, err := encryptor.VerifyBid(bid)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		originatorAddress, pubkey, err := encryptor.BidOriginator(bid)
 		if err != nil {
 			t.Fatal(err)
 		}
-		assert.Equal(t, expectedAddress, *originatorAddress)
-		assert.Equal(t, expectedAddress, *address)
+		assert.Equal(t, address, *originatorAddress)
+		assert.Equal(t, address, *bidAddress)
 		assert.Equal(t, key.PublicKey, *pubkey)
 	})
 	t.Run("preConfirmation", func(t *testing.T) {
@@ -50,27 +65,42 @@ func TestBids(t *testing.T) {
 		}
 
 		keySigner := mockkeysigner.NewMockKeySigner(bidderKey, crypto.PubkeyToAddress(bidderKey.PublicKey))
-
-		bidderSigner := preconfencryptor.NewEncryptor(keySigner)
+		bidderKeyKeeper, err := keykeeper.NewBidderKeyKeeper(keySigner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		bidderEncryptor := preconfencryptor.NewEncryptor(bidderKeyKeeper)
 		providerKey, err := crypto.GenerateKey()
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		bidderAddress := crypto.PubkeyToAddress(bidderKey.PublicKey)
 		keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
-		providerSigner := preconfencryptor.NewEncryptor(keySigner)
-
-		bid, err := bidderSigner.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		providerKeyKeeper, err := keykeeper.NewProviderKeyKeeper(keySigner)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		preConfirmation, err := providerSigner.ConstructPreConfirmation(bid)
+		providerKeyKeeper.BiddersAESKeys[bidderAddress] = bidderKeyKeeper.AESKey
+
+		providerEncryptor := preconfencryptor.NewEncryptor(providerKeyKeeper)
+
+		bid, encryptedBid, err := bidderEncryptor.ConstructEncryptedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		decryptedBid, err := providerEncryptor.DecryptBidData(bidderAddress, encryptedBid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encryptedPreConfirmation, err := providerEncryptor.ConstructEncryptedPreConfirmation(decryptedBid)
 		if err != nil {
 			t.Fail()
 		}
 
-		address, err := bidderSigner.VerifyPreConfirmation(preConfirmation)
+		address, err := bidderEncryptor.VerifyEncryptedPreConfirmation(providerKeyKeeper.GetNIKEPublicKey(), bid.Digest, encryptedPreConfirmation)
 		if err != nil {
 			t.Fail()
 		}
@@ -132,7 +162,7 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "31dca6c6fd15593559dabb9e25285f727fd33f07e17ec2e8da266706020034dc"
+		expHash := "33a9d7e3fb407f57ecb3b5e1503e71180289cc8c2e05df682d6a16f34fa00291"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}
