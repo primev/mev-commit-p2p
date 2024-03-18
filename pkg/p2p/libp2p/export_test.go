@@ -5,6 +5,11 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 )
 
+var (
+	NewStream         = newStream
+	NewMetadataStream = newMetadataStream
+)
+
 func (s *Service) Addrs() ([]byte, error) {
 	info := s.host.Peerstore().PeerInfo(s.host.ID())
 	return info.MarshalJSON()

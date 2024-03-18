@@ -238,7 +238,7 @@ func (s *Service) handleConnectReq(streamlibp2p network.Stream) {
 	}
 
 	if s.notifier != nil {
-		s.notifier.Connected(peer)
+		s.notifier.Connected(*peer)
 	}
 
 	s.logger.Info("peer connected (inbound)", "peer", peer)
@@ -259,25 +259,26 @@ func (s *Service) Self() map[string]interface{} {
 	}
 }
 
-func matchProtocolIDWithSemver(protoID string, supportedVersion string) bool {
+func matchProtocolIDWithSemver(protoID string, supportedVersion string) (bool, error) {
 	// Extract the version part from the protocol ID.
 	parts := strings.Split(protoID, "/")
 	if len(parts) != 3 {
-		return false
+		return false, fmt.Errorf("invalid protocol ID: %s", protoID)
 	}
 	protocolVersion := parts[2]
 
 	// Parse the supported version and the protocol version.
 	supportedSemver, err := semver.NewVersion(supportedVersion)
 	if err != nil {
-		return false
+		return false, err
 	}
 	protoSemver, err := semver.NewVersion(protocolVersion)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("invalid protocol version: %s", protocolVersion)
 	}
 
-	return supportedSemver.Major() == protoSemver.Major() && supportedSemver.Minor() >= protoSemver.Minor()
+	// Major version bumps in the protocols are not backward compatible. Minor version bumps are backward compatible.
+	return supportedSemver.Major() == protoSemver.Major() && supportedSemver.Minor() >= protoSemver.Minor(), nil
 }
 
 func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
@@ -287,7 +288,11 @@ func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
 		s.host.SetStreamHandlerMatch(
 			protocol.ID(ss.Name),
 			func(p protocol.ID) bool {
-				return matchProtocolIDWithSemver(string(p), ss.Version)
+				matched, err := matchProtocolIDWithSemver(string(p), ss.Version)
+				if err != nil {
+					s.logger.Error("matching protocol ID with semver", "err", err)
+				}
+				return matched
 			},
 			func(streamlibp2p network.Stream) {
 				peerID := streamlibp2p.Conn().RemotePeer()
@@ -313,7 +318,7 @@ func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
 
 				respHdrs := p2p.Header{}
 				if ss.Header != nil {
-					respHdrs = ss.Header(ctx, p, headers)
+					respHdrs = ss.Header(ctx, *p, headers)
 				}
 
 				err = mtdtStream.WriteHeader(ctx, respHdrs)
@@ -325,7 +330,7 @@ func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
 
 				stream := newStream(streamlibp2p, headers, respHdrs)
 
-				err = ss.Handler(ctx, p, stream)
+				err = ss.Handler(ctx, *p, stream)
 				if err != nil {
 					s.logger.Error("stream handler", "err", err)
 					retErr, _ := status.FromError(err)
@@ -385,7 +390,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 	}
 
 	if p, found := s.peers.isConnected(addrInfo.ID); found {
-		return p, nil
+		return *p, nil
 	}
 
 	if err := s.host.Connect(ctx, addrInfo); err != nil {
@@ -420,7 +425,7 @@ func (s *Service) Connect(ctx context.Context, info []byte) (p2p.Peer, error) {
 	s.host.Peerstore().AddAddrs(addrInfo.ID, addrInfo.Addrs, peerstore.PermanentAddrTTL)
 	s.logger.Info("peer connected (outbound)", "peer", p)
 
-	return p, nil
+	return *p, nil
 }
 
 func (s *Service) GetPeerInfo(p p2p.Peer) ([]byte, error) {

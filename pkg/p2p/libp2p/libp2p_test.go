@@ -16,6 +16,9 @@ import (
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/p2p/libp2p"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -91,10 +94,10 @@ func TestP2PService(t *testing.T) {
 			Name:    "test",
 			Version: "1.0.0",
 			Handler: func(ctx context.Context, peer p2p.Peer, str p2p.Stream) error {
-				if peer.EthAddress.Hex() != client.Peer().EthAddress.Hex() {
+				if peer.EthAddress.Cmp(client.Peer().EthAddress) != 0 {
 					t.Fatalf(
 						"expected eth address %s, got %s",
-						client.Peer().EthAddress.Hex(), peer.EthAddress.Hex(),
+						client.Peer().EthAddress, peer.EthAddress,
 					)
 				}
 
@@ -297,4 +300,68 @@ func TestBootstrap(t *testing.T) {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func TestHandlerError(t *testing.T) {
+	svc := newTestService(t)
+	client := newTestService(t)
+
+	t.Cleanup(func() {
+		err := errors.Join(svc.Close(), client.Close())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	stream := p2p.StreamDesc{
+		Name:    "test",
+		Version: "1.0.0",
+		Handler: func(ctx context.Context, peer p2p.Peer, str p2p.Stream) error {
+			return status.Error(codes.Internal, "test error")
+		},
+	}
+
+	svc.AddStreamHandlers(stream)
+
+	svAddr, err := svc.Addrs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p, err := client.Connect(context.Background(), svAddr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if p.EthAddress.Hex() != svc.Peer().EthAddress.Hex() {
+		t.Fatalf(
+			"expected eth address %s, got %s",
+			svc.Peer().EthAddress.Hex(), p.EthAddress.Hex(),
+		)
+	}
+
+	if p.Type != svc.Peer().Type {
+		t.Fatalf(
+			"expected peer type %s, got %s",
+			svc.Peer().Type.String(), p.Type.String(),
+		)
+	}
+
+	str, err := client.NewStream(context.Background(), p, nil, stream)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = str.WriteMsg(context.Background(), &wrapperspb.StringValue{Value: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = str.ReadMsg(context.Background(), &wrapperspb.StringValue{})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	assert.Equal(t, codes.Internal, status.Convert(err).Code())
+	assert.Equal(t, "test error", status.Convert(err).Message())
 }

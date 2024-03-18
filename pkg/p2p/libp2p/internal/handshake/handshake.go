@@ -159,17 +159,17 @@ func (h *Service) Handle(
 	ctx context.Context,
 	stream p2p.Stream,
 	peerID core.PeerID,
-) (p2p.Peer, error) {
+) (*p2p.Peer, error) {
 
 	req := new(handshakepb.HandshakeReq)
 	err := stream.ReadMsg(ctx, req)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	ethAddress, err := h.verifyReq(req, peerID)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	resp := &handshakepb.HandshakeResp{
@@ -178,25 +178,25 @@ func (h *Service) Handle(
 	}
 
 	if err := stream.WriteMsg(ctx, resp); err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	err = stream.WriteMsg(ctx, h.handshakeReq)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	ack := new(handshakepb.HandshakeResp)
 	err = stream.ReadMsg(ctx, ack)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	if err := h.verifyResp(ack); err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
-	return p2p.Peer{
+	return &p2p.Peer{
 		EthAddress: ethAddress,
 		Type:       p2p.FromString(req.PeerType),
 	}, nil
@@ -206,31 +206,31 @@ func (h *Service) Handshake(
 	ctx context.Context,
 	peerID core.PeerID,
 	stream p2p.Stream,
-) (p2p.Peer, error) {
+) (*p2p.Peer, error) {
 
 	if err := stream.WriteMsg(ctx, h.handshakeReq); err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	resp := new(handshakepb.HandshakeResp)
 	err := stream.ReadMsg(ctx, resp)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	if err := h.verifyResp(resp); err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	ack := new(handshakepb.HandshakeReq)
 	err = stream.ReadMsg(ctx, ack)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	ethAddress, err := h.verifyReq(ack, peerID)
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
 	err = stream.WriteMsg(ctx, &handshakepb.HandshakeResp{
@@ -238,10 +238,10 @@ func (h *Service) Handshake(
 		PeerType:        ack.PeerType,
 	})
 	if err != nil {
-		return p2p.Peer{}, err
+		return nil, err
 	}
 
-	return p2p.Peer{
+	return &p2p.Peer{
 		EthAddress: ethAddress,
 		Type:       p2p.FromString(ack.PeerType),
 	}, nil

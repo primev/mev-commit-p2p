@@ -3,8 +3,8 @@ package libp2p
 import (
 	"context"
 	"fmt"
+	"io"
 
-	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-msgio"
 	streammsgv1 "github.com/primevprotocol/mev-commit/gen/go/streammsg/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
@@ -12,20 +12,23 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func newStream(libp2pstream network.Stream, hdrs, respHdrs p2p.Header) p2p.Stream {
+type networkStream interface {
+	io.ReadWriteCloser
+	Reset() error
+}
+
+func newStream(libp2pstream networkStream, hdrs, respHdrs p2p.Header) p2p.Stream {
 	return &stream{
-		Stream:   libp2pstream,
-		reader:   msgio.NewVarintReaderSize(libp2pstream, network.MessageSizeMax),
-		writer:   msgio.NewVarintWriter(libp2pstream),
-		hdrs:     hdrs,
-		respHdrs: respHdrs,
+		networkStream: libp2pstream,
+		rw:            msgio.NewReadWriter(libp2pstream),
+		hdrs:          hdrs,
+		respHdrs:      respHdrs,
 	}
 }
 
 type stream struct {
-	network.Stream
-	reader   msgio.Reader
-	writer   msgio.Writer
+	networkStream
+	rw       msgio.ReadWriter
 	hdrs     p2p.Header
 	respHdrs p2p.Header
 }
@@ -38,7 +41,7 @@ type result struct {
 func (s *stream) ReadMsg(ctx context.Context, m proto.Message) error {
 	ch := make(chan result, 1)
 	go func() {
-		sMsgBuf, err := s.reader.ReadMsg()
+		sMsgBuf, err := s.rw.ReadMsg()
 		ch <- result{sMsgBuf, err}
 	}()
 
@@ -88,7 +91,7 @@ func (s *stream) WriteMsg(ctx context.Context, m proto.Message) error {
 	errC := make(chan error, 1)
 
 	go func() {
-		errC <- s.writer.WriteMsg(sMsgBuf)
+		errC <- s.rw.WriteMsg(sMsgBuf)
 	}()
 
 	select {
@@ -100,23 +103,21 @@ func (s *stream) WriteMsg(ctx context.Context, m proto.Message) error {
 }
 
 type metadataStream struct {
-	network.Stream
-	reader msgio.Reader
-	writer msgio.Writer
+	networkStream
+	rw msgio.ReadWriter
 }
 
-func newMetadataStream(libp2pstream network.Stream) p2p.MetadataStream {
+func newMetadataStream(libp2pstream networkStream) p2p.MetadataStream {
 	return &metadataStream{
-		Stream: libp2pstream,
-		reader: msgio.NewVarintReaderSize(libp2pstream, network.MessageSizeMax),
-		writer: msgio.NewVarintWriter(libp2pstream),
+		networkStream: libp2pstream,
+		rw:            msgio.NewReadWriter(libp2pstream),
 	}
 }
 
 func (s *metadataStream) ReadHeader(ctx context.Context) (p2p.Header, error) {
 	ch := make(chan result, 1)
 	go func() {
-		sMsgBuf, err := s.reader.ReadMsg()
+		sMsgBuf, err := s.rw.ReadMsg()
 		ch <- result{sMsgBuf, err}
 	}()
 
@@ -148,7 +149,7 @@ func (s *metadataStream) WriteHeader(ctx context.Context, hdr p2p.Header) error 
 
 	errC := make(chan error, 1)
 	go func() {
-		errC <- s.writer.WriteMsg(sMsgBuf)
+		errC <- s.rw.WriteMsg(sMsgBuf)
 	}()
 
 	select {
@@ -173,7 +174,7 @@ func (s *metadataStream) WriteError(ctx context.Context, st *status.Status) erro
 
 	errC := make(chan error, 1)
 	go func() {
-		errC <- s.writer.WriteMsg(buf)
+		errC <- s.rw.WriteMsg(buf)
 	}()
 
 	select {
