@@ -263,7 +263,13 @@ func (t *txmonitor) check(newBlock uint64, lastNonce uint64) {
 					t.notify(nonce, tHash, Result{nil, ErrTxnCancelled})
 					continue
 				}
-				t.logger.Error("failed to get receipt", "err", result.Error)
+				var tt *TransactionTrace
+				if dbg, ok := t.client.(Debugger); ok {
+					if tt, err = dbg.TraceTransaction(t.baseCtx, tHash); err != nil {
+						t.logger.Error("retrieving transaction trace failed", "error", err)
+					}
+				}
+				t.logger.Error("failed to get receipt", "error", result.Error, "transaction_trace", tt)
 				continue
 			}
 			if result.Result == nil {
