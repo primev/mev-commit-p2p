@@ -23,14 +23,16 @@ const (
 )
 
 type Preconfirmation struct {
-	signer       signer.Signer
-	topo         Topology
-	streamer     p2p.Streamer
-	us           BidderStore
-	processer    BidProcessor
-	commitmentDA preconfcontract.Interface
-	logger       *slog.Logger
-	metrics      *metrics
+	nodeType        p2p.PeerType
+	signer          signer.Signer
+	topo            Topology
+	streamer        p2p.Streamer
+	us              BidderStore
+	processer       BidProcessor
+	commitmentDA    preconfcontract.Interface
+	blobBroadcaster BlobBroadcaster
+	logger          *slog.Logger
+	metrics         *metrics
 }
 
 type Topology interface {
@@ -45,24 +47,32 @@ type BidProcessor interface {
 	ProcessBid(context.Context, *signer.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
 
+type BlobBroadcaster interface {
+	BroadcastBlob(context.Context, string, *big.Int) ([]p2p.Peer, error)
+}
+
 func New(
+	nodeType p2p.PeerType,
 	topo Topology,
 	streamer p2p.Streamer,
 	signer signer.Signer,
 	us BidderStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
+	blobBroadcaster BlobBroadcaster,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
-		topo:         topo,
-		streamer:     streamer,
-		signer:       signer,
-		us:           us,
-		processer:    processor,
-		commitmentDA: commitmentDA,
-		logger:       logger,
-		metrics:      newMetrics(),
+		nodeType:        nodeType,
+		topo:            topo,
+		streamer:        streamer,
+		signer:          signer,
+		us:              us,
+		processer:       processor,
+		commitmentDA:    commitmentDA,
+		blobBroadcaster: blobBroadcaster,
+		logger:          logger,
+		metrics:         newMetrics(),
 	}
 }
 
@@ -88,6 +98,7 @@ func (p *Preconfirmation) SendBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
+	isBlob bool,
 ) (chan *signer.PreConfirmation, error) {
 	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber)
 	if err != nil {
@@ -96,7 +107,12 @@ func (p *Preconfirmation) SendBid(
 	}
 	p.logger.Info("constructed signed bid", "signedBid", signedBid)
 
-	providers := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
+	var providers []p2p.Peer
+	if isBlob {
+		providers = p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeRelay})
+	} else {
+		providers = p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
+	}
 	if len(providers) == 0 {
 		p.logger.Error("no providers available", "txHash", txHash)
 		return nil, errors.New("no providers available")
@@ -151,7 +167,7 @@ func (p *Preconfirmation) SendBid(
 				logger.Error("verifying provider signature", "error", err)
 				return
 			}
-			preConfirmation.ProviderAddress = *providerAddress
+			preConfirmation.CommitterAddress = *providerAddress
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
 
@@ -183,6 +199,10 @@ func (p *Preconfirmation) handleBid(
 ) error {
 	if peer.Type != p2p.PeerTypeBidder {
 		return ErrInvalidBidderTypeForBid
+	}
+
+	if p.nodeType == p2p.PeerTypeRelay {
+		return p.handleBidRelay(ctx, peer, stream)
 	}
 
 	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
@@ -240,5 +260,66 @@ func (p *Preconfirmation) handleBid(
 		return errors.New("bidder not allowed")
 	}
 
+	return nil
+}
+
+func (p *Preconfirmation) handleBidRelay(
+	ctx context.Context,
+	peer p2p.Peer,
+	stream p2p.Stream,
+) error {
+	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
+	bid, err := r.ReadMsg(ctx)
+	if err != nil {
+		return err
+	}
+
+	p.logger.Info("received blob bid", "bid", bid)
+
+	ethAddress, err := p.signer.VerifyBid(bid)
+	if err != nil {
+		return err
+	}
+
+	if p.us.CheckBidderAllowance(ctx, *ethAddress) {
+		// try to enqueue for 5 seconds
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+
+		statusC, err := p.processer.ProcessBid(ctx, bid)
+		if err != nil {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case status := <-statusC:
+			switch status {
+			case providerapiv1.BidResponse_STATUS_REJECTED:
+				return errors.New("bid rejected")
+			case providerapiv1.BidResponse_STATUS_ACCEPTED:
+				confirmedProviders, err := p.blobBroadcaster.BroadcastBlob(ctx, bid.TxHash, bid.BlockNumber)
+				if err != nil {
+					return err
+				}
+				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
+				if err != nil {
+					return err
+				}
+				for _, provider := range confirmedProviders {
+					preConfirmation.BlobCommitters = append(preConfirmation.BlobCommitters, provider.EthAddress)
+				}
+				p.logger.Info("sending blob preconfirmation", "preConfirmation", preConfirmation)
+				err = w.WriteMsg(ctx, preConfirmation)
+				if err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	} else {
+		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
+		return errors.New("bidder not allowed")
+	}
 	return nil
 }

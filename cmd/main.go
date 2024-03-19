@@ -80,7 +80,7 @@ var (
 		Usage:   "peer type to use, options are 'bidder', 'provider' or 'bootnode'",
 		EnvVars: []string{"MEV_COMMIT_PEER_TYPE"},
 		Value:   "bidder",
-		Action:  stringInCheck("peer-type", []string{"bidder", "provider", "bootnode"}),
+		Action:  stringInCheck("peer-type", []string{"bidder", "provider", "bootnode", "relay"}),
 	})
 
 	optionP2PPort = altsrc.NewIntFlag(&cli.IntFlag{

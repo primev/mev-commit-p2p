@@ -30,6 +30,32 @@ paths:
           in: path
           required: true
           type: string
+  /v1/provider/get_block_inclusion_list/{blockNumber}:
+    get:
+      summary: GetBlockInclusionList
+      operationId: Provider_GetBlockInclusionList
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InclusionListResp'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: blockNumber
+          description: Block number for which the provider wants to get the inclusion list.
+          in: path
+          required: true
+          type: string
+          format: int64
+        - name: relayAddress
+          description: Hex encoding of the address of the relay.
+          in: query
+          required: false
+          type: string
+          pattern: '[a-fA-F0-9]{40}'
   /v1/provider/get_min_stake:
     get:
       summary: GetMinStake
@@ -230,6 +256,17 @@ definitions:
     title: Cancel response
     required:
       - txHash
+  v1InclusionListResp:
+    type: object
+    properties:
+      relayList:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1RelayInclusionList'
+        description: Inclusion list response message from the mev-commit node for a particular relay.
+    description: Inclusion list response message from the mev-commit node to the provider.
+    title: Inclusion list response
   v1PendingTxnsResponse:
     type: object
     properties:
@@ -243,6 +280,21 @@ definitions:
     title: Pending transactions list
     required:
       - pendingTxns
+  v1RelayInclusionList:
+    type: object
+    properties:
+      relayAddress:
+        type: string
+        description: Hex encoding of the address of the relay.
+        pattern: '[a-fA-F0-9]{40}'
+      txHashes:
+        type: array
+        items:
+          type: string
+          pattern: '[a-fA-F0-9]{64}'
+        description: Hex string encoding of the hashes of the transactions included in the block.
+    description: Inclusion list response message from the mev-commit node for a particular relay.
+    title: Relay inclusion list
   v1StakeResponse:
     type: object
     example:

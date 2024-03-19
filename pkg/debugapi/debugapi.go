@@ -53,6 +53,7 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 	logger := d.logger.With("method", "handleTopology")
 	providers := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
 	bidders := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeBidder})
+	relays := d.topo.GetPeers(topology.Query{Type: p2p.PeerTypeRelay})
 
 	topoResp := topologyResponse{
 		Self:           d.p2p.Self(),
@@ -72,6 +73,13 @@ func (d *debugapi) handleTopology(w http.ResponseWriter, r *http.Request) {
 			connectedBidders[idx] = bidder.EthAddress
 		}
 		topoResp.ConnectedPeers["bidders"] = connectedBidders
+	}
+	if len(relays) > 0 {
+		connectedRelays := make([]common.Address, len(relays))
+		for idx, relay := range relays {
+			connectedRelays[idx] = relay.EthAddress
+		}
+		topoResp.ConnectedPeers["relays"] = connectedRelays
 	}
 
 	topoResp.BlockedPeers = d.p2p.BlockedPeers()

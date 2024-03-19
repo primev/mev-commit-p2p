@@ -13,6 +13,7 @@ import (
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	"github.com/primevprotocol/mev-commit/pkg/blobinclusion"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
@@ -31,11 +32,16 @@ type Service struct {
 	evmClient        EvmClient
 	metrics          *metrics
 	validator        *protovalidate.Validator
+	inclusionGetter  InclusionListGetter
 }
 
 type EvmClient interface {
 	PendingTxns() []evmclient.TxnInfo
 	CancelTx(ctx context.Context, txHash common.Hash) (common.Hash, error)
+}
+
+type InclusionListGetter interface {
+	GetInclusionLists(blockNumber int64) blobinclusion.InclusionLists
 }
 
 func NewService(
@@ -44,6 +50,7 @@ func NewService(
 	owner common.Address,
 	e EvmClient,
 	validator *protovalidate.Validator,
+	inclusionGetter InclusionListGetter,
 ) *Service {
 	return &Service{
 		receiver:         make(chan *providerapiv1.Bid),
@@ -54,6 +61,7 @@ func NewService(
 		evmClient:        e,
 		metrics:          newMetrics(),
 		validator:        validator,
+		inclusionGetter:  inclusionGetter,
 	}
 }
 
@@ -240,4 +248,50 @@ func (s *Service) CancelTransaction(
 	}
 
 	return &providerapiv1.CancelResponse{TxHash: cHash.Hex()}, nil
+}
+
+func (s *Service) GetBlockInclusionList(
+	ctx context.Context,
+	req *providerapiv1.InclusionListReq,
+) (*providerapiv1.InclusionListResp, error) {
+	if s.inclusionGetter == nil {
+		return nil, status.Error(codes.Unimplemented, "inclusion list getter not set")
+	}
+
+	lists := s.inclusionGetter.GetInclusionLists(req.BlockNumber)
+
+	if req.RelayAddress != "" {
+		relayAddress := common.HexToAddress(req.RelayAddress)
+		for k, v := range lists.RelayBlobs {
+			if k == relayAddress.Hex() {
+				txHashes := make([]string, 0, len(v))
+				for _, b := range v {
+					txHashes = append(txHashes, b.TxHash)
+				}
+				return &providerapiv1.InclusionListResp{
+					RelayList: []*providerapiv1.RelayInclusionList{
+						{
+							RelayAddress: relayAddress.Hex(),
+							TxHashes:     txHashes,
+						},
+					},
+				}, nil
+			}
+		}
+		return nil, status.Errorf(codes.NotFound, "relay address not found")
+	}
+
+	listsMsg := make([]*providerapiv1.RelayInclusionList, 0, len(lists.RelayBlobs))
+	for k, v := range lists.RelayBlobs {
+		txHashes := make([]string, 0, len(v))
+		for _, b := range v {
+			txHashes = append(txHashes, b.TxHash)
+		}
+		listsMsg = append(listsMsg, &providerapiv1.RelayInclusionList{
+			RelayAddress: k,
+			TxHashes:     txHashes,
+		})
+	}
+
+	return &providerapiv1.InclusionListResp{RelayList: listsMsg}, nil
 }

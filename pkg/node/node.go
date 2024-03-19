@@ -19,6 +19,7 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
+	"github.com/primevprotocol/mev-commit/pkg/blobinclusion"
 	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	provider_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
@@ -170,13 +171,24 @@ func NewNode(opts *Options) (*Node, error) {
 		)
 
 		switch opts.PeerType {
-		case p2p.PeerTypeProvider.String():
+		case p2p.PeerTypeProvider.String(), p2p.PeerTypeRelay.String():
+			blobInclusionProto := blobinclusion.New(
+				p2p.Peer{Type: peerType, EthAddress: opts.KeySigner.GetAddress()},
+				topo,
+				p2pSvc,
+				opts.Logger.With("component", "blobinclusion"),
+			)
+			if peerType == p2p.PeerTypeProvider {
+				p2pSvc.AddProtocol(blobInclusionProto.Protocol())
+			}
+
 			providerAPI := providerapi.NewService(
 				opts.Logger.With("component", "providerapi"),
 				providerRegistry,
 				opts.KeySigner.GetAddress(),
 				evmClient,
 				validator,
+				blobInclusionProto,
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 			bidProcessor = providerAPI
@@ -191,12 +203,14 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 
 			preconfProto := preconfirmation.New(
+				peerType,
 				topo,
 				p2pSvc,
 				preconfSigner,
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
+				blobInclusionProto,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			// Only register handler for provider
@@ -205,12 +219,14 @@ func NewNode(opts *Options) (*Node, error) {
 
 		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
+				peerType,
 				topo,
 				p2pSvc,
 				preconfSigner,
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
+				nil,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
@@ -284,7 +300,7 @@ func NewNode(opts *Options) (*Node, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 		switch opts.PeerType {
-		case p2p.PeerTypeProvider.String():
+		case p2p.PeerTypeProvider.String(), p2p.PeerTypeRelay.String():
 			err := providerapiv1.RegisterProviderHandler(ctx, gatewayMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register provider handler", "err", err)

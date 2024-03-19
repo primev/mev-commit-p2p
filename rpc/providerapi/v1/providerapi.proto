@@ -37,6 +37,11 @@ service Provider {
       body: "*"
     };
   }
+  // GetBlockInclusionList
+  //
+  rpc GetBlockInclusionList(InclusionListReq) returns (InclusionListResp) {
+    option (google.api.http) = {get: "/v1/provider/get_block_inclusion_list/{block_number}"};
+  }
   // RegisterStake
   //
   // RegisterStake is called by the provider to register its stake in the provider registry.
@@ -228,3 +233,54 @@ message CancelResponse {
     pattern: "[a-fA-F0-9]{64}"
   }];
 };
+
+message InclusionListReq {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Inclusion list request"
+      description: "Inclusion list request message from the provider to the mev-commit node."
+      required: ["blockNumber"]
+    }
+    example: "{\"blockNumber\": 123456, \"relayAddress\": \"91a89B633194c0D86C539A1A5B14DCCacfD47094\"}"
+  };
+  int64 block_number = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Block number for which the provider wants to get the inclusion list."
+  }, (buf.validate.field).int64.gt = 0];
+  string relay_address = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Hex encoding of the address of the relay."
+    pattern: "[a-fA-F0-9]{40}"
+  }];
+};
+
+message InclusionListResp {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "Inclusion list response"
+      description: "Inclusion list response message from the mev-commit node to the provider."
+    }
+  };
+  repeated RelayInclusionList relay_list = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Inclusion list response message from the mev-commit node for a particular relay."
+  }];
+};
+
+message RelayInclusionList {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+      json_schema: {
+        title: "Relay inclusion list"
+        description: "Inclusion list response message from the mev-commit node for a particular relay."
+      }
+  };
+  string relay_address = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Hex encoding of the address of the relay."
+      pattern: "[a-fA-F0-9]{40}"
+  }];
+  repeated string tx_hashes = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Hex string encoding of the hashes of the transactions included in the block."
+      pattern: "[a-fA-F0-9]{64}"
+  }, (buf.validate.field).cel = {
+      id: "tx_hashes",
+      message: "tx_hashes must be a valid array of transaction hashes.",
+      expression: "this.all(r, r.matches('^[a-fA-F0-9]{64}$')) && size(this) > 0"
+  }];
+}

@@ -1,6 +1,7 @@
 package preconfirmation_test
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -83,6 +84,14 @@ func (t *testCommitmentDA) Close() error {
 	return nil
 }
 
+type testBlobBroadcaster struct {
+	committers []p2p.Peer
+}
+
+func (t *testBlobBroadcaster) BroadcastBlob(_ context.Context, _ string, _ *big.Int) ([]p2p.Peer, error) {
+	return t.committers, nil
+}
+
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()
 
@@ -136,18 +145,20 @@ func TestPreconfBidSubmission(t *testing.T) {
 		}
 
 		p := preconfirmation.New(
+			server.Type,
 			topo,
 			svc,
 			signer,
 			us,
 			proc,
 			&testCommitmentDA{},
+			&testBlobBroadcaster{},
 			newTestLogger(t, os.Stdout),
 		)
 
 		svc.SetPeerHandler(server, p.Protocol())
 
-		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber, false)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -160,6 +171,92 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		if string(commitment.Signature) != "test" {
 			t.Fatalf("preConfirmation signature is not equal to test")
+		}
+	})
+}
+
+func TestPreconfBlobBidSubmission(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ok", func(t *testing.T) {
+		client := p2p.Peer{
+			EthAddress: common.HexToAddress("0x1"),
+			Type:       p2p.PeerTypeBidder,
+		}
+		server := p2p.Peer{
+			EthAddress: common.HexToAddress("0x2"),
+			Type:       p2p.PeerTypeRelay,
+		}
+		committer := p2p.Peer{
+			EthAddress: common.HexToAddress("0x3"),
+			Type:       p2p.PeerTypeProvider,
+		}
+
+		bid := &preconfsigner.Bid{
+			TxHash:      "test",
+			BidAmt:      big.NewInt(10),
+			BlockNumber: big.NewInt(10),
+			Digest:      []byte("test"),
+			Signature:   []byte("test"),
+		}
+
+		preConfirmation := &preconfsigner.PreConfirmation{
+			Bid:       *bid,
+			Digest:    []byte("test"),
+			Signature: []byte("test"),
+		}
+
+		svc := p2ptest.New(
+			&client,
+		)
+
+		topo := &testTopo{server}
+		us := &testBidderStore{}
+		proc := &testProcessor{
+			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
+		}
+		signer := &testSigner{
+			bid:                   bid,
+			preConfirmation:       preConfirmation,
+			bidSigner:             common.HexToAddress("0x1"),
+			preConfirmationSigner: common.HexToAddress("0x2"),
+		}
+
+		p := preconfirmation.New(
+			server.Type,
+			topo,
+			svc,
+			signer,
+			us,
+			proc,
+			&testCommitmentDA{},
+			&testBlobBroadcaster{committers: []p2p.Peer{committer}},
+			newTestLogger(t, os.Stdout),
+		)
+
+		svc.SetPeerHandler(server, p.Protocol())
+
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		commitment := <-respC
+
+		if string(commitment.Digest) != "test" {
+			t.Fatalf("data hash is not equal to test")
+		}
+
+		if string(commitment.Signature) != "test" {
+			t.Fatalf("preConfirmation signature is not equal to test")
+		}
+
+		if len(commitment.BlobCommitters) != 1 {
+			t.Fatalf("committer length is not equal to 1")
+		}
+
+		if !bytes.Equal(commitment.BlobCommitters[0].Bytes(), committer.EthAddress.Bytes()) {
+			t.Fatalf("committer address is not equal to 0x3")
 		}
 	})
 }

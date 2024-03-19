@@ -42,6 +42,7 @@ func (s *testSender) SendBid(
 	txHex string,
 	amount *big.Int,
 	blockNum *big.Int,
+	_ bool,
 ) (chan *preconfsigner.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
@@ -59,9 +60,9 @@ func (s *testSender) SendBid(
 				Digest:      []byte("digest"),
 				Signature:   []byte("signature"),
 			},
-			Digest:          []byte("digest"),
-			Signature:       []byte("signature"),
-			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)),
+			Digest:           []byte("digest"),
+			Signature:        []byte("signature"),
+			CommitterAddress: common.HexToAddress(fmt.Sprintf("%x", i)),
 		}
 	}
 

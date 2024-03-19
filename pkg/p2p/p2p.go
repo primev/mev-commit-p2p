@@ -18,6 +18,8 @@ const (
 	PeerTypeProvider
 	// PeerTypeBidder is a bidder node
 	PeerTypeBidder
+	// PeerTypeRelay is a relay node
+	PeerTypeRelay
 )
 
 func (pt PeerType) String() string {
@@ -28,6 +30,8 @@ func (pt PeerType) String() string {
 		return "provider"
 	case PeerTypeBidder:
 		return "bidder"
+	case PeerTypeRelay:
+		return "relay"
 	default:
 		return "unknown"
 	}
@@ -41,6 +45,8 @@ func FromString(str string) PeerType {
 		return PeerTypeProvider
 	case "bidder":
 		return PeerTypeBidder
+	case "relay":
+		return PeerTypeRelay
 	default:
 		return -1
 	}
@@ -67,6 +73,9 @@ type Stream interface {
 
 	Reset() error
 	io.Closer
+
+	CloseWrite() error
+	CloseRead() error
 }
 
 type Handler func(ctx context.Context, peer Peer, stream Stream) error

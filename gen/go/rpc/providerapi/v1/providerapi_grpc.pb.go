@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Provider_ReceiveBids_FullMethodName       = "/rpc.providerapi.v1.Provider/ReceiveBids"
-	Provider_SendProcessedBids_FullMethodName = "/rpc.providerapi.v1.Provider/SendProcessedBids"
-	Provider_RegisterStake_FullMethodName     = "/rpc.providerapi.v1.Provider/RegisterStake"
-	Provider_GetStake_FullMethodName          = "/rpc.providerapi.v1.Provider/GetStake"
-	Provider_GetMinStake_FullMethodName       = "/rpc.providerapi.v1.Provider/GetMinStake"
-	Provider_GetPendingTxns_FullMethodName    = "/rpc.providerapi.v1.Provider/GetPendingTxns"
-	Provider_CancelTransaction_FullMethodName = "/rpc.providerapi.v1.Provider/CancelTransaction"
+	Provider_ReceiveBids_FullMethodName           = "/rpc.providerapi.v1.Provider/ReceiveBids"
+	Provider_SendProcessedBids_FullMethodName     = "/rpc.providerapi.v1.Provider/SendProcessedBids"
+	Provider_GetBlockInclusionList_FullMethodName = "/rpc.providerapi.v1.Provider/GetBlockInclusionList"
+	Provider_RegisterStake_FullMethodName         = "/rpc.providerapi.v1.Provider/RegisterStake"
+	Provider_GetStake_FullMethodName              = "/rpc.providerapi.v1.Provider/GetStake"
+	Provider_GetMinStake_FullMethodName           = "/rpc.providerapi.v1.Provider/GetMinStake"
+	Provider_GetPendingTxns_FullMethodName        = "/rpc.providerapi.v1.Provider/GetPendingTxns"
+	Provider_CancelTransaction_FullMethodName     = "/rpc.providerapi.v1.Provider/CancelTransaction"
 )
 
 // ProviderClient is the client API for Provider service.
@@ -42,6 +43,8 @@ type ProviderClient interface {
 	// SendProcessedBids is called by the provider to send processed bids to the mev-commit node.
 	// The provider will stream processed bids to the mev-commit node.
 	SendProcessedBids(ctx context.Context, opts ...grpc.CallOption) (Provider_SendProcessedBidsClient, error)
+	// GetBlockInclusionList
+	GetBlockInclusionList(ctx context.Context, in *InclusionListReq, opts ...grpc.CallOption) (*InclusionListResp, error)
 	// RegisterStake
 	//
 	// RegisterStake is called by the provider to register its stake in the provider registry.
@@ -138,6 +141,15 @@ func (x *providerSendProcessedBidsClient) CloseAndRecv() (*EmptyMessage, error) 
 	return m, nil
 }
 
+func (c *providerClient) GetBlockInclusionList(ctx context.Context, in *InclusionListReq, opts ...grpc.CallOption) (*InclusionListResp, error) {
+	out := new(InclusionListResp)
+	err := c.cc.Invoke(ctx, Provider_GetBlockInclusionList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *providerClient) RegisterStake(ctx context.Context, in *StakeRequest, opts ...grpc.CallOption) (*StakeResponse, error) {
 	out := new(StakeResponse)
 	err := c.cc.Invoke(ctx, Provider_RegisterStake_FullMethodName, in, out, opts...)
@@ -197,6 +209,8 @@ type ProviderServer interface {
 	// SendProcessedBids is called by the provider to send processed bids to the mev-commit node.
 	// The provider will stream processed bids to the mev-commit node.
 	SendProcessedBids(Provider_SendProcessedBidsServer) error
+	// GetBlockInclusionList
+	GetBlockInclusionList(context.Context, *InclusionListReq) (*InclusionListResp, error)
 	// RegisterStake
 	//
 	// RegisterStake is called by the provider to register its stake in the provider registry.
@@ -229,6 +243,9 @@ func (UnimplementedProviderServer) ReceiveBids(*EmptyMessage, Provider_ReceiveBi
 }
 func (UnimplementedProviderServer) SendProcessedBids(Provider_SendProcessedBidsServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendProcessedBids not implemented")
+}
+func (UnimplementedProviderServer) GetBlockInclusionList(context.Context, *InclusionListReq) (*InclusionListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockInclusionList not implemented")
 }
 func (UnimplementedProviderServer) RegisterStake(context.Context, *StakeRequest) (*StakeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterStake not implemented")
@@ -303,6 +320,24 @@ func (x *providerSendProcessedBidsServer) Recv() (*BidResponse, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func _Provider_GetBlockInclusionList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InclusionListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProviderServer).GetBlockInclusionList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Provider_GetBlockInclusionList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProviderServer).GetBlockInclusionList(ctx, req.(*InclusionListReq))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Provider_RegisterStake_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -402,6 +437,10 @@ var Provider_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "rpc.providerapi.v1.Provider",
 	HandlerType: (*ProviderServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetBlockInclusionList",
+			Handler:    _Provider_GetBlockInclusionList_Handler,
+		},
 		{
 			MethodName: "RegisterStake",
 			Handler:    _Provider_RegisterStake_Handler,
