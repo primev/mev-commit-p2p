@@ -1,8 +1,6 @@
 package libp2p
 
 import (
-	"fmt"
-
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 )
@@ -24,7 +22,6 @@ func (s *Service) HostID() peer.ID {
 }
 
 func (s *Service) AddrString() string {
-	fmt.Println(s.host.Addrs())
 	return s.host.Addrs()[0].String() + "/p2p/" + s.host.ID().String()
 }
 

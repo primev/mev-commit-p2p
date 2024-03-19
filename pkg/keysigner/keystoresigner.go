@@ -3,7 +3,6 @@ package keysigner
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"io"
 	"math/big"
 	"runtime"
 
@@ -13,13 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type keystoreSigner struct {
+type KeystoreSigner struct {
 	keystore *keystore.KeyStore
 	password string
 	account  accounts.Account
 }
 
-func NewKeystoreSigner(wr io.Writer, path, password string) (*keystoreSigner, error) {
+func NewKeystoreSigner(path, password string) (*KeystoreSigner, error) {
 	// lightscripts are using 4MB memory and taking approximately 100ms CPU time on a modern processor to decrypt
 	keystore := keystore.NewKeyStore(path, keystore.LightScryptN, keystore.LightScryptP)
 	ksAccounts := keystore.Accounts()
@@ -35,37 +34,38 @@ func NewKeystoreSigner(wr io.Writer, path, password string) (*keystoreSigner, er
 		account = ksAccounts[0]
 	}
 
-	fmt.Fprintf(wr, "Public address of the key: %s\n", account.Address.Hex())
-	fmt.Fprintf(wr, "Path of the secret key file: %s\n", account.URL.Path)
-
-	return &keystoreSigner{
+	return &KeystoreSigner{
 		keystore: keystore,
 		password: password,
 		account:  account,
 	}, nil
 }
 
-func (kss *keystoreSigner) SignHash(hash []byte) ([]byte, error) {
+func (kss *KeystoreSigner) SignHash(hash []byte) ([]byte, error) {
 	return kss.keystore.SignHashWithPassphrase(kss.account, kss.password, hash)
 }
 
-func (kss *keystoreSigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
+func (kss *KeystoreSigner) SignTx(tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	return kss.keystore.SignTxWithPassphrase(kss.account, kss.password, tx, chainID)
 }
 
-func (kss *keystoreSigner) GetAddress() common.Address {
+func (kss *KeystoreSigner) GetAddress() common.Address {
 	return kss.account.Address
 }
 
-func (kss *keystoreSigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
+func (kss *KeystoreSigner) GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	return extractPrivateKey(kss.account.URL.Path, kss.password)
 }
 
-func (kss *keystoreSigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {
+func (kss *KeystoreSigner) ZeroPrivateKey(key *ecdsa.PrivateKey) {
 	b := key.D.Bits()
 	for i := range b {
 		b[i] = 0
 	}
 	// Force garbage collection to remove the key from memory
 	runtime.GC()
+}
+
+func (kss *KeystoreSigner) String() string {
+	return kss.account.URL.String()
 }

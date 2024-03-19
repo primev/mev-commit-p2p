@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,6 +12,7 @@ import (
 	mevcommit "github.com/primevprotocol/mev-commit"
 	ks "github.com/primevprotocol/mev-commit/pkg/keysigner"
 	"github.com/primevprotocol/mev-commit/pkg/node"
+	"github.com/primevprotocol/mev-commit/pkg/util"
 	"github.com/urfave/cli/v2"
 	"github.com/urfave/cli/v2/altsrc"
 )
@@ -158,6 +157,20 @@ var (
 		Action:  stringInCheck("log-level", []string{"debug", "info", "warn", "error"}),
 	})
 
+	optionLogTags = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "log-tags",
+		Usage:   "log tags is a comma-separated list of <name:value> pairs that will be inserted into each log line",
+		EnvVars: []string{"MEV_COMMIT_LOG_TAGS"},
+		Action: func(ctx *cli.Context, s string) error {
+			for i, p := range strings.Split(s, ",") {
+				if len(strings.Split(p, ":")) != 2 {
+					return fmt.Errorf("invalid log-tags at index %d, expecting <name:value>", i)
+				}
+			}
+			return nil
+		},
+	})
+
 	optionBidderRegistryAddr = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "bidder-registry-contract",
 		Usage:   "address of the bidder registry contract",
@@ -229,6 +242,7 @@ func main() {
 		optionSecret,
 		optionLogFmt,
 		optionLogLevel,
+		optionLogTags,
 		optionBidderRegistryAddr,
 		optionProviderRegistryAddr,
 		optionPreconfStoreAddr,
@@ -274,19 +288,21 @@ func verifyKeystorePasswordPresence(c *cli.Context) error {
 
 // launchNodeWithConfig configures and starts the p2p node based on the CLI context.
 func launchNodeWithConfig(c *cli.Context) error {
-	keysigner, err := newKeySigner(c)
-	if err != nil {
-		return fmt.Errorf("failed to create keysigner: %w", err)
-	}
-
-	logger, err := newLogger(
+	logger, err := util.NewLogger(
 		c.String(optionLogLevel.Name),
 		c.String(optionLogFmt.Name),
+		c.String(optionLogTags.Name),
 		c.App.Writer,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
+
+	keysigner, err := newKeySigner(c)
+	if err != nil {
+		return fmt.Errorf("failed to create keysigner: %w", err)
+	}
+	logger.Info("key signer account", "address", keysigner.GetAddress().Hex(), "url", keysigner.String())
 
 	httpAddr := fmt.Sprintf("%s:%d", c.String(optionHTTPAddr.Name), c.Int(optionHTTPPort.Name))
 	rpcAddr := fmt.Sprintf("%s:%d", c.String(optionRPCAddr.Name), c.Int(optionRPCPort.Name))
@@ -324,7 +340,7 @@ func launchNodeWithConfig(c *cli.Context) error {
 	}
 
 	<-c.Done()
-	fmt.Fprintln(c.App.Writer, "shutting down...")
+	logger.Info("shutting down...")
 	closed := make(chan struct{})
 
 	go func() {
@@ -345,34 +361,9 @@ func launchNodeWithConfig(c *cli.Context) error {
 	return nil
 }
 
-func newLogger(lvl, logFmt string, sink io.Writer) (*slog.Logger, error) {
-	level := new(slog.LevelVar)
-	if err := level.UnmarshalText([]byte(lvl)); err != nil {
-		return nil, fmt.Errorf("invalid log level: %w", err)
-	}
-
-	var (
-		handler slog.Handler
-		options = &slog.HandlerOptions{
-			AddSource: true,
-			Level:     level,
-		}
-	)
-	switch logFmt {
-	case "text":
-		handler = slog.NewTextHandler(sink, options)
-	case "json", "none":
-		handler = slog.NewJSONHandler(sink, options)
-	default:
-		return nil, fmt.Errorf("invalid log format: %s", logFmt)
-	}
-
-	return slog.New(handler), nil
-}
-
 func newKeySigner(c *cli.Context) (ks.KeySigner, error) {
 	if c.IsSet(optionKeystorePath.Name) {
-		return ks.NewKeystoreSigner(c.App.Writer, c.String(optionKeystorePath.Name), c.String(optionKeystorePassword.Name))
+		return ks.NewKeystoreSigner(c.String(optionKeystorePath.Name), c.String(optionKeystorePassword.Name))
 	}
-	return ks.NewPrivateKeySigner(c.App.Writer, c.String(optionPrivKeyFile.Name))
+	return ks.NewPrivateKeySigner(c.String(optionPrivKeyFile.Name))
 }
