@@ -232,18 +232,15 @@ func (p *Preconfirmation) handleBid(
 				}
 				p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
 				// todo: update SC
-				// err = p.commitmentDA.StoreCommitment(
-				// 	ctx,
-				// 	preConfirmation.Bid.BidAmt,
-				// 	uint64(preConfirmation.Bid.BlockNumber.Int64()),
-				// 	preConfirmation.Bid.TxHash,
-				// 	preConfirmation.Bid.Signature,
-				// 	preConfirmation.Signature,
-				// )
-				// if err != nil {
-				// 	p.logger.Error("storing commitment", "error", err)
-				// 	return err
-				// }
+				err = p.commitmentDA.StoreEncryptedCommitment(
+					ctx,
+					preConfirmation.Commitment,
+					preConfirmation.Signature,
+				)
+				if err != nil {
+					p.logger.Error("storing commitment", "error", err)
+					return err
+				}
 				return w.WriteMsg(ctx, preConfirmation)
 			}
 		}

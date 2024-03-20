@@ -3,13 +3,12 @@ package preconfcontract
 import (
 	"context"
 	"log/slog"
-	"math/big"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
+	preconfcommitmentstore "github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
@@ -24,12 +23,9 @@ var preconfABI = func() abi.ABI {
 var defaultWaitTimeout = 10 * time.Second
 
 type Interface interface {
-	StoreCommitment(
+	StoreEncryptedCommitment(
 		ctx context.Context,
-		bid *big.Int,
-		blockNumber uint64,
-		txHash string,
-		bidSignature []byte,
+		commitmentDigest []byte,
 		commitmentSignature []byte,
 	) error
 }
@@ -54,25 +50,19 @@ func New(
 	}
 }
 
-func (p *preconfContract) StoreCommitment(
+func (p *preconfContract) StoreEncryptedCommitment(
 	ctx context.Context,
-	bid *big.Int,
-	blockNumber uint64,
-	txHash string,
-	bidSignature []byte,
+	commitmentDigest []byte,
 	commitmentSignature []byte,
 ) error {
 
 	callData, err := p.preconfABI.Pack(
-		"storeCommitment",
-		uint64(bid.Int64()),
-		blockNumber,
-		txHash,
-		bidSignature,
+		"storeEncryptedCommitment",
+		[32]byte(commitmentDigest),
 		commitmentSignature,
 	)
 	if err != nil {
-		p.logger.Error("preconf contract storeCommitment pack error", "err", err)
+		p.logger.Error("preconf contract storeEncryptedCommitment pack error", "err", err)
 		return err
 	}
 
@@ -84,7 +74,7 @@ func (p *preconfContract) StoreCommitment(
 		return err
 	}
 
-	p.logger.Info("preconf contract storeCommitment successful", "txnHash", txnHash)
+	p.logger.Info("preconf contract storeEncryptedCommitment successful", "txnHash", txnHash)
 
 	return nil
 }

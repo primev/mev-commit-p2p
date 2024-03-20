@@ -82,11 +82,8 @@ func (t *testProcessor) ProcessBid(
 
 type testCommitmentDA struct{}
 
-func (t *testCommitmentDA) StoreCommitment(
+func (t *testCommitmentDA) StoreEncryptedCommitment(
 	_ context.Context,
-	_ *big.Int,
-	_ uint64,
-	_ string,
 	_ []byte,
 	_ []byte,
 ) error {

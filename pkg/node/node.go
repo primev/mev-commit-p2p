@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math/big"
 	"net"
 	"net/http"
 	"time"
@@ -404,11 +403,8 @@ func (noOpBidProcessor) ProcessBid(
 
 type noOpCommitmentDA struct{}
 
-func (noOpCommitmentDA) StoreCommitment(
+func (noOpCommitmentDA) StoreEncryptedCommitment(
 	_ context.Context,
-	_ *big.Int,
-	_ uint64,
-	_ string,
 	_ []byte,
 	_ []byte,
 ) error {
