@@ -22,7 +22,7 @@ DOCKER_NETWORK_NAME="primev_net"
 MEV_COMMIT_BRANCH="ckartik/update-bid-commitment-payload"
 GETH_POA_BRANCH="master"
 CONTRACTS_BRANCH="main"
-ORACLE_BRANCH="ckartik/update-oracle-with-decay"
+ORACLE_BRANCH="main"
 BRIDGE_BRANCH="main"
 
 # Default values for optional arguments
