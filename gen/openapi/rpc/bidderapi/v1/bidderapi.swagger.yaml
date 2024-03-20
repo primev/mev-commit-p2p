@@ -65,7 +65,7 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
-  /v1/bidder/prepay/{amount}:
+  /v1/bidder/provide_allowance/{amount}:
     post:
       summary: PrepayAllowance
       description: PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.

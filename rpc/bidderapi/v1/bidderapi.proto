@@ -33,7 +33,7 @@ service Bidder {
   //
   // PrepayAllowance is called by the bidder node to add prepaid allowance in the bidder registry.
   rpc PrepayAllowance(PrepayRequest) returns (PrepayResponse) {
-    option (google.api.http) = {post: "/v1/bidder/prepay/{amount}"};
+    option (google.api.http) = {post: "/v1/bidder/provide_allowance/{amount}"};
   }
   // GetAllowance
   //
@@ -52,8 +52,8 @@ service Bidder {
 message PrepayRequest {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {
-      title: "Prepay request"
-      description: "Prepayment for bids to be issued by the bidder in wei."
+      title: "Prepay allowance request"
+      description: "Prepayment of allowance for bids to be issued by the bidder in wei."
       required: ["amount"]
     }
     example: "{\"amount\": \"1000000000000000000\" }"
