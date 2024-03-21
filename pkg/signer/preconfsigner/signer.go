@@ -53,8 +53,8 @@ func (p *privateKeySigner) ConstructSignedBid(
 		BidAmount:           bidAmt,
 		TxHash:              txHash,
 		BlockNumber:         blockNumber,
-		DecayStartTimeStamp: decayStartTimeStamp,
-		DecayEndTimeStamp:   decayEndTimeStamp,
+		DecayStartTimestamp: decayStartTimeStamp,
+		DecayEndTimestamp:   decayEndTimeStamp,
 	}
 
 	bidHash, err := GetBidHash(bid)
@@ -211,8 +211,8 @@ func GetBidHash(bid *preconfpb.Bid) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(bidAmt)...)
 	data = append(data, math.U256Bytes(big.NewInt(bid.BlockNumber))...)
-	data = append(data, math.U256Bytes(big.NewInt(bid.DecayStartTimeStamp))...)
-	data = append(data, math.U256Bytes(big.NewInt(bid.DecayEndTimeStamp))...)
+	data = append(data, math.U256Bytes(big.NewInt(bid.DecayStartTimestamp))...)
+	data = append(data, math.U256Bytes(big.NewInt(bid.DecayEndTimestamp))...)
 	dataHash := crypto.Keccak256Hash(data)
 
 	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
@@ -254,8 +254,8 @@ func GetPreConfirmationHash(c *preconfpb.PreConfirmation) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(bidAmt)...)
 	data = append(data, math.U256Bytes(big.NewInt(c.Bid.BlockNumber))...)
-	data = append(data, math.U256Bytes(big.NewInt(c.Bid.DecayStartTimeStamp))...)
-	data = append(data, math.U256Bytes(big.NewInt(c.Bid.DecayEndTimeStamp))...)
+	data = append(data, math.U256Bytes(big.NewInt(c.Bid.DecayStartTimestamp))...)
+	data = append(data, math.U256Bytes(big.NewInt(c.Bid.DecayEndTimestamp))...)
 	data = append(data, bidDigestHash.Bytes()...)
 	data = append(data, bidSigHash.Bytes()...)
 	dataHash := crypto.Keccak256Hash(data)

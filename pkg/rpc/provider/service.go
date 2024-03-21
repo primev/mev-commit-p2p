@@ -73,8 +73,8 @@ func (s *Service) ProcessBid(
 		BidAmount:           bid.BidAmount,
 		BlockNumber:         bid.BlockNumber,
 		BidDigest:           bid.Digest,
-		DecayStartTimestamp: bid.DecayStartTimeStamp,
-		DecayEndTimestamp:   bid.DecayEndTimeStamp,
+		DecayStartTimestamp: bid.DecayStartTimestamp,
+		DecayEndTimestamp:   bid.DecayEndTimestamp,
 	}
 
 	err := s.validator.Validate(bidMsg)

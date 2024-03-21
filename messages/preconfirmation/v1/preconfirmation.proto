@@ -8,6 +8,8 @@ message Bid {
   int64 block_number = 3;
   bytes digest = 4;
   bytes signature = 5;
+  int64 decay_start_timestamp = 6;
+  int64 decay_end_timestamp = 7;
 };
 
 message PreConfirmation {

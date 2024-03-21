@@ -235,8 +235,8 @@ func (p *Preconfirmation) handleBid(
 				bidAmt,
 				uint64(preConfirmation.Bid.BlockNumber),
 				preConfirmation.Bid.TxHash,
-				uint64(preConfirmation.Bid.DecayStartTimeStamp),
-				uint64(preConfirmation.Bid.DecayEndTimeStamp),
+				uint64(preConfirmation.Bid.DecayStartTimestamp),
+				uint64(preConfirmation.Bid.DecayEndTimestamp),
 				preConfirmation.Bid.Signature,
 				preConfirmation.Signature,
 			)

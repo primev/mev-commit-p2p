@@ -39,11 +39,7 @@ type testSigner struct {
 	preConfirmationSigner common.Address
 }
 
-<<<<<<< HEAD
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
-=======
-func (t *testSigner) ConstructSignedBid(_ string, _ string, _ int64) (*preconfpb.Bid, error) {
->>>>>>> d4e267e (feat: integrate new libp2p messages)
+func (t *testSigner) ConstructSignedBid(_ string, _ string, _ int64, _ int64, _ int64) (*preconfpb.Bid, error) {
 	return t.bid, nil
 }
 
@@ -114,13 +110,13 @@ func TestPreconfBidSubmission(t *testing.T) {
 		}
 
 		bid := &preconfpb.Bid{
-			TxHash:      "test",
-			BidAmount:   "10",
-			BlockNumber: 10,
-			DecayStartTimeStamp: time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds(),
-			DecayEndTimeStamp:   time.Now().UnixMilli(),
-			Digest:      []byte("test"),
-			Signature:   []byte("test"),
+			TxHash:              "test",
+			BidAmount:           "10",
+			BlockNumber:         10,
+			DecayStartTimestamp: time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds(),
+			DecayEndTimestamp:   time.Now().UnixMilli(),
+			Digest:              []byte("test"),
+			Signature:           []byte("test"),
 		}
 
 		preConfirmation := &preconfpb.PreConfirmation{
@@ -157,7 +153,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		svc.SetPeerHandler(server, p.Streams()[0])
 
-		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber, bid.DecayStartTimeStamp, bid.DecayEndTimeStamp)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmount, bid.BlockNumber, bid.DecayStartTimestamp, bid.DecayEndTimestamp)
 		if err != nil {
 			t.Fatal(err)
 		}

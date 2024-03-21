@@ -2,7 +2,6 @@ package preconfsigner_test
 
 import (
 	"encoding/hex"
-	"math/big"
 	"testing"
 	"time"
 
@@ -89,10 +88,10 @@ func TestHashing(t *testing.T) {
 	t.Run("bid", func(t *testing.T) {
 		bid := &preconfpb.Bid{
 			TxHash:              "0xkartik",
-			BidAmount:           "2",
-			BlockNumber:         2,
-			DecayStartTimeStamp: 10,
-			DecayEndTimeStamp:   30,
+			BidAmount:           "200",
+			BlockNumber:         3000,
+			DecayStartTimestamp: 10,
+			DecayEndTimestamp:   30,
 		}
 
 		hash, err := preconfsigner.GetBidHash(bid)
@@ -125,8 +124,8 @@ func TestHashing(t *testing.T) {
 			TxHash:              "0xkartik",
 			BidAmount:           "2",
 			BlockNumber:         2,
-			DecayStartTimeStamp: 10,
-			DecayEndTimeStamp:   20,
+			DecayStartTimestamp: 10,
+			DecayEndTimestamp:   20,
 			Digest:              bidHashBytes,
 			Signature:           bidSigBytes,
 		}
@@ -158,7 +157,7 @@ func TestSignature(t *testing.T) {
 	keySigner := mockkeysigner.NewMockKeySigner(pkey, crypto.PubkeyToAddress(pkey.PublicKey))
 	bidder := preconfsigner.NewSigner(keySigner)
 
-	bid, err := bidder.ConstructSignedBid("0xkartik", big.NewInt(2), big.NewInt(2), big.NewInt(10), big.NewInt(20))
+	bid, err := bidder.ConstructSignedBid("0xkartik", "2", 2, 10, 20)
 	if err != nil {
 		t.Fatal(err)
 	}
