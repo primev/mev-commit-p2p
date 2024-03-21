@@ -42,6 +42,8 @@ func (s *testSender) SendBid(
 	txHex string,
 	amount *big.Int,
 	blockNum *big.Int,
+	decayStartTimestamp *big.Int,
+	decayEndTimestamp *big.Int,
 ) (chan *preconfsigner.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
@@ -53,11 +55,13 @@ func (s *testSender) SendBid(
 	for i := 0; i < s.noOfPreconfs; i++ {
 		preconfs <- &preconfsigner.PreConfirmation{
 			Bid: preconfsigner.Bid{
-				TxHash:      txHex,
-				BidAmt:      amount,
-				BlockNumber: blockNum,
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              txHex,
+				BidAmt:              amount,
+				BlockNumber:         blockNum,
+				DecayStartTimeStamp: decayStartTimestamp,
+				DecayEndTimeStamp:   decayEndTimestamp,
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
 			},
 			Digest:          []byte("digest"),
 			Signature:       []byte("signature"),
@@ -214,55 +218,69 @@ func TestSendBid(t *testing.T) {
 	client := startServer(t)
 
 	type testCase struct {
-		name     string
-		txHexs   []string
-		amount   string
-		blockNum int64
-		err      string
+		name                string
+		txHexs              []string
+		amount              string
+		blockNum            int64
+		decayStartTimestamp int64
+		decayEndTimestamp   int64
+		err                 string
 	}
 
 	for _, tc := range []testCase{
 		{
-			name:     "invalid tx hex",
-			txHexs:   []string{"asdf"},
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "tx_hashes must be a valid array of transaction hashes",
+			name:                "invalid tx hex",
+			txHexs:              []string{"asdf"},
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "tx_hashes must be a valid array of transaction hashes",
 		},
 		{
-			name:     "no txns",
-			txHexs:   nil,
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "tx_hashes must be a valid array of transaction hashes",
+			name:                "no txns",
+			txHexs:              nil,
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "tx_hashes must be a valid array of transaction hashes",
 		},
 		{
-			name:     "invalid amount",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "000000000000000000",
-			blockNum: 1,
-			err:      "amount must be a valid integer",
+			name:                "invalid amount",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "amount must be a valid integer",
 		},
 		{
-			name:     "invalid block number",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "1000000000000000000",
-			blockNum: 0,
-			err:      "block_number must be a valid integer",
+			name:                "invalid block number",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "1000000000000000000",
+			blockNum:            0,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "block_number must be a valid integer",
 		},
 		{
-			name:     "success",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "",
+			name:                "success",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rcv, err := client.SendBid(context.Background(), &bidderapiv1.Bid{
-				TxHashes:    tc.txHexs,
-				Amount:      tc.amount,
-				BlockNumber: tc.blockNum,
+				TxHashes:            tc.txHexs,
+				Amount:              tc.amount,
+				BlockNumber:         tc.blockNum,
+				DecayStartTimestamp: tc.decayStartTimestamp,
+				DecayEndTimestamp:   tc.decayEndTimestamp,
 			})
 			if err != nil {
 				t.Fatalf("error sending bid: %v", err)

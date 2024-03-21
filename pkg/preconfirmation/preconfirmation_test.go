@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
@@ -38,7 +39,7 @@ type testSigner struct {
 	preConfirmationSigner common.Address
 }
 
-func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
+func (t *testSigner) ConstructSignedBid(_ string, _ *big.Int, _ *big.Int, _ *big.Int, _ *big.Int) (*preconfsigner.Bid, error) {
 	return t.bid, nil
 }
 
@@ -73,6 +74,8 @@ func (t *testCommitmentDA) StoreCommitment(
 	_ *big.Int,
 	_ uint64,
 	_ string,
+	_ uint64,
+	_ uint64,
 	_ []byte,
 	_ []byte,
 ) error {
@@ -106,11 +109,13 @@ func TestPreconfBidSubmission(t *testing.T) {
 		}
 
 		bid := &preconfsigner.Bid{
-			TxHash:      "test",
-			BidAmt:      big.NewInt(10),
-			BlockNumber: big.NewInt(10),
-			Digest:      []byte("test"),
-			Signature:   []byte("test"),
+			TxHash:              "test",
+			BidAmt:              big.NewInt(10),
+			BlockNumber:         big.NewInt(10),
+			DecayStartTimeStamp: big.NewInt(time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds()),
+			DecayEndTimeStamp:   big.NewInt(time.Now().UnixMilli()),
+			Digest:              []byte("test"),
+			Signature:           []byte("test"),
 		}
 
 		preConfirmation := &preconfsigner.PreConfirmation{
@@ -147,7 +152,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 
 		svc.SetPeerHandler(server, p.Protocol())
 
-		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber, bid.DecayStartTimeStamp, bid.DecayEndTimeStamp)
 		if err != nil {
 			t.Fatal(err)
 		}

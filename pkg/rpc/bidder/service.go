@@ -45,7 +45,7 @@ func NewService(
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
+	SendBid(context.Context, string, *big.Int, *big.Int, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
@@ -77,6 +77,8 @@ func (s *Service) SendBid(
 		txnsStr,
 		amtVal,
 		big.NewInt(bid.BlockNumber),
+		big.NewInt(bid.DecayStartTimestamp),
+		big.NewInt(bid.DecayEndTimestamp),
 	)
 	if err != nil {
 		s.logger.Error("sending bid", "error", err)

@@ -372,6 +372,8 @@ func (noOpCommitmentDA) StoreCommitment(
 	_ *big.Int,
 	_ uint64,
 	_ string,
+	_ uint64,
+	_ uint64,
 	_ []byte,
 	_ []byte,
 ) error {

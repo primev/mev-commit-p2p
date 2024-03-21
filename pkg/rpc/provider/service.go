@@ -69,10 +69,12 @@ func (s *Service) ProcessBid(
 	bid *preconfsigner.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
 	bidMsg := &providerapiv1.Bid{
-		TxHashes:    strings.Split(bid.TxHash, ","),
-		BidAmount:   bid.BidAmt.String(),
-		BlockNumber: bid.BlockNumber.Int64(),
-		BidDigest:   bid.Digest,
+		TxHashes:            strings.Split(bid.TxHash, ","),
+		BidAmount:           bid.BidAmt.String(),
+		BlockNumber:         bid.BlockNumber.Int64(),
+		BidDigest:           bid.Digest,
+		DecayStartTimestamp: bid.DecayStartTimeStamp.Int64(),
+		DecayEndTimestamp:   bid.DecayEndTimeStamp.Int64(),
 	}
 
 	err := s.validator.Validate(bidMsg)

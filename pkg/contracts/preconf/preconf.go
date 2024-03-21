@@ -9,7 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
+	preconfcommitmentstore "github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 )
 
@@ -29,6 +29,8 @@ type Interface interface {
 		bid *big.Int,
 		blockNumber uint64,
 		txHash string,
+		decayStartTimeStamp uint64,
+		decayEndTimeStamp uint64,
 		bidSignature []byte,
 		commitmentSignature []byte,
 	) error
@@ -59,6 +61,8 @@ func (p *preconfContract) StoreCommitment(
 	bid *big.Int,
 	blockNumber uint64,
 	txHash string,
+	deacyStartTimeStamp uint64,
+	decayEndTimeStamp uint64,
 	bidSignature []byte,
 	commitmentSignature []byte,
 ) error {
@@ -68,6 +72,8 @@ func (p *preconfContract) StoreCommitment(
 		uint64(bid.Int64()),
 		blockNumber,
 		txHash,
+		deacyStartTimeStamp,
+		decayEndTimeStamp,
 		bidSignature,
 		commitmentSignature,
 	)

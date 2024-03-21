@@ -293,9 +293,11 @@ func sendBid(
 	)
 
 	bid := &pb.Bid{
-		TxHashes:    []string{strings.TrimPrefix(txHash.Hex(), "0x")},
-		Amount:      strconv.Itoa(int(amount)),
-		BlockNumber: int64(blkNum) + 5,
+		TxHashes:            []string{strings.TrimPrefix(txHash.Hex(), "0x")},
+		Amount:              strconv.Itoa(int(amount)),
+		BlockNumber:         int64(blkNum) + 5,
+		DecayStartTimestamp: time.Now().UnixMilli() - (time.Duration(8 * time.Second).Milliseconds()),
+		DecayEndTimestamp:   time.Now().UnixMilli(),
 	}
 
 	logger.Info("sending bid", "bid", bid)

@@ -30,21 +30,25 @@ type Bid struct {
 	BidAmt      *big.Int `json:"bid_amt"`
 	BlockNumber *big.Int `json:"block_number"`
 
+	// The format for these timestamps is unix timestamp in milliseconds
+	DecayStartTimeStamp *big.Int `json:"decay_start_timestamp"`
+	DecayEndTimeStamp   *big.Int `json:"decay_end_timestamp"`
+
 	Digest    []byte `json:"bid_digest"` // TODO(@ckaritk): name better
 	Signature []byte `json:"bid_signature"`
 }
 
 func (b Bid) String() string {
 	return fmt.Sprintf(
-		"TxHash: %s, BidAmt: %s, BlockNumber: %s, Digest: %s, Signature: %s",
-		b.TxHash, b.BidAmt, b.BlockNumber, hex.EncodeToString(b.Digest), hex.EncodeToString(b.Signature),
+		"TxHash: %s, BidAmt: %s, BlockNumber: %s, Digest: %s, Signature: %s, DecayStartTimeStamp: %d, DecayEndTimeStamp: %d",
+		b.TxHash, b.BidAmt, b.BlockNumber, hex.EncodeToString(b.Digest), hex.EncodeToString(b.Signature), b.DecayStartTimeStamp, b.DecayEndTimeStamp,
 	)
 }
 
 type PreConfirmation struct {
 	Bid Bid `json:"bid"`
 
-	Digest    []byte `json:"digest"` // TODO(@ckaritk): name better
+	Digest    []byte `json:"digest"`
 	Signature []byte `json:"signature"`
 
 	ProviderAddress common.Address `json:"provider_address"`
@@ -58,7 +62,7 @@ func (p PreConfirmation) String() string {
 }
 
 type Signer interface {
-	ConstructSignedBid(string, *big.Int, *big.Int) (*Bid, error)
+	ConstructSignedBid(string, *big.Int, *big.Int, *big.Int, *big.Int) (*Bid, error)
 	ConstructPreConfirmation(*Bid) (*PreConfirmation, error)
 	VerifyBid(*Bid) (*common.Address, error)
 	VerifyPreConfirmation(*PreConfirmation) (*common.Address, error)
@@ -78,15 +82,23 @@ func (p *privateKeySigner) ConstructSignedBid(
 	txHash string,
 	bidAmt *big.Int,
 	blockNumber *big.Int,
+	decayStartTimeStamp *big.Int,
+	decayEndTimeStamp *big.Int,
 ) (*Bid, error) {
 	if txHash == "" || bidAmt == nil || blockNumber == nil {
 		return nil, errors.New("missing required fields")
 	}
 
+	if decayEndTimeStamp.Cmp(decayStartTimeStamp) != 1 {
+		return nil, errors.New("decay end timestamp must be after decay start timestamp")
+	}
+
 	bid := &Bid{
-		BidAmt:      bidAmt,
-		TxHash:      txHash,
-		BlockNumber: blockNumber,
+		BidAmt:              bidAmt,
+		TxHash:              txHash,
+		BlockNumber:         blockNumber,
+		DecayStartTimeStamp: decayStartTimeStamp,
+		DecayEndTimeStamp:   decayEndTimeStamp,
 	}
 
 	bidHash, err := GetBidHash(bid)
@@ -226,16 +238,20 @@ func GetBidHash(bid *Bid) ([]byte, error) {
 
 	// EIP712_MESSAGE_TYPEHASH
 	eip712MessageTypeHash := crypto.Keccak256Hash(
-		[]byte("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber)"),
+		[]byte("PreConfBid(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp)"),
 	)
 
 	// Convert the txnHash to a byte array and hash it
 	txnHashHash := crypto.Keccak256Hash([]byte(bid.TxHash))
 
 	// Encode values similar to Solidity's abi.encode
+	// The reason we use math.U256Bytes is because we want to encode the uint64 as a 32 byte array
+	// The EVM does this for values due via padding to 32 bytes, as that's the base size of a word in the EVM
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(bid.BidAmt)...)
 	data = append(data, math.U256Bytes(bid.BlockNumber)...)
+	data = append(data, math.U256Bytes(bid.DecayStartTimeStamp)...)
+	data = append(data, math.U256Bytes(bid.DecayEndTimeStamp)...)
 	dataHash := crypto.Keccak256Hash(data)
 
 	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)
@@ -260,7 +276,7 @@ func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
 
 	// EIP712_MESSAGE_TYPEHASH
 	eip712MessageTypeHash := crypto.Keccak256Hash(
-		[]byte("PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,string bidHash,string signature)"),
+		[]byte("PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,string bidHash,string signature)"),
 	)
 
 	// Convert the txnHash to a byte array and hash it
@@ -272,6 +288,8 @@ func GetPreConfirmationHash(c *PreConfirmation) ([]byte, error) {
 	data := append(eip712MessageTypeHash.Bytes(), txnHashHash.Bytes()...)
 	data = append(data, math.U256Bytes(c.Bid.BidAmt)...)
 	data = append(data, math.U256Bytes(c.Bid.BlockNumber)...)
+	data = append(data, math.U256Bytes(c.Bid.DecayStartTimeStamp)...)
+	data = append(data, math.U256Bytes(c.Bid.DecayEndTimeStamp)...)
 	data = append(data, bidDigestHash.Bytes()...)
 	data = append(data, bidSigHash.Bytes()...)
 	dataHash := crypto.Keccak256Hash(data)
@@ -287,6 +305,8 @@ func constructPreConfirmationPayload(
 	txHash string,
 	bid *big.Int,
 	blockNumber *big.Int,
+	decayStartTimeStamp *big.Int,
+	decayEndTimeStamp *big.Int,
 	bidHash []byte,
 	signature []byte,
 ) apitypes.TypedData {
@@ -296,6 +316,8 @@ func constructPreConfirmationPayload(
 				{Name: "txHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
 				{Name: "blockNumber", Type: "uint64"},
+				{Name: "decayStartTimeStamp", Type: "uint64"},
+				{Name: "decayEndTimeStamp", Type: "uint64"},
 				{Name: "bidHash", Type: "string"},   // Hex Encoded Hash
 				{Name: "signature", Type: "string"}, // Hex Encoded Signature
 			},
@@ -310,11 +332,13 @@ func constructPreConfirmationPayload(
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"txHash":      txHash,
-			"bid":         bid,
-			"blockNumber": blockNumber,
-			"bidHash":     hex.EncodeToString(bidHash),
-			"signature":   hex.EncodeToString(signature),
+			"txHash":              txHash,
+			"bid":                 bid,
+			"blockNumber":         blockNumber,
+			"decayStartTimeStamp": decayStartTimeStamp,
+			"decayEndTimeStamp":   decayEndTimeStamp,
+			"bidHash":             hex.EncodeToString(bidHash),
+			"signature":           hex.EncodeToString(signature),
 		},
 	}
 
@@ -323,13 +347,15 @@ func constructPreConfirmationPayload(
 
 // Constructs the EIP712 formatted bid
 // nolint:unused
-func constructBidPayload(txHash string, bid *big.Int, blockNumber *big.Int) apitypes.TypedData {
+func constructBidPayload(txHash string, bid *big.Int, blockNumber *big.Int, decayStartTimeStamp *big.Int, decayEndTimeStamp *big.Int) apitypes.TypedData {
 	signerData := apitypes.TypedData{
 		Types: apitypes.Types{
 			"PreConfBid": []apitypes.Type{
 				{Name: "txHash", Type: "string"},
 				{Name: "bid", Type: "uint64"},
 				{Name: "blockNumber", Type: "uint64"},
+				{Name: "decayStartTimeStamp", Type: "uint64"},
+				{Name: "decayEndTimeStamp", Type: "uint64"},
 			},
 			"EIP712Domain": []apitypes.Type{
 				{Name: "name", Type: "string"},
@@ -342,9 +368,11 @@ func constructBidPayload(txHash string, bid *big.Int, blockNumber *big.Int) apit
 			Version: "1",
 		},
 		Message: apitypes.TypedDataMessage{
-			"txHash":      txHash,
-			"bid":         bid,
-			"blockNumber": blockNumber,
+			"txHash":              txHash,
+			"bid":                 bid,
+			"blockNumber":         blockNumber,
+			"decayStartTimeStamp": decayStartTimeStamp,
+			"decayEndTimeStamp":   decayEndTimeStamp,
 		},
 	}
 

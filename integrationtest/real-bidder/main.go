@@ -149,7 +149,7 @@ func main() {
 				bundle := 1
 				for j := 0; j < len(block); j += bundle {
 					bundle := rand.Intn(10)
-					err = sendBid(bidderClient, logger, rpcClient, block[j:j+bundle], int64(blkNum))
+					err = sendBid(bidderClient, logger, rpcClient, block[j:j+bundle], int64(blkNum), (time.Now().UnixMilli())-10000, (time.Now().UnixMilli()))
 					if err != nil {
 						logger.Error("failed to send bid", "err", err)
 					}
@@ -237,14 +237,18 @@ func sendBid(
 	rpcClient *ethclient.Client,
 	txnHashes []string,
 	blkNum int64,
+	decayStartTimestamp int64,
+	decayEndTimestamp int64,
 ) error {
 	amount := rand.Intn(200000)
 	amount += 100000
 
 	bid := &pb.Bid{
-		TxHashes:    txnHashes,
-		Amount:      strconv.Itoa(amount),
-		BlockNumber: int64(blkNum),
+		TxHashes:            txnHashes,
+		Amount:              strconv.Itoa(amount),
+		BlockNumber:         int64(blkNum),
+		DecayStartTimestamp: decayStartTimestamp,
+		DecayEndTimestamp:   decayEndTimestamp,
 	}
 
 	logger.Info("sending bid", "bid", bid)

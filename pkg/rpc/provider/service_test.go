@@ -197,32 +197,38 @@ func TestBidHandling(t *testing.T) {
 						common.HexToHash("0x00002").Hex()[2:], // remove 0x
 					}, ",", // join with comma
 				),
-				BidAmt:      big.NewInt(1000000000000000000),
-				BlockNumber: big.NewInt(1),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				BidAmt:              big.NewInt(1000000000000000000),
+				BlockNumber:         big.NewInt(1),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		},
 		{
 			name: "rejected bid",
 			bid: &preconfsigner.Bid{
-				TxHash:      common.HexToHash("0x00003").Hex()[2:], // remove 0x
-				BidAmt:      big.NewInt(1000000000000000000),
-				BlockNumber: big.NewInt(1),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              common.HexToHash("0x00003").Hex()[2:], // remove 0x
+				BidAmt:              big.NewInt(1000000000000000000),
+				BlockNumber:         big.NewInt(1),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			status: providerapiv1.BidResponse_STATUS_REJECTED,
 		},
 		{
 			name: "invalid bid status",
 			bid: &preconfsigner.Bid{
-				TxHash:      common.HexToHash("0x00003").Hex()[2:], // remove 0x
-				BidAmt:      big.NewInt(1000000000000000000),
-				BlockNumber: big.NewInt(1),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              common.HexToHash("0x00003").Hex()[2:], // remove 0x
+				BidAmt:              big.NewInt(1000000000000000000),
+				BlockNumber:         big.NewInt(1),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			status:   providerapiv1.BidResponse_STATUS_UNSPECIFIED,
 			noStatus: true,
@@ -230,33 +236,39 @@ func TestBidHandling(t *testing.T) {
 		{
 			name: "invalid bid txHash",
 			bid: &preconfsigner.Bid{
-				TxHash:      "asdf",
-				BidAmt:      big.NewInt(1000000000000000000),
-				BlockNumber: big.NewInt(1),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              "asdf",
+				BidAmt:              big.NewInt(1000000000000000000),
+				BlockNumber:         big.NewInt(1),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			processErr: "tx_hashes: tx_hashes must be a valid array of transaction hashes",
 		},
 		{
 			name: "invalid bid amount",
 			bid: &preconfsigner.Bid{
-				TxHash:      common.HexToHash("0x00004").Hex()[2:], // remove 0x
-				BidAmt:      big.NewInt(0000000000000000000),
-				BlockNumber: big.NewInt(1),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              common.HexToHash("0x00004").Hex()[2:], // remove 0x
+				BidAmt:              big.NewInt(0000000000000000000),
+				BlockNumber:         big.NewInt(1),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			processErr: "bid_amount: bid_amount must be a valid integer",
 		},
 		{
 			name: "invalid bid block number",
 			bid: &preconfsigner.Bid{
-				TxHash:      common.HexToHash("0x00004").Hex()[2:], // remove 0x
-				BidAmt:      big.NewInt(1000000000000000000),
-				BlockNumber: big.NewInt(0),
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+				TxHash:              common.HexToHash("0x00004").Hex()[2:], // remove 0x
+				BidAmt:              big.NewInt(1000000000000000000),
+				BlockNumber:         big.NewInt(0),
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
+				DecayStartTimeStamp: big.NewInt(199),
+				DecayEndTimeStamp:   big.NewInt(299),
 			},
 			processErr: "block_number: value must be greater than 0",
 		},

@@ -185,6 +185,14 @@ definitions:
         type: string
         format: byte
         description: Digest of the bid message signed by the bidder.
+      decayStartTimestamp:
+        type: string
+        format: int64
+        description: Timestamp at which the bid starts decaying.
+      decayEndTimestamp:
+        type: string
+        format: int64
+        description: Timestamp at which the bid ends decaying.
     description: Signed bid message from bidders to the provider.
     title: Bid message
     required:
