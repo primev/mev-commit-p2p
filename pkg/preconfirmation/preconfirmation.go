@@ -204,7 +204,7 @@ func (p *Preconfirmation) handleBid(
 
 	if !p.us.CheckBidderAllowance(ctx, *ethAddress) {
 		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
-		return status.Errorf(codes.PermissionDenied, "bidder not allowed")
+		return status.Errorf(codes.FailedPrecondition, "bidder not allowed")
 	}
 
 	bidAmt, _ := new(big.Int).SetString(bid.BidAmount, 10)
@@ -220,14 +220,14 @@ func (p *Preconfirmation) handleBid(
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case status := <-statusC:
-		switch status {
+	case st := <-statusC:
+		switch st {
 		case providerapiv1.BidResponse_STATUS_REJECTED:
 			return errors.New("bid rejected")
 		case providerapiv1.BidResponse_STATUS_ACCEPTED:
 			preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, "failed to construct preconfirmation: %v", err)
 			}
 			p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
 			err = p.commitmentDA.StoreCommitment(
@@ -242,7 +242,7 @@ func (p *Preconfirmation) handleBid(
 			)
 			if err != nil {
 				p.logger.Error("storing commitment", "error", err)
-				return err
+				return status.Errorf(codes.Internal, "failed to store commitment: %v", err)
 			}
 			return stream.WriteMsg(ctx, preConfirmation)
 		}

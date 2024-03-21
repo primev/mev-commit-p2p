@@ -69,7 +69,7 @@ func New(
 }
 
 func ProtocolID() protocol.ID {
-	return protocol.ID(fmt.Sprintf("%s/%s", ProtocolName, ProtocolVersion))
+	return protocol.ID(fmt.Sprintf("/%s/%s", ProtocolName, ProtocolVersion))
 }
 
 type HandshakeReq struct {
