@@ -223,7 +223,7 @@ func (p *Preconfirmation) handleBid(
 	case st := <-statusC:
 		switch st {
 		case providerapiv1.BidResponse_STATUS_REJECTED:
-			return errors.New("bid rejected")
+			return status.Errorf(codes.Internal, "bid rejected")
 		case providerapiv1.BidResponse_STATUS_ACCEPTED:
 			preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
 			if err != nil {
