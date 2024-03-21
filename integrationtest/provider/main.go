@@ -55,7 +55,7 @@ var (
 	)
 	errorProbability = flag.Int(
 		errorProbabilityFlagName,
-		0,
+		20,
 		"The probability of returning an error when sending a bid response",
 	)
 )
