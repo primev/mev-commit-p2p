@@ -259,13 +259,21 @@ func (s *Service) Self() map[string]interface{} {
 	}
 }
 
-func matchProtocolIDWithSemver(protoID string, supportedVersion string) (bool, error) {
+func matchProtocolIDWithSemver(
+	incomingProto string,
+	protoID string,
+	supportedVersion string) (bool, error) {
 	// Extract the version part from the protocol ID.
-	parts := strings.Split(protoID, "/")
+	parts := strings.Split(incomingProto, "/")
 	if len(parts) != 3 {
 		return false, fmt.Errorf("invalid protocol ID: %s", protoID)
 	}
+	protocolName := parts[1]
 	protocolVersion := parts[2]
+
+	if protocolName != protoID {
+		return false, nil
+	}
 
 	// Parse the supported version and the protocol version.
 	supportedSemver, err := semver.NewVersion(supportedVersion)
@@ -288,7 +296,7 @@ func (s *Service) AddStreamHandlers(streams ...p2p.StreamDesc) {
 		s.host.SetStreamHandlerMatch(
 			protocol.ID(ss.Name),
 			func(p protocol.ID) bool {
-				matched, err := matchProtocolIDWithSemver(string(p), ss.Version)
+				matched, err := matchProtocolIDWithSemver(string(p), ss.Name, ss.Version)
 				if err != nil {
 					s.logger.Error("matching protocol ID with semver", "err", err)
 				}
