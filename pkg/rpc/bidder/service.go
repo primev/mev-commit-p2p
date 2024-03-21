@@ -90,6 +90,8 @@ func (s *Service) SendBid(
 			CommitmentDigest:     hex.EncodeToString(resp.Digest),
 			CommitmentSignature:  hex.EncodeToString(resp.Signature),
 			ProviderAddress:      common.Bytes2Hex(resp.ProviderAddress),
+			DecayStartTimestamp:  b.DecayStartTimestamp,
+			DecayEndTimestamp:    b.DecayEndTimestamp,
 		})
 		if err != nil {
 			s.logger.Error("sending preConfirmation", "error", err)
