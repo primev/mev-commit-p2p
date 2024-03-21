@@ -89,6 +89,10 @@ func (p *privateKeySigner) ConstructSignedBid(
 		return nil, errors.New("missing required fields")
 	}
 
+	if decayEndTimeStamp.Cmp(decayStartTimeStamp) != 1 {
+		return nil, errors.New("decay end timestamp must be after decay start timestamp")
+	}
+
 	bid := &Bid{
 		BidAmt:              bidAmt,
 		TxHash:              txHash,

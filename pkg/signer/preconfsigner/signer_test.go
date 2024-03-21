@@ -24,7 +24,9 @@ func TestBids(t *testing.T) {
 		keySigner := mockkeysigner.NewMockKeySigner(key, crypto.PubkeyToAddress(key.PublicKey))
 		signer := preconfsigner.NewSigner(keySigner)
 
-		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(time.Now().UnixMilli()), big.NewInt(time.Now().UnixMilli()))
+		start := time.Now().UnixMilli()
+		end := start + 100000
+		bid, err := signer.ConstructSignedBid("0xkartik", big.NewInt(10), big.NewInt(2), big.NewInt(start), big.NewInt(end))
 		if err != nil {
 			t.Fatal(err)
 		}
