@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -55,7 +55,7 @@ var (
 	)
 	errorProbability = flag.Int(
 		errorProbabilityFlagName,
-		0,
+		20,
 		"The probability of returning an error when sending a bid response",
 	)
 )

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
+	"google.golang.org/protobuf/proto"
 )
 
 func NewDuplexStream() (out *testStream, in *testStream) {
@@ -26,12 +27,20 @@ func newStream() *testStream {
 	}
 }
 
-func (s *testStream) ReadMsg() ([]byte, error) {
-	return <-s.in, nil
+func (s *testStream) ReadMsg(ctx context.Context, msg proto.Message) error {
+	buf, ok := <-s.in
+	if !ok {
+		return errors.New("stream closed")
+	}
+	return proto.Unmarshal(buf, msg)
 }
 
-func (s *testStream) WriteMsg(msg []byte) error {
-	s.out <- msg
+func (s *testStream) WriteMsg(_ context.Context, msg proto.Message) error {
+	buf, err := proto.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	s.out <- buf
 	return nil
 }
 
@@ -71,7 +80,7 @@ type Option func(*P2PTest)
 
 type P2PTest struct {
 	self            *p2p.Peer
-	handlers        map[string]p2p.ProtocolSpec
+	handlers        map[string][]p2p.StreamDesc
 	connectFunc     func([]byte) (p2p.Peer, error)
 	addressbookFunc func(p2p.Peer) ([]byte, error)
 }
@@ -90,7 +99,7 @@ func WithAddressbookFunc(fn func(p p2p.Peer) ([]byte, error)) Option {
 
 func New(selfNode *p2p.Peer, opts ...Option) *P2PTest {
 	p := &P2PTest{
-		handlers: make(map[string]p2p.ProtocolSpec),
+		handlers: make(map[string][]p2p.StreamDesc),
 		self:     selfNode,
 	}
 
@@ -101,8 +110,8 @@ func New(selfNode *p2p.Peer, opts ...Option) *P2PTest {
 	return p
 }
 
-func (p *P2PTest) SetPeerHandler(peer p2p.Peer, proto p2p.ProtocolSpec) {
-	p.handlers[peer.EthAddress.Hex()] = proto
+func (p *P2PTest) SetPeerHandler(peer p2p.Peer, proto p2p.StreamDesc) {
+	p.handlers[peer.EthAddress.Hex()] = append(p.handlers[peer.EthAddress.Hex()], proto)
 }
 
 func (p *P2PTest) Connect(_ context.Context, addr []byte) (p2p.Peer, error) {
@@ -124,16 +133,17 @@ func (p *P2PTest) GetPeerInfo(peer p2p.Peer) ([]byte, error) {
 func (p *P2PTest) NewStream(
 	_ context.Context,
 	peer p2p.Peer,
-	proto, version, stream string,
+	_ p2p.Header,
+	stream p2p.StreamDesc,
 ) (p2p.Stream, error) {
 	sHandlers, found := p.handlers[peer.EthAddress.Hex()]
 	if !found {
 		return nil, errors.New("peer not found")
 	}
 
-	var handler p2p.Handler
-	for _, h := range sHandlers.StreamSpecs {
-		if h.Name == stream {
+	var handler p2p.HandlerFunc
+	for _, h := range sHandlers {
+		if h.Name == stream.Name && h.Version == stream.Version {
 			handler = h.Handler
 			break
 		}

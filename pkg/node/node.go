@@ -16,8 +16,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
@@ -136,7 +137,7 @@ func NewNode(opts *Options) (*Node, error) {
 	p2pSvc.SetNotifier(topo)
 
 	// Register the discovery protocol with the p2p service
-	p2pSvc.AddProtocol(disc.Protocol())
+	p2pSvc.AddStreamHandlers(disc.Streams()...)
 
 	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger.With("component", "debugapi"))
 
@@ -200,7 +201,7 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			// Only register handler for provider
-			p2pSvc.AddProtocol(preconfProto.Protocol())
+			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 		case p2p.PeerTypeBidder.String():
@@ -356,7 +357,7 @@ type noOpBidProcessor struct{}
 // ProcessBid auto accepts all bids sent.
 func (noOpBidProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconfsigner.Bid,
+	_ *preconfpb.Bid,
 ) (chan providerapiv1.BidResponse_Status, error) {
 	statusC := make(chan providerapiv1.BidResponse_Status, 5)
 	statusC <- providerapiv1.BidResponse_STATUS_ACCEPTED

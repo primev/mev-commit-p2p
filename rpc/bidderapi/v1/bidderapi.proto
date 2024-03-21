@@ -1,8 +1,6 @@
 syntax = "proto3";
 
-package rpc.bidderapi.v1;
-
-option go_package = "github.com/primevprotocol/mev-commit/rpc/bidderapi/v1;bidderapiv1";
+package bidderapi.v1;
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/api/annotations.proto";
@@ -134,7 +132,7 @@ message Commitment {
     description: "Hex string encoding of the hash of the transaction that the bidder wants to include in the block."
     pattern: "[a-fA-F0-9]{64}"
   }];
-  int64 bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+  string bid_amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH that the bidder has agreed to pay to the provider for including the transaction in the block."
   }];
   int64 block_number = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {

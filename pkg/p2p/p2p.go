@@ -6,6 +6,9 @@ import (
 	"io"
 
 	"github.com/ethereum/go-ethereum/common"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // PeerType is the type of a peer
@@ -61,25 +64,42 @@ type PeerInfo struct {
 	Underlay   []byte
 }
 
+// Stream is a bidirectional stream of messages between two peers per protocol.
 type Stream interface {
-	ReadMsg() ([]byte, error)
-	WriteMsg([]byte) error
+	// ReadMsg reads the next message from the stream.
+	ReadMsg(context.Context, proto.Message) error
+	// WriteMsg writes a message to the stream.
+	WriteMsg(context.Context, proto.Message) error
 
 	Reset() error
 	io.Closer
 }
 
-type Handler func(ctx context.Context, peer Peer, stream Stream) error
-
-type StreamSpec struct {
-	Name    string
-	Handler Handler
+type MetadataStream interface {
+	// ReadHeader reads the header from the stream.
+	ReadHeader(context.Context) (Header, error)
+	// WriteHeader writes the header to the stream.
+	WriteHeader(context.Context, Header) error
+	// WriteError writes an error to the stream.
+	WriteError(context.Context, *status.Status) error
 }
 
-type ProtocolSpec struct {
-	Name        string
-	Version     string
-	StreamSpecs []StreamSpec
+// Header is a map of string to structpb.Value. It is used to pass headers
+// between the client and the server.
+type Header map[string]*structpb.Value
+
+// HandlerFunc is a function that handles a stream.
+type HandlerFunc func(ctx context.Context, peer Peer, stream Stream) error
+
+// HeaderFunc is a function that handles a header.
+type HeaderFunc func(ctx context.Context, peer Peer, hdr Header) Header
+
+// StreamDesc describes a stream handler.
+type StreamDesc struct {
+	Name    string
+	Version string
+	Handler HandlerFunc
+	Header  HeaderFunc
 }
 
 type Addressbook interface {
@@ -87,11 +107,11 @@ type Addressbook interface {
 }
 
 type Streamer interface {
-	NewStream(ctx context.Context, peer Peer, proto, version, stream string) (Stream, error)
+	NewStream(context.Context, Peer, Header, StreamDesc) (Stream, error)
 }
 
 type Service interface {
-	AddProtocol(spec ProtocolSpec)
+	AddStreamHandlers(desc ...StreamDesc)
 	Connect(ctx context.Context, info []byte) (Peer, error)
 	Streamer
 	Addressbook
@@ -110,8 +130,4 @@ type BlockedPeerInfo struct {
 	Peer     common.Address
 	Reason   string
 	Duration string
-}
-
-func NewStreamName(protocol, version, stream string) string {
-	return "/primev/" + protocol + "/" + version + "/" + stream
 }

@@ -9,17 +9,19 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
-	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	signer "github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
 	ProtocolName    = "preconfirmation"
-	ProtocolVersion = "1.0.0"
+	ProtocolVersion = "2.0.0"
 )
 
 type Preconfirmation struct {
@@ -42,7 +44,7 @@ type BidderStore interface {
 }
 
 type BidProcessor interface {
-	ProcessBid(context.Context, *signer.Bid) (chan providerapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *preconfpb.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
 
 func New(
@@ -66,17 +68,16 @@ func New(
 	}
 }
 
-func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
-	return p2p.ProtocolSpec{
+func (p *Preconfirmation) preconfStream() p2p.StreamDesc {
+	return p2p.StreamDesc{
 		Name:    ProtocolName,
 		Version: ProtocolVersion,
-		StreamSpecs: []p2p.StreamSpec{
-			{
-				Name:    "bid",
-				Handler: p.handleBid,
-			},
-		},
+		Handler: p.handleBid,
 	}
+}
+
+func (p *Preconfirmation) Streams() []p2p.StreamDesc {
+	return []p2p.StreamDesc{p.preconfStream()}
 }
 
 // SendBid is meant to be called by the bidder to construct and send bids to the provider.
@@ -86,11 +87,11 @@ func (p *Preconfirmation) Protocol() p2p.ProtocolSpec {
 func (p *Preconfirmation) SendBid(
 	ctx context.Context,
 	txHash string,
-	bidAmt *big.Int,
-	blockNumber *big.Int,
-	decayStartTimestamp *big.Int,
-	decayEndTimestamp *big.Int,
-) (chan *signer.PreConfirmation, error) {
+	bidAmt string,
+	blockNumber int64,
+	decayStartTimestamp int64,
+	decayEndTimestamp int64,
+) (chan *preconfpb.PreConfirmation, error) {
 	signedBid, err := p.signer.ConstructSignedBid(txHash, bidAmt, blockNumber, decayStartTimestamp, decayEndTimestamp)
 	if err != nil {
 		p.logger.Error("constructing signed bid", "error", err, "txHash", txHash)
@@ -105,7 +106,7 @@ func (p *Preconfirmation) SendBid(
 	}
 
 	// Create a new channel to receive preConfirmations
-	preConfirmations := make(chan *signer.PreConfirmation, len(providers))
+	preConfirmations := make(chan *preconfpb.PreConfirmation, len(providers))
 
 	wg := sync.WaitGroup{}
 	for idx := range providers {
@@ -118,9 +119,8 @@ func (p *Preconfirmation) SendBid(
 			providerStream, err := p.streamer.NewStream(
 				ctx,
 				provider,
-				ProtocolName,
-				ProtocolVersion,
-				"bid",
+				nil,
+				p.preconfStream(),
 			)
 			if err != nil {
 				logger.Error("creating stream", "error", err)
@@ -129,8 +129,7 @@ func (p *Preconfirmation) SendBid(
 
 			logger.Info("sending signed bid", "signedBid", signedBid)
 
-			r, w := msgpack.NewReaderWriter[signer.PreConfirmation, signer.Bid](providerStream)
-			err = w.WriteMsg(ctx, signedBid)
+			err = providerStream.WriteMsg(ctx, signedBid)
 			if err != nil {
 				_ = providerStream.Reset()
 				logger.Error("writing message", "error", err)
@@ -138,7 +137,8 @@ func (p *Preconfirmation) SendBid(
 			}
 			p.metrics.SentBidsCount.Inc()
 
-			preConfirmation, err := r.ReadMsg(ctx)
+			preConfirmation := new(preconfpb.PreConfirmation)
+			err = providerStream.ReadMsg(ctx, preConfirmation)
 			if err != nil {
 				_ = providerStream.Reset()
 				logger.Error("reading message", "error", err)
@@ -153,7 +153,8 @@ func (p *Preconfirmation) SendBid(
 				logger.Error("verifying provider signature", "error", err)
 				return
 			}
-			preConfirmation.ProviderAddress = *providerAddress
+			preConfirmation.ProviderAddress = make([]byte, len(providerAddress))
+			copy(preConfirmation.ProviderAddress, providerAddress[:])
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
 
@@ -187,8 +188,8 @@ func (p *Preconfirmation) handleBid(
 		return ErrInvalidBidderTypeForBid
 	}
 
-	r, w := msgpack.NewReaderWriter[signer.Bid, signer.PreConfirmation](stream)
-	bid, err := r.ReadMsg(ctx)
+	bid := new(preconfpb.Bid)
+	err := stream.ReadMsg(ctx, bid)
 	if err != nil {
 		return err
 	}
@@ -197,51 +198,54 @@ func (p *Preconfirmation) handleBid(
 
 	ethAddress, err := p.signer.VerifyBid(bid)
 	if err != nil {
-		return err
+		p.logger.Error("verifying bid", "error", err)
+		return status.Errorf(codes.InvalidArgument, "invalid bid: %v", err)
 	}
 
-	if p.us.CheckBidderAllowance(ctx, *ethAddress) {
-		// try to enqueue for 5 seconds
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-
-		statusC, err := p.processer.ProcessBid(ctx, bid)
-		if err != nil {
-			return err
-		}
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case status := <-statusC:
-			switch status {
-			case providerapiv1.BidResponse_STATUS_REJECTED:
-				return errors.New("bid rejected")
-			case providerapiv1.BidResponse_STATUS_ACCEPTED:
-				preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
-				if err != nil {
-					return err
-				}
-				p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
-				err = p.commitmentDA.StoreCommitment(
-					ctx,
-					preConfirmation.Bid.BidAmt,
-					preConfirmation.Bid.BlockNumber.Uint64(),
-					preConfirmation.Bid.TxHash,
-					preConfirmation.Bid.DecayStartTimeStamp.Uint64(),
-					preConfirmation.Bid.DecayEndTimeStamp.Uint64(),
-					preConfirmation.Bid.Signature,
-					preConfirmation.Signature,
-				)
-				if err != nil {
-					p.logger.Error("storing commitment", "error", err)
-					return err
-				}
-				return w.WriteMsg(ctx, preConfirmation)
-			}
-		}
-	} else {
+	if !p.us.CheckBidderAllowance(ctx, *ethAddress) {
 		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
-		return errors.New("bidder not allowed")
+		return status.Errorf(codes.FailedPrecondition, "bidder not allowed")
+	}
+
+	bidAmt, _ := new(big.Int).SetString(bid.BidAmount, 10)
+
+	// try to enqueue for 5 seconds
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	statusC, err := p.processer.ProcessBid(ctx, bid)
+	if err != nil {
+		return err
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case st := <-statusC:
+		switch st {
+		case providerapiv1.BidResponse_STATUS_REJECTED:
+			return status.Errorf(codes.Internal, "bid rejected")
+		case providerapiv1.BidResponse_STATUS_ACCEPTED:
+			preConfirmation, err := p.signer.ConstructPreConfirmation(bid)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to construct preconfirmation: %v", err)
+			}
+			p.logger.Info("sending preconfirmation", "preConfirmation", preConfirmation)
+			err = p.commitmentDA.StoreCommitment(
+				ctx,
+				bidAmt,
+				uint64(preConfirmation.Bid.BlockNumber),
+				preConfirmation.Bid.TxHash,
+				uint64(preConfirmation.Bid.DecayStartTimestamp),
+				uint64(preConfirmation.Bid.DecayEndTimestamp),
+				preConfirmation.Bid.Signature,
+				preConfirmation.Signature,
+			)
+			if err != nil {
+				p.logger.Error("storing commitment", "error", err)
+				return status.Errorf(codes.Internal, "failed to store commitment: %v", err)
+			}
+			return stream.WriteMsg(ctx, preConfirmation)
+		}
 	}
 
 	return nil

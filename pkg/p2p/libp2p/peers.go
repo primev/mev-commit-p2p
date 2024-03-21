@@ -12,7 +12,7 @@ import (
 
 type peerRegistry struct {
 	// overlays maps peer IDs to peer info relevant to the primev client
-	overlays map[core.PeerID]p2p.Peer
+	overlays map[core.PeerID]*p2p.Peer
 	// underlays maps Ethereum addresses to peer IDs used by libp2p
 	underlays map[common.Address]core.PeerID
 	// connections maps peer IDs to their open connections, this is used to
@@ -34,7 +34,7 @@ type disconnector interface {
 
 func newPeerRegistry() *peerRegistry {
 	return &peerRegistry{
-		overlays:    make(map[core.PeerID]p2p.Peer),
+		overlays:    make(map[core.PeerID]*p2p.Peer),
 		underlays:   make(map[common.Address]core.PeerID),
 		connections: make(map[core.PeerID]map[network.Conn]struct{}),
 		streams:     make(map[core.PeerID]map[network.Stream]context.CancelFunc),
@@ -69,10 +69,10 @@ func (r *peerRegistry) Disconnected(_ network.Network, c network.Conn) {
 		cancel()
 	}
 	delete(r.streams, peerID)
-	r.disconnector.disconnected(peerInfo)
+	r.disconnector.disconnected(*peerInfo)
 }
 
-func (r *peerRegistry) addPeer(c network.Conn, p p2p.Peer) (exists bool) {
+func (r *peerRegistry) addPeer(c network.Conn, p *p2p.Peer) (exists bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -91,7 +91,7 @@ func (r *peerRegistry) addPeer(c network.Conn, p p2p.Peer) (exists bool) {
 	return false
 }
 
-func (r *peerRegistry) removePeer(peer p2p.Peer) (found bool, peerID core.PeerID) { //nolint:unused
+func (r *peerRegistry) removePeer(peer *p2p.Peer) (found bool, peerID core.PeerID) { //nolint:unused
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -106,7 +106,7 @@ func (r *peerRegistry) removePeer(peer p2p.Peer) (found bool, peerID core.PeerID
 	return
 }
 
-func (r *peerRegistry) getPeer(peerID core.PeerID) (p2p.Peer, bool) {
+func (r *peerRegistry) getPeer(peerID core.PeerID) (*p2p.Peer, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -122,11 +122,11 @@ func (r *peerRegistry) getPeerID(ethAddress common.Address) (core.PeerID, bool) 
 	return peerID, ok
 }
 
-func (r *peerRegistry) getPeers() []p2p.Peer { //nolint:unused
+func (r *peerRegistry) getPeers() []*p2p.Peer { //nolint:unused
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	peers := make([]p2p.Peer, 0, len(r.overlays))
+	peers := make([]*p2p.Peer, 0, len(r.overlays))
 	for _, peer := range r.overlays {
 		peers = append(peers, peer)
 	}
@@ -166,13 +166,13 @@ func (r *peerRegistry) removeStream(peerID core.PeerID, stream network.Stream) {
 	delete(r.streams[peerID], stream)
 }
 
-func (r *peerRegistry) isConnected(peerID core.PeerID) (p2p.Peer, bool) {
+func (r *peerRegistry) isConnected(peerID core.PeerID) (*p2p.Peer, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	peer, ok := r.overlays[peerID]
 	if !ok {
-		return p2p.Peer{}, false
+		return nil, false
 	}
 
 	_, ok = r.connections[peerID]

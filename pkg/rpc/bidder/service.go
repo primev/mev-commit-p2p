@@ -10,9 +10,9 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
+	preconfirmationv1 "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -45,7 +45,7 @@ func NewService(
 }
 
 type PreconfSender interface {
-	SendBid(context.Context, string, *big.Int, *big.Int, *big.Int, *big.Int) (chan *preconfsigner.PreConfirmation, error)
+	SendBid(context.Context, string, string, int64, int64, int64) (chan *preconfirmationv1.PreConfirmation, error)
 }
 
 func (s *Service) SendBid(
@@ -64,21 +64,15 @@ func (s *Service) SendBid(
 		return status.Errorf(codes.InvalidArgument, "validating bid: %v", err)
 	}
 
-	amtVal, success := big.NewInt(0).SetString(bid.Amount, 10)
-	if !success {
-		s.logger.Error("parsing amount", "amount", bid.Amount)
-		return status.Errorf(codes.InvalidArgument, "error parsing amount: %v", bid.Amount)
-	}
-
 	txnsStr := strings.Join(bid.TxHashes, ",")
 
 	respC, err := s.sender.SendBid(
 		ctx,
 		txnsStr,
-		amtVal,
-		big.NewInt(bid.BlockNumber),
-		big.NewInt(bid.DecayStartTimestamp),
-		big.NewInt(bid.DecayEndTimestamp),
+		bid.Amount,
+		bid.BlockNumber,
+		bid.DecayStartTimestamp,
+		bid.DecayEndTimestamp,
 	)
 	if err != nil {
 		s.logger.Error("sending bid", "error", err)
@@ -89,13 +83,15 @@ func (s *Service) SendBid(
 		b := resp.Bid
 		err := srv.Send(&bidderapiv1.Commitment{
 			TxHashes:             strings.Split(b.TxHash, ","),
-			BidAmount:            b.BidAmt.Int64(),
-			BlockNumber:          b.BlockNumber.Int64(),
+			BidAmount:            b.BidAmount,
+			BlockNumber:          b.BlockNumber,
 			ReceivedBidDigest:    hex.EncodeToString(b.Digest),
 			ReceivedBidSignature: hex.EncodeToString(b.Signature),
 			CommitmentDigest:     hex.EncodeToString(resp.Digest),
 			CommitmentSignature:  hex.EncodeToString(resp.Signature),
-			ProviderAddress:      resp.ProviderAddress.String(),
+			ProviderAddress:      common.Bytes2Hex(resp.ProviderAddress),
+			DecayStartTimestamp:  b.DecayStartTimestamp,
+			DecayEndTimestamp:    b.DecayEndTimestamp,
 		})
 		if err != nil {
 			s.logger.Error("sending preConfirmation", "error", err)
