@@ -23,7 +23,6 @@ func TestPreconfContract(t *testing.T) {
 		txHash := common.HexToHash("abcdef")
 		bid := big.NewInt(1000000000000000000)
 		blockNum := uint64(100)
-		// bidHash := "abcdef"
 		bidSig := []byte("abcdef")
 		commitment := []byte("abcdef")
 		decayStart := uint64(1710095453035)
