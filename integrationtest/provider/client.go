@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
@@ -123,8 +122,6 @@ func (b *ProviderClient) CheckAndStake() error {
 }
 
 func (b *ProviderClient) startSender() error {
-	fmt.Println("starting sender")
-
 	stream, err := b.client.SendProcessedBids(context.Background())
 	if err != nil {
 		return err
