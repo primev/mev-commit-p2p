@@ -225,7 +225,7 @@ deploy_contracts() {
 }
 
 start_oracle(){
-    local l1_url=${L1_RPC_BASE_URL}/$1
+    local l1_url="https://ethereum-holesky-rpc.publicnode.com"
     local datadog_key=$2
     # Run Docker Compose
     L1_URL="$l1_url" DD_KEY="$datadog_key" docker compose -f "$ORACLE_PATH/integration-compose.yml" up -d --build
