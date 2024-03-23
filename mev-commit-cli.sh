@@ -19,10 +19,10 @@ ORACLE_PATH="$PRIMEV_DIR/$ORACLE_REPO_NAME"
 BRIDGE_PATH="$PRIMEV_DIR/$BRIDGE_REPO_NAME"
 
 DOCKER_NETWORK_NAME="primev_net"
-MEV_COMMIT_BRANCH="main"
-GETH_POA_BRANCH="master"
+MEV_COMMIT_BRANCH="e2e-testing"
+GETH_POA_BRANCH="revert-33-revert-modify-chain-to-ms-timestamps"
 CONTRACTS_BRANCH="main"
-ORACLE_BRANCH="main"
+ORACLE_BRANCH="ckartik/adds-logs-for-decay"
 BRIDGE_BRANCH="main"
 
 # Default values for optional arguments
