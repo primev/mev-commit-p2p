@@ -153,7 +153,7 @@ start_mev_commit_e2e() {
     PRECONF_CONTRACT=0x451656c1E7eDf82397EBE04f38819c9970AA3658
     RPC_URL=${rpc_url}
     PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-    L1_RPC_URL="${L1_RPC_BASE_URL}/${sepolia_key}"
+    L1_RPC_URL="https://ethereum-holesky-rpc.publicnode.com"
 EOF
 
 
