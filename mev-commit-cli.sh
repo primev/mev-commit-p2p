@@ -144,17 +144,17 @@ start_mev_commit_e2e() {
             ;;
         esac
     done
-    echo "Setting .env file ..."
+#     echo "Setting .env file ..."
 
-        # Create or overwrite the .env file
-    cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
-    BIDDER_REGISTRY=0x5340b92E261141D6B4D0DC6F847667E5e4A63544
-    PROVIDER_REGISTRY=0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
-    PRECONF_CONTRACT=0x451656c1E7eDf82397EBE04f38819c9970AA3658
-    RPC_URL=${rpc_url}
-    PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-    L1_RPC_URL="https://ethereum-holesky-rpc.publicnode.com"
-EOF
+#         # Create or overwrite the .env file
+#     cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
+#     BIDDER_REGISTRY=0x5340b92E261141D6B4D0DC6F847667E5e4A63544
+#     PROVIDER_REGISTRY=0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
+#     PRECONF_CONTRACT=0x451656c1E7eDf82397EBE04f38819c9970AA3658
+#     RPC_URL=${rpc_url}
+#     PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+#     L1_RPC_URL="https://ethereum-holesky-rpc.publicnode.com"
+# EOF
 
 
     # Check if datadog_key is empty
