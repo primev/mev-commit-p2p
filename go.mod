@@ -15,7 +15,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1
 	github.com/primevprotocol/contracts-abi v0.2.3
 	github.com/prometheus/client_golang v1.18.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/crypto v0.21.0
 	golang.org/x/sync v0.6.0
