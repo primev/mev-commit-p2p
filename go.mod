@@ -3,7 +3,7 @@ module github.com/primevprotocol/mev-commit
 go 1.21.1
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.32.0-20240221180331-f05a6f4403ce.1
+	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.33.0-20240221180331-f05a6f4403ce.1
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/bufbuild/protovalidate-go v0.6.0
 	github.com/ethereum/go-ethereum v1.13.14
