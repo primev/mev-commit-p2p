@@ -144,17 +144,18 @@ func main() {
 			if err != nil || len(block) == 0 {
 				logger.Error("failed to get block", "err", err)
 			} else {
-				throtle := time.Duration(12000*time.Millisecond) / time.Duration(len(block))
+				throtle := time.Duration(time.Second * 24)
 				logger.Info("thortling set", "throtle", throtle.String())
-				bundle := 1
-				for j := 0; j < len(block); j += bundle {
-					bundle := rand.Intn(10)
-					err = sendBid(bidderClient, logger, rpcClient, block[j:j+bundle], int64(blkNum), (time.Now().UnixMilli() - int64(time.Second*4)), (time.Now().UnixMilli() + int64(time.Second*5)))
-					if err != nil {
-						logger.Error("failed to send bid", "err", err)
-					}
-					time.Sleep(throtle)
+				// bundle := 1
+				// for j := 0; j < len(block); j += bundle {
+				// bundle := rand.Intn(10)
+				logger.Info("Sending a bid", "block", block[0:2], "blockNumber", blkNum)
+				err = sendBid(bidderClient, logger, rpcClient, block[0:2], int64(blkNum), (time.Now().UnixMilli() - int64(time.Second*4)), (time.Now().UnixMilli() + int64(time.Second*5)))
+				if err != nil {
+					logger.Error("failed to send bid", "err", err)
 				}
+				time.Sleep(throtle)
+				// }
 			}
 		}
 	}(logger)
@@ -240,8 +241,7 @@ func sendBid(
 	decayStartTimestamp int64,
 	decayEndTimestamp int64,
 ) error {
-	amount := rand.Intn(200000)
-	amount += 100000
+	amount := rand.Intn(1000000000000)
 
 	bid := &pb.Bid{
 		TxHashes:            txnHashes,
