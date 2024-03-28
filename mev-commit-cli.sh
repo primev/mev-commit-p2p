@@ -168,6 +168,53 @@ start_mev_commit_e2e() {
     fi
 }
 
+
+start_mev_commit_e2e_demo() {
+    local datadog_key=""
+    local sepolia_key=""
+    echo "Starting MEV-Commit..."
+
+    # Loop through arguments and process them
+    for arg in "$@"
+    do
+        case $arg in
+            --datadog-key=*)
+            datadog_key="${arg#*=}"
+            shift # Remove --datadog-key= from processing
+            ;;
+            --sepolia-key=*)
+            sepolia_key="${arg#*=}"
+            shift # Remove --sepolia-key= from processing
+            ;;
+            *)
+            # Unknown option
+            ;;
+        esac
+    done
+#     echo "Setting .env file ..."
+
+#         # Create or overwrite the .env file
+#     cat > "$MEV_COMMIT_PATH/integrationtest/.env" <<EOF
+#     BIDDER_REGISTRY=0x5340b92E261141D6B4D0DC6F847667E5e4A63544
+#     PROVIDER_REGISTRY=0xeA73E67c2E34C4E02A2f3c5D416F59B76e7617fC
+#     PRECONF_CONTRACT=0x451656c1E7eDf82397EBE04f38819c9970AA3658
+#     RPC_URL=${rpc_url}
+#     PRIVATE_KEY=ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+#     L1_RPC_URL="https://ethereum-holesky-rpc.publicnode.com"
+# EOF
+
+
+    # Check if datadog_key is empty
+    if [ -z "$datadog_key" ]; then
+        echo "DD_KEY is empty, so no agents will be started."
+        # Run Docker Compose without --profile agent
+        docker compose --profile demo -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    else
+        # Run Docker Compose with --profile agent
+        DD_KEY="$datadog_key" docker compose --profile demo --profile agent -f "$MEV_COMMIT_PATH/e2e-compose.yml" up --build -d
+    fi
+}
+
 start_mev_commit() {
     local datadog_key=$1
 
@@ -402,6 +449,14 @@ start_service() {
             start_oracle "$sepolia_key" "$datadog_key"
             start_hyperlane "$public_rpc_url"
             ;;
+        "demo")
+            initialize_environment
+            start_settlement_layer "$datadog_key"
+            deploy_contracts "$rpc_url"
+            start_mev_commit_e2e_demo "--sepolia-key=$sepolia_key" "--datadog-key=$datadog_key"
+            sleep 12
+            start_oracle "$sepolia_key" "$datadog_key"
+            ;;
         "e2e")
             initialize_environment
             start_settlement_layer "$datadog_key"
@@ -468,6 +523,7 @@ show_help() {
     echo "Examples:"
     echo "  $0 start all --rpc-url http://localhost:8545  Start all services with a specific RPC URL"
     echo "  $0 start e2e --datadog-key abc123             Start only the e2e service with a Datadog key"
+    echo "  $0 start demo --datadog-key abc123            Start only the e2e service with a Datadog key in demo mode"
     echo "  $0 start oracle                               Start only the oracle service"
     echo "  $0 start sl                                   Start only the settlement layer service"
     echo "  $0 stop sl                                    Stop the settlement layer service"
