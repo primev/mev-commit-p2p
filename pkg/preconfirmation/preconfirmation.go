@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math/big"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	encryptor "github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
@@ -30,6 +32,7 @@ type Preconfirmation struct {
 	us           BidderStore
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
+	blockTracker blocktrackercontract.Interface
 	logger       *slog.Logger
 	metrics      *metrics
 }
@@ -39,7 +42,7 @@ type Topology interface {
 }
 
 type BidderStore interface {
-	CheckBidderAllowance(context.Context, common.Address) bool
+	CheckBidderAllowance(context.Context, common.Address, *big.Int) bool
 }
 
 type BidProcessor interface {
@@ -53,6 +56,7 @@ func New(
 	us BidderStore,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
+	blockTracker blocktrackercontract.Interface,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
@@ -62,6 +66,7 @@ func New(
 		us:           us,
 		processer:    processor,
 		commitmentDA: commitmentDA,
+		blockTracker: blockTracker,
 		logger:       logger,
 		metrics:      newMetrics(),
 	}
@@ -210,9 +215,14 @@ func (p *Preconfirmation) handleBid(
 	if err != nil {
 		return err
 	}
+	
+	window, err := p.blockTracker.GetCurrentWindow(ctx)
+	if err != nil {
+		p.logger.Error("getting window", "error", err)
+		return status.Errorf(codes.Internal, "failed to get window: %v", err)
+	}
 
-	// todo: change to take care of double spend
-	if !p.us.CheckBidderAllowance(ctx, *ethAddress) {
+	if !p.us.CheckBidderAllowance(ctx, *ethAddress, new(big.Int).SetUint64(window)) {
 		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
 		return status.Errorf(codes.FailedPrecondition, "bidder not allowed")
 	}

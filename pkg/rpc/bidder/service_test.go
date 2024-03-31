@@ -16,6 +16,7 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -84,7 +85,7 @@ func (t *testRegistryContract) PrepayAllowance(ctx context.Context, amount *big.
 	return nil
 }
 
-func (t *testRegistryContract) GetAllowance(ctx context.Context, address common.Address) (*big.Int, error) {
+func (t *testRegistryContract) GetAllowance(ctx context.Context, address common.Address, window *big.Int) (*big.Int, error) {
 	return t.allowance, nil
 }
 
@@ -92,9 +93,53 @@ func (t *testRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int, e
 	return t.minAllowance, nil
 }
 
-func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address common.Address) bool {
+func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int) bool {
 	return t.allowance.Cmp(t.minAllowance) > 0
 }
+
+type testBlockTrackerContract struct {
+	blockNumberToWinner map[uint64]common.Address
+	lastBlockNumber uint64
+	lastBlockWinner common.Address
+	blocksPerWindow uint64
+}
+
+// RecordBlock records a new block and its winner.
+func (btc *testBlockTrackerContract) RecordL1Block(ctx context.Context, blockNumber uint64, winner common.Address) error {
+	btc.lastBlockNumber = blockNumber
+	btc.lastBlockWinner = winner
+	btc.blockNumberToWinner[blockNumber] = winner
+	return nil
+}
+
+func (btc *testBlockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error) {
+	return btc.blockNumberToWinner[blockNumber], nil
+}
+
+// GetCurrentWindow returns the current window number.
+func (btc *testBlockTrackerContract) GetCurrentWindow(ctx context.Context) (uint64, error) {
+	return btc.lastBlockNumber / btc.blocksPerWindow, nil
+}
+
+func (btc *testBlockTrackerContract) GetLastL1BlockWinner(ctx context.Context) (common.Address, error) {
+	return btc.lastBlockWinner, nil
+}
+
+func (btc *testBlockTrackerContract) GetLastL1BlockNumber(ctx context.Context) (uint64, error) {
+	return btc.lastBlockNumber, nil
+}
+
+// SetBlocksPerWindow sets the number of blocks per window.
+func (btc *testBlockTrackerContract) SetBlocksPerWindow(ctx context.Context, blocksPerWindow uint64) error {
+	btc.blocksPerWindow = blocksPerWindow
+	return nil
+}
+
+// GetBlocksPerWindow returns the number of blocks per window.
+func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (uint64, error) {
+	return btc.blocksPerWindow, nil
+}
+
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {
 	lis := bufconn.Listen(bufferSize)
@@ -108,11 +153,12 @@ func startServer(t *testing.T) bidderapiv1.BidderClient {
 	owner := common.HexToAddress("0x00001")
 	registryContract := &testRegistryContract{minAllowance: big.NewInt(100000000000000000)}
 	sender := &testSender{noOfPreconfs: 2}
-
+	blockTrackerContract := &testBlockTrackerContract{blocksPerWindow: 64, blockNumberToWinner: make(map[uint64]common.Address)}
 	srvImpl := bidderapi.NewService(
 		sender,
 		owner,
 		registryContract,
+		blockTrackerContract,
 		validator,
 		logger,
 	)
@@ -192,7 +238,7 @@ func TestAllowanceHandling(t *testing.T) {
 	})
 
 	t.Run("get allowance", func(t *testing.T) {
-		allowance, err := client.GetAllowance(context.Background(), &bidderapiv1.EmptyMessage{})
+		allowance, err := client.GetAllowance(context.Background(), &bidderapiv1.GetAllowanceRequest{WindowNumber: wrapperspb.UInt64(1)})
 		if err != nil {
 			t.Fatalf("error getting allowance: %v", err)
 		}

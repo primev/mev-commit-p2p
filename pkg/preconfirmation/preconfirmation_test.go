@@ -7,13 +7,14 @@ import (
 	"crypto/rand"
 	"io"
 	"log/slog"
+	"math/big"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
@@ -31,7 +32,7 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 
 type testBidderStore struct{}
 
-func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address) bool {
+func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address, _ *big.Int) bool {
 	return true
 }
 
@@ -92,6 +93,49 @@ func (t *testCommitmentDA) StoreEncryptedCommitment(
 
 func (t *testCommitmentDA) Close() error {
 	return nil
+}
+
+type testBlockTrackerContract struct {
+	blockNumberToWinner map[uint64]common.Address
+	lastBlockNumber uint64
+	lastBlockWinner common.Address
+	blocksPerWindow uint64
+}
+
+// RecordBlock records a new block and its winner.
+func (btc *testBlockTrackerContract) RecordL1Block(ctx context.Context, blockNumber uint64, winner common.Address) error {
+	btc.lastBlockNumber = blockNumber
+	btc.lastBlockWinner = winner
+	btc.blockNumberToWinner[blockNumber] = winner
+	return nil
+}
+
+func (btc *testBlockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error) {
+	return btc.blockNumberToWinner[blockNumber], nil
+}
+
+// GetCurrentWindow returns the current window number.
+func (btc *testBlockTrackerContract) GetCurrentWindow(ctx context.Context) (uint64, error) {
+	return btc.lastBlockNumber / btc.blocksPerWindow, nil
+}
+
+func (btc *testBlockTrackerContract) GetLastL1BlockWinner(ctx context.Context) (common.Address, error) {
+	return btc.lastBlockWinner, nil
+}
+
+func (btc *testBlockTrackerContract) GetLastL1BlockNumber(ctx context.Context) (uint64, error) {
+	return btc.lastBlockNumber, nil
+}
+
+// SetBlocksPerWindow sets the number of blocks per window.
+func (btc *testBlockTrackerContract) SetBlocksPerWindow(ctx context.Context, blocksPerWindow uint64) error {
+	btc.blocksPerWindow = blocksPerWindow
+	return nil
+}
+
+// GetBlocksPerWindow returns the number of blocks per window.
+func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (uint64, error) {
+	return btc.blocksPerWindow, nil
 }
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
@@ -180,6 +224,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			us,
 			proc,
 			&testCommitmentDA{},
+			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
 			newTestLogger(t, os.Stdout),
 		)
 

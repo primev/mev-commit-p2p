@@ -5,6 +5,7 @@ package bidderapi.v1;
 import "protoc-gen-openapiv2/options/annotations.proto";
 import "google/api/annotations.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/wrappers.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
@@ -36,8 +37,10 @@ service Bidder {
   // GetAllowance
   //
   // GetAllowance is called by the bidder to get its allowance in the bidder registry.
-  rpc GetAllowance(EmptyMessage) returns (PrepayResponse) {
-    option (google.api.http) = {get: "/v1/bidder/get_allowance"};
+  rpc GetAllowance(GetAllowanceRequest) returns (PrepayResponse) {
+    option (google.api.http) = {
+      get: "/v1/bidder/get_allowance"
+    };
   }
   // GetMinAllowance
   //
@@ -78,6 +81,17 @@ message PrepayResponse {
 };
 
 message EmptyMessage {};
+
+message GetAllowanceRequest {
+  google.protobuf.UInt64Value windowNumber = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Optional window number for querying allowances. If not specified, the current block number is used."
+    }, (buf.validate.field).cel = {
+      id: "windowNumber",
+      message: "windowNumber must be a positive integer if specified.",
+      expression: "this.value == null || (this.value > 0)"
+    }];
+}
 
 message Bid {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {

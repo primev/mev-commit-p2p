@@ -20,6 +20,7 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	provider_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
@@ -58,6 +59,7 @@ type Options struct {
 	RPCAddr                  string
 	Bootnodes                []string
 	PreconfContract          string
+	BlockTrackerContract     string
 	ProviderRegistryContract string
 	BidderRegistryContract   string
 	RPCEndpoint              string
@@ -187,6 +189,15 @@ func NewNode(opts *Options) (*Node, error) {
 			commitmentDA preconfcontract.Interface    = noOpCommitmentDA{}
 		)
 
+		blockTrackerAddr := common.HexToAddress(opts.PreconfContract)
+
+		blockTracker := blocktrackercontract.New(
+			blockTrackerAddr,
+			evmClient,
+			opts.Logger.With("component", "blocktrackercontract"),
+		)
+
+
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
 			providerAPI := providerapi.NewService(
@@ -215,6 +226,7 @@ func NewNode(opts *Options) (*Node, error) {
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
+				blockTracker,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			// Only register handler for provider
@@ -238,6 +250,7 @@ func NewNode(opts *Options) (*Node, error) {
 				bidderRegistry,
 				bidProcessor,
 				commitmentDA,
+				blockTracker,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
@@ -246,6 +259,7 @@ func NewNode(opts *Options) (*Node, error) {
 				preconfProto,
 				opts.KeySigner.GetAddress(),
 				bidderRegistry,
+				blockTracker,
 				validator,
 				opts.Logger.With("component", "bidderapi"),
 			)

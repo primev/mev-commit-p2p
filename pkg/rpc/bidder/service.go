@@ -13,34 +13,38 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfirmationv1 "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Service struct {
 	bidderapiv1.UnimplementedBidderServer
-	sender           PreconfSender
-	owner            common.Address
-	registryContract registrycontract.Interface
-	logger           *slog.Logger
-	metrics          *metrics
-	validator        *protovalidate.Validator
+	sender               PreconfSender
+	owner                common.Address
+	registryContract     registrycontract.Interface
+	blockTrackerContract blocktrackercontract.Interface
+	logger               *slog.Logger
+	metrics              *metrics
+	validator            *protovalidate.Validator
 }
 
 func NewService(
 	sender PreconfSender,
 	owner common.Address,
 	registryContract registrycontract.Interface,
+	blockTrackerContract blocktrackercontract.Interface,
 	validator *protovalidate.Validator,
 	logger *slog.Logger,
 ) *Service {
 	return &Service{
-		sender:           sender,
-		owner:            owner,
-		registryContract: registryContract,
-		logger:           logger,
-		metrics:          newMetrics(),
-		validator:        validator,
+		sender:               sender,
+		owner:                owner,
+		registryContract:     registryContract,
+		blockTrackerContract: blockTrackerContract,
+		logger:               logger,
+		metrics:              newMetrics(),
+		validator:            validator,
 	}
 }
 
@@ -122,7 +126,12 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
-	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
+	currentWindow, err := s.blockTrackerContract.GetCurrentWindow(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
+	}
+
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, new(big.Int).SetUint64(currentWindow+1))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
@@ -132,9 +141,21 @@ func (s *Service) PrepayAllowance(
 
 func (s *Service) GetAllowance(
 	ctx context.Context,
-	_ *bidderapiv1.EmptyMessage,
+	r *bidderapiv1.GetAllowanceRequest,
 ) (*bidderapiv1.PrepayResponse, error) {
-	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner)
+	var (
+		window uint64
+		err    error
+	)
+	if r.WindowNumber == nil {
+		window, err = s.blockTrackerContract.GetCurrentWindow(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
+		}
+	} else {
+		window = r.WindowNumber.Value
+	}
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, new(big.Int).SetUint64(window))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}

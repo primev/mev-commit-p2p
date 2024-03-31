@@ -40,7 +40,7 @@ type BidderClient interface {
 	// GetAllowance
 	//
 	// GetAllowance is called by the bidder to get its allowance in the bidder registry.
-	GetAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error)
+	GetAllowance(ctx context.Context, in *GetAllowanceRequest, opts ...grpc.CallOption) (*PrepayResponse, error)
 	// GetMinAllowance
 	//
 	// GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
@@ -96,7 +96,7 @@ func (c *bidderClient) PrepayAllowance(ctx context.Context, in *PrepayRequest, o
 	return out, nil
 }
 
-func (c *bidderClient) GetAllowance(ctx context.Context, in *EmptyMessage, opts ...grpc.CallOption) (*PrepayResponse, error) {
+func (c *bidderClient) GetAllowance(ctx context.Context, in *GetAllowanceRequest, opts ...grpc.CallOption) (*PrepayResponse, error) {
 	out := new(PrepayResponse)
 	err := c.cc.Invoke(ctx, Bidder_GetAllowance_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -129,7 +129,7 @@ type BidderServer interface {
 	// GetAllowance
 	//
 	// GetAllowance is called by the bidder to get its allowance in the bidder registry.
-	GetAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error)
+	GetAllowance(context.Context, *GetAllowanceRequest) (*PrepayResponse, error)
 	// GetMinAllowance
 	//
 	// GetMinAllowance is called by the bidder to get the minimum allowance required in the bidder registry to make bids.
@@ -147,7 +147,7 @@ func (UnimplementedBidderServer) SendBid(*Bid, Bidder_SendBidServer) error {
 func (UnimplementedBidderServer) PrepayAllowance(context.Context, *PrepayRequest) (*PrepayResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PrepayAllowance not implemented")
 }
-func (UnimplementedBidderServer) GetAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error) {
+func (UnimplementedBidderServer) GetAllowance(context.Context, *GetAllowanceRequest) (*PrepayResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllowance not implemented")
 }
 func (UnimplementedBidderServer) GetMinAllowance(context.Context, *EmptyMessage) (*PrepayResponse, error) {
@@ -206,7 +206,7 @@ func _Bidder_PrepayAllowance_Handler(srv interface{}, ctx context.Context, dec f
 }
 
 func _Bidder_GetAllowance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyMessage)
+	in := new(GetAllowanceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func _Bidder_GetAllowance_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: Bidder_GetAllowance_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BidderServer).GetAllowance(ctx, req.(*EmptyMessage))
+		return srv.(BidderServer).GetAllowance(ctx, req.(*GetAllowanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

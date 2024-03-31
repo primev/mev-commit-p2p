@@ -51,6 +51,13 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/googlerpcStatus'
+      parameters:
+        - name: windowNumber
+          description: Optional window number for querying allowances. If not specified, the current block number is used.
+          in: query
+          required: false
+          type: string
+          format: uint64
   /v1/bidder/get_min_allowance:
     get:
       summary: GetMinAllowance
