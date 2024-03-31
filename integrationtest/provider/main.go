@@ -6,12 +6,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log/slog"
 	"math/rand"
 	"net/http"
 	"os"
 
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
+	"github.com/primevprotocol/mev-commit/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -21,6 +21,8 @@ import (
 const (
 	serverAddrFlagName       = "server-addr"
 	logLevelFlagName         = "log-level"
+	logFmtFlagName           = "log-fmt"
+	logTagsFlagName          = "log-tags"
 	httpPortFlagName         = "http-port"
 	errorProbabilityFlagName = "error-probability"
 )
@@ -36,6 +38,16 @@ var (
 		"debug",
 		"Verbosity level (debug|info|warn|error)",
 	)
+	logFmt = flag.String(
+		logFmtFlagName,
+		"text",
+		"Format of the log output: 'text', 'json'",
+	)
+	logTags = flag.String(
+		logTagsFlagName,
+		"",
+		"Comma-separated list of <name:value> pairs that will be inserted into each log line",
+	)
 	httpPort = flag.Int(
 		httpPortFlagName,
 		8080,
@@ -43,7 +55,7 @@ var (
 	)
 	errorProbability = flag.Int(
 		errorProbabilityFlagName,
-		0,
+		20,
 		"The probability of returning an error when sending a bid response",
 	)
 )
@@ -71,21 +83,17 @@ var (
 
 func main() {
 	flag.Parse()
+
+	logger, err := util.NewLogger(*logLevel, *logFmt, *logTags, os.Stdout)
+	if err != nil {
+		fmt.Printf("failed to create logger: %v", err)
+		return
+	}
+
 	if *serverAddr == "" {
 		fmt.Printf("please provide a valid server address with the -%s flag\n", serverAddrFlagName)
 		return
 	}
-
-	level := new(slog.LevelVar)
-	if err := level.UnmarshalText([]byte(*logLevel)); err != nil {
-		level.Set(slog.LevelDebug)
-		fmt.Printf("invalid log level: %s; using %q", err, level)
-	}
-
-	logger := slog.New(slog.NewTextHandler(
-		os.Stdout,
-		&slog.HandlerOptions{Level: level},
-	))
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(receivedBids, sentBids)

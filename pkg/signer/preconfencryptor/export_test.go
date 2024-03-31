@@ -5,11 +5,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 )
 
 var EIPVerify = eipVerify
 
-func (e *encryptor) BidOriginator(bid *Bid) (*common.Address, *ecdsa.PublicKey, error) {
+func (e *encryptor) BidOriginator(bid *preconfpb.Bid) (*common.Address, *ecdsa.PublicKey, error) {
 	_, err := e.VerifyBid(bid)
 	if err != nil {
 		return nil, nil, err

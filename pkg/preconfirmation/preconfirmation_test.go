@@ -7,17 +7,17 @@ import (
 	"crypto/rand"
 	"io"
 	"log/slog"
-	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -37,34 +37,34 @@ func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Addre
 
 type testEncryptor struct {
 	bidHash               []byte
-	encryptedBid          *preconfencryptor.EncryptedBid
-	bid                   *preconfencryptor.Bid
-	preConfirmation       *preconfencryptor.EncryptedPreConfirmation
+	encryptedBid          *preconfpb.EncryptedBid
+	bid                   *preconfpb.Bid
+	preConfirmation       *preconfpb.EncryptedPreConfirmation
 	bidSigner             common.Address
 	preConfirmationSigner common.Address
 }
 
-func (t *testEncryptor) ConstructEncryptedBid(_ string, _ *big.Int, _ *big.Int) (*preconfencryptor.Bid, *preconfencryptor.EncryptedBid, error) {
+func (t *testEncryptor) ConstructEncryptedBid(_ string, _ string, _ int64, _ int64, _ int64) (*preconfpb.Bid, *preconfpb.EncryptedBid, error) {
 	return t.bid, t.encryptedBid, nil
 }
 
-func (t *testEncryptor) ConstructEncryptedPreConfirmation(_ *preconfencryptor.Bid) (*preconfencryptor.EncryptedPreConfirmation, error) {
+func (t *testEncryptor) ConstructEncryptedPreConfirmation(_ *preconfpb.Bid) (*preconfpb.EncryptedPreConfirmation, error) {
 	return t.preConfirmation, nil
 }
 
-func (t *testEncryptor) VerifyBid(_ *preconfencryptor.Bid) (*common.Address, error) {
+func (t *testEncryptor) VerifyBid(_ *preconfpb.Bid) (*common.Address, error) {
 	return &t.bidSigner, nil
 }
 
-func (t *testEncryptor) DecryptBidData(_ common.Address, _ *preconfencryptor.EncryptedBid) (*preconfencryptor.Bid, error) {
-	return t.bid, nil
-}
-
-func (t *testEncryptor) VerifyPreConfirmation(_ *preconfencryptor.PreConfirmation) (*common.Address, error) {
+func (t *testEncryptor) VerifyPreConfirmation(_ *preconfpb.PreConfirmation) (*common.Address, error) {
 	return &t.preConfirmationSigner, nil
 }
 
-func (t *testEncryptor) VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfencryptor.EncryptedPreConfirmation) (*common.Address, error) {
+func (t *testEncryptor) DecryptBidData(_ common.Address, _ *preconfpb.EncryptedBid) (*preconfpb.Bid, error) {
+	return t.bid, nil
+}
+
+func (t *testEncryptor) VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfpb.EncryptedPreConfirmation) (*common.Address, error) {
 	return &t.preConfirmationSigner, nil
 }
 
@@ -74,7 +74,7 @@ type testProcessor struct {
 
 func (t *testProcessor) ProcessBid(
 	_ context.Context,
-	_ *preconfencryptor.Bid) (chan providerapiv1.BidResponse_Status, error) {
+	_ *preconfpb.Bid) (chan providerapiv1.BidResponse_Status, error) {
 	statusC := make(chan providerapiv1.BidResponse_Status, 1)
 	statusC <- t.status
 	return statusC, nil
@@ -131,15 +131,17 @@ func TestPreconfBidSubmission(t *testing.T) {
 			},
 		}
 
-		bid := &preconfencryptor.Bid{
-			TxHash:      "test",
-			BidAmt:      big.NewInt(10),
-			BlockNumber: big.NewInt(10),
-			Digest:      []byte("test"),
-			Signature:   []byte("test"),
+		bid := &preconfpb.Bid{
+			TxHash:              "test",
+			BidAmount:           "10",
+			BlockNumber:         10,
+			DecayStartTimestamp: time.Now().UnixMilli() - 10000*time.Millisecond.Milliseconds(),
+			DecayEndTimestamp:   time.Now().UnixMilli(),
+			Digest:              []byte("test"),
+			Signature:           []byte("test"),
 		}
 
-		encryptedBid := &preconfencryptor.EncryptedBid{
+		encryptedBid := &preconfpb.EncryptedBid{
 			Ciphertext: []byte("test"),
 		}
 
@@ -149,7 +151,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 		// 	Signature: []byte("test"),
 		// }
 
-		encryptedPreConfirmation := &preconfencryptor.EncryptedPreConfirmation{
+		encryptedPreConfirmation := &preconfpb.EncryptedPreConfirmation{
 			Commitment: []byte("test"),
 			Signature:  []byte("test"),
 		}
@@ -181,9 +183,9 @@ func TestPreconfBidSubmission(t *testing.T) {
 			newTestLogger(t, os.Stdout),
 		)
 
-		svc.SetPeerHandler(server, p.Protocol())
+		svc.SetPeerHandler(server, p.Streams()[0])
 
-		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmt, bid.BlockNumber)
+		respC, err := p.SendBid(context.Background(), bid.TxHash, bid.BidAmount, bid.BlockNumber, bid.DecayStartTimestamp, bid.DecayEndTimestamp)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -13,9 +13,9 @@ import (
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
-	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
-	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,8 +28,8 @@ const (
 
 type bid struct {
 	txHex    string
-	amount   *big.Int
-	blockNum *big.Int
+	amount   string
+	blockNum int64
 }
 
 type testSender struct {
@@ -40,28 +40,32 @@ type testSender struct {
 func (s *testSender) SendBid(
 	ctx context.Context,
 	txHex string,
-	amount *big.Int,
-	blockNum *big.Int,
-) (chan *preconfencryptor.PreConfirmation, error) {
+	amount string,
+	blockNum int64,
+	decayStartTimestamp int64,
+	decayEndTimestamp int64,
+) (chan *preconfpb.PreConfirmation, error) {
 	s.bids = append(s.bids, bid{
 		txHex:    txHex,
 		amount:   amount,
 		blockNum: blockNum,
 	})
 
-	preconfs := make(chan *preconfencryptor.PreConfirmation, s.noOfPreconfs)
+	preconfs := make(chan *preconfpb.PreConfirmation, s.noOfPreconfs)
 	for i := 0; i < s.noOfPreconfs; i++ {
-		preconfs <- &preconfencryptor.PreConfirmation{
-			Bid: preconfencryptor.Bid{
-				TxHash:      txHex,
-				BidAmt:      amount,
-				BlockNumber: blockNum,
-				Digest:      []byte("digest"),
-				Signature:   []byte("signature"),
+		preconfs <- &preconfpb.PreConfirmation{
+			Bid: &preconfpb.Bid{
+				TxHash:              txHex,
+				BidAmount:           amount,
+				BlockNumber:         blockNum,
+				DecayStartTimestamp: decayStartTimestamp,
+				DecayEndTimestamp:   decayEndTimestamp,
+				Digest:              []byte("digest"),
+				Signature:           []byte("signature"),
 			},
 			Digest:          []byte("digest"),
 			Signature:       []byte("signature"),
-			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)),
+			ProviderAddress: common.HexToAddress(fmt.Sprintf("%x", i)).Bytes(),
 		}
 	}
 
@@ -214,55 +218,69 @@ func TestSendBid(t *testing.T) {
 	client := startServer(t)
 
 	type testCase struct {
-		name     string
-		txHexs   []string
-		amount   string
-		blockNum int64
-		err      string
+		name                string
+		txHexs              []string
+		amount              string
+		blockNum            int64
+		decayStartTimestamp int64
+		decayEndTimestamp   int64
+		err                 string
 	}
 
 	for _, tc := range []testCase{
 		{
-			name:     "invalid tx hex",
-			txHexs:   []string{"asdf"},
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "tx_hashes must be a valid array of transaction hashes",
+			name:                "invalid tx hex",
+			txHexs:              []string{"asdf"},
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "tx_hashes must be a valid array of transaction hashes",
 		},
 		{
-			name:     "no txns",
-			txHexs:   nil,
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "tx_hashes must be a valid array of transaction hashes",
+			name:                "no txns",
+			txHexs:              nil,
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "tx_hashes must be a valid array of transaction hashes",
 		},
 		{
-			name:     "invalid amount",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "000000000000000000",
-			blockNum: 1,
-			err:      "amount must be a valid integer",
+			name:                "invalid amount",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "amount must be a valid integer",
 		},
 		{
-			name:     "invalid block number",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "1000000000000000000",
-			blockNum: 0,
-			err:      "block_number must be a valid integer",
+			name:                "invalid block number",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "1000000000000000000",
+			blockNum:            0,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "block_number must be a valid integer",
 		},
 		{
-			name:     "success",
-			txHexs:   []string{common.HexToHash("0x0000ab").Hex()[2:]},
-			amount:   "1000000000000000000",
-			blockNum: 1,
-			err:      "",
+			name:                "success",
+			txHexs:              []string{common.HexToHash("0x0000ab").Hex()[2:]},
+			amount:              "1000000000000000000",
+			blockNum:            1,
+			decayStartTimestamp: 10,
+			decayEndTimestamp:   20,
+			err:                 "",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rcv, err := client.SendBid(context.Background(), &bidderapiv1.Bid{
-				TxHashes:    tc.txHexs,
-				Amount:      tc.amount,
-				BlockNumber: tc.blockNum,
+				TxHashes:            tc.txHexs,
+				Amount:              tc.amount,
+				BlockNumber:         tc.blockNum,
+				DecayStartTimestamp: tc.decayStartTimestamp,
+				DecayEndTimestamp:   tc.decayEndTimestamp,
 			})
 			if err != nil {
 				t.Fatalf("error sending bid: %v", err)

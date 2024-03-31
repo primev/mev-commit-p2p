@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/primevprotocol/mev-commit/examples/provideremulator/client"
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 )
 
 var (

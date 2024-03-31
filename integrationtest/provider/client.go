@@ -4,12 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"time"
 
-	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/rpc/providerapi/v1"
+	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -123,8 +122,6 @@ func (b *ProviderClient) CheckAndStake() error {
 }
 
 func (b *ProviderClient) startSender() error {
-	fmt.Println("starting sender")
-
 	stream, err := b.client.SendProcessedBids(context.Background())
 	if err != nil {
 		return err

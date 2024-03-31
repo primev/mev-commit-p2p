@@ -82,7 +82,7 @@ func TestKeyExchange_SendAndHandleTimestampMessage(t *testing.T) {
 	ke1 := keyexchange.New(topo1, svc1, bidderKK, logger, signer)
 	ke2 := keyexchange.New(topo2, svc2, providerKK, logger, signer)
 
-	svc1.SetPeerHandler(bidderPeer, ke2.Protocol())
+	svc1.SetPeerHandler(bidderPeer, ke2.Streams()[0])
 
 	err = ke1.SendTimestampMessage()
 	if err != nil {

@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	keyexchangepb "github.com/primevprotocol/mev-commit/gen/go/keyexchange"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
-	"github.com/primevprotocol/mev-commit/pkg/p2p/msgpack"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
@@ -35,17 +35,16 @@ func New(
 	}
 }
 
-func (ke *KeyExchange) Protocol() p2p.ProtocolSpec {
-	return p2p.ProtocolSpec{
+func (ke *KeyExchange) timestampMessageStream() p2p.StreamDesc {
+	return p2p.StreamDesc{
 		Name:    ProtocolName,
 		Version: ProtocolVersion,
-		StreamSpecs: []p2p.StreamSpec{
-			{
-				Name:    ProtocolHandlerName,
-				Handler: ke.handleTimestampMessage,
-			},
-		},
+		Handler: ke.handleTimestampMessage,
 	}
+}
+
+func (ke *KeyExchange) Streams() []p2p.StreamDesc {
+	return []p2p.StreamDesc{ke.timestampMessageStream()}
 }
 
 func (ke *KeyExchange) SendTimestampMessage() error {
@@ -132,8 +131,8 @@ func (ke *KeyExchange) distributeMessages(providers []p2p.Peer, encryptedKeys []
 	return nil
 }
 
-func (ke *KeyExchange) createSignedMessage(encryptedKeys [][]byte, timestampMessage []byte) (*EKMWithSignature, error) {
-	message := EncryptedKeysMessage{
+func (ke *KeyExchange) createSignedMessage(encryptedKeys [][]byte, timestampMessage []byte) (*keyexchangepb.EKMWithSignature, error) {
+	message := keyexchangepb.EncryptedKeysMessage{
 		EncryptedKeys:    encryptedKeys,
 		TimestampMessage: timestampMessage,
 	}
@@ -152,7 +151,7 @@ func (ke *KeyExchange) createSignedMessage(encryptedKeys [][]byte, timestampMess
 		return nil, fmt.Errorf("failed to sign message: %w", err)
 	}
 
-	ekmWithSignature := &EKMWithSignature{
+	ekmWithSignature := &keyexchangepb.EKMWithSignature{
 		Message:   messageBytes,
 		Signature: signature,
 	}
@@ -160,22 +159,19 @@ func (ke *KeyExchange) createSignedMessage(encryptedKeys [][]byte, timestampMess
 	return ekmWithSignature, nil
 }
 
-func (ke *KeyExchange) sendMessageToProvider(ctx context.Context, provider p2p.Peer, ekmWithSignature *EKMWithSignature) error {
+func (ke *KeyExchange) sendMessageToProvider(ctx context.Context, provider p2p.Peer, ekmWithSignature *keyexchangepb.EKMWithSignature) error {
 	stream, err := ke.streamer.NewStream(
 		ctx,
 		provider,
-		ProtocolName,
-		ProtocolVersion,
-		ProtocolHandlerName,
+		nil,
+		ke.timestampMessageStream(),
 	)
-
 	if err != nil {
 		return fmt.Errorf("failed to create new stream to provider %s: %w", provider.EthAddress, err)
 	}
 	defer stream.Close()
 
-	_, w := msgpack.NewReaderWriter[EKMWithSignature, EKMWithSignature](stream)
-	err = w.WriteMsg(ctx, ekmWithSignature)
+	err = stream.WriteMsg(ctx, ekmWithSignature)
 	if err != nil {
 		_ = stream.Reset()
 		return fmt.Errorf("failed to send message to provider %s: %w", provider.EthAddress, err)
@@ -204,14 +200,14 @@ func (ke *KeyExchange) handleTimestampMessage(ctx context.Context, peer p2p.Peer
 	return nil
 }
 
-func (ke *KeyExchange) readAndVerifyMessage(ctx context.Context, peer p2p.Peer, stream p2p.Stream) (*EKMWithSignature, error) {
+func (ke *KeyExchange) readAndVerifyMessage(ctx context.Context, peer p2p.Peer, stream p2p.Stream) (*keyexchangepb.EKMWithSignature, error) {
 	if peer.Type != p2p.PeerTypeBidder {
 		return nil, ErrInvalidBidderTypeForMessage
 	}
 
-	r, _ := msgpack.NewReaderWriter[EKMWithSignature, EKMWithSignature](stream)
+	ekmWithSignature := new(keyexchangepb.EKMWithSignature)
 
-	ekmWithSignature, err := r.ReadMsg(ctx)
+	err := stream.ReadMsg(ctx, ekmWithSignature)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +220,7 @@ func (ke *KeyExchange) readAndVerifyMessage(ctx context.Context, peer p2p.Peer, 
 	return ekmWithSignature, nil
 }
 
-func (ke *KeyExchange) verifySignature(peer p2p.Peer, ekm *EKMWithSignature) error {
+func (ke *KeyExchange) verifySignature(peer p2p.Peer, ekm *keyexchangepb.EKMWithSignature) error {
 	verified, ethAddress, err := ke.signer.Verify(ekm.Signature, ekm.Message)
 	if err != nil {
 		return errors.Join(err, ErrSignatureVerificationFailed)
@@ -241,12 +237,12 @@ func (ke *KeyExchange) verifySignature(peer p2p.Peer, ekm *EKMWithSignature) err
 	return nil
 }
 
-func (ke *KeyExchange) decryptMessage(ekmWithSignature *EKMWithSignature) ([]byte, []byte, error) {
+func (ke *KeyExchange) decryptMessage(ekmWithSignature *keyexchangepb.EKMWithSignature) ([]byte, []byte, error) {
 	var (
 		aesKey    []byte
 		decrypted bool
 		err       error
-		message   EncryptedKeysMessage
+		message   keyexchangepb.EncryptedKeysMessage
 	)
 
 	err = json.Unmarshal(ekmWithSignature.Message, &message)

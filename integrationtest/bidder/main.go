@@ -20,7 +20,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	pb "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
+	"github.com/primevprotocol/mev-commit/pkg/util"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -43,6 +44,16 @@ var (
 		"log-level",
 		"debug",
 		"Verbosity level (debug|info|warn|error)",
+	)
+	logFmt = flag.String(
+		"log-fmt",
+		"text",
+		"Format of the log output: 'text', 'json'",
+	)
+	logTags = flag.String(
+		"log-tags",
+		"",
+		"Comma-separated list of <name:value> pairs that will be inserted into each log line",
 	)
 	httpPort = flag.Int(
 		"http-port",
@@ -85,21 +96,17 @@ var (
 
 func main() {
 	flag.Parse()
+
+	logger, err := util.NewLogger(*logLevel, *logFmt, *logTags, os.Stdout)
+	if err != nil {
+		fmt.Printf("failed to create logger: %v", err)
+		return
+	}
+
 	if *serverAddr == "" {
 		fmt.Println("Please provide a valid server address with the -serverAddr flag")
 		return
 	}
-
-	level := new(slog.LevelVar)
-	if err := level.UnmarshalText([]byte(*logLevel)); err != nil {
-		level.Set(slog.LevelDebug)
-		fmt.Printf("Invalid log level: %s; using %q", err, level)
-	}
-
-	logger := slog.New(slog.NewTextHandler(
-		os.Stdout,
-		&slog.HandlerOptions{Level: level},
-	))
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(
@@ -286,9 +293,11 @@ func sendBid(
 	)
 
 	bid := &pb.Bid{
-		TxHashes:    []string{strings.TrimPrefix(txHash.Hex(), "0x")},
-		Amount:      strconv.Itoa(int(amount)),
-		BlockNumber: int64(blkNum) + 5,
+		TxHashes:            []string{strings.TrimPrefix(txHash.Hex(), "0x")},
+		Amount:              strconv.Itoa(int(amount)),
+		BlockNumber:         int64(blkNum) + 5,
+		DecayStartTimestamp: time.Now().UnixMilli() - (time.Duration(8 * time.Second).Milliseconds()),
+		DecayEndTimestamp:   time.Now().UnixMilli(),
 	}
 
 	logger.Info("sending bid", "bid", bid)

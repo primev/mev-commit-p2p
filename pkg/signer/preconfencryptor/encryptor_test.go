@@ -2,10 +2,11 @@ package preconfencryptor_test
 
 import (
 	"encoding/hex"
-	"math/big"
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	mockkeysigner "github.com/primevprotocol/mev-commit/pkg/keykeeper/keysigner/mock"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
@@ -29,7 +30,9 @@ func TestBids(t *testing.T) {
 		}
 		encryptor := preconfencryptor.NewEncryptor(keyKeeper)
 
-		_, encryptedBid, err := encryptor.ConstructEncryptedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		start := time.Now().UnixMilli()
+		end := start + 100000
+		_, encryptedBid, err := encryptor.ConstructEncryptedBid("0xkartik", "10", 2, start, end)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,8 +88,10 @@ func TestBids(t *testing.T) {
 		providerKeyKeeper.BiddersAESKeys[bidderAddress] = bidderKeyKeeper.AESKey
 
 		providerEncryptor := preconfencryptor.NewEncryptor(providerKeyKeeper)
+		start := time.Now().UnixMilli()
+		end := start + 100000
 
-		bid, encryptedBid, err := bidderEncryptor.ConstructEncryptedBid("0xkartik", big.NewInt(10), big.NewInt(2))
+		bid, encryptedBid, err := bidderEncryptor.ConstructEncryptedBid("0xkartik", "10", 2, start, end)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -113,10 +118,12 @@ func TestHashing(t *testing.T) {
 	t.Parallel()
 
 	t.Run("bid", func(t *testing.T) {
-		bid := &preconfencryptor.Bid{
-			TxHash:      "0xkartik",
-			BidAmt:      big.NewInt(2),
-			BlockNumber: big.NewInt(2),
+		bid := &preconfpb.Bid{
+			TxHash:              "0xkartik",
+			BidAmount:           "200",
+			BlockNumber:         3000,
+			DecayStartTimestamp: 10,
+			DecayEndTimestamp:   30,
 		}
 
 		hash, err := preconfencryptor.GetBidHash(bid)
@@ -125,15 +132,16 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "86ac45fb1e987a6c8115494cd4fd82f6756d359022cdf5ea19fd2fac1df6e7f0"
+		// This hash is sourced from the solidity contract to ensure interoperability
+		expHash := "a837b0c680d4b9b11011ac6225670498d845e65f1dc340b00694d74a6ca0a049"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}
 	})
 
 	t.Run("preConfirmation", func(t *testing.T) {
-		bidHash := "86ac45fb1e987a6c8115494cd4fd82f6756d359022cdf5ea19fd2fac1df6e7f0"
-		bidSignature := "33683da4605067c9491d665864b2e4e7ade8bc57921da9f192a1b8246a941eaa2fb90f72031a2bf6008fa590158591bb5218c9aace78ad8cf4d1f2f4d74bc3e901"
+		bidHash := "a0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100"
+		bidSignature := "876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b"
 
 		bidHashBytes, err := hex.DecodeString(bidHash)
 		if err != nil {
@@ -144,16 +152,18 @@ func TestHashing(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		bid := &preconfencryptor.Bid{
-			TxHash:      "0xkartik",
-			BidAmt:      big.NewInt(2),
-			BlockNumber: big.NewInt(2),
-			Digest:      bidHashBytes,
-			Signature:   bidSigBytes,
+		bid := &preconfpb.Bid{
+			TxHash:              "0xkartik",
+			BidAmount:           "2",
+			BlockNumber:         2,
+			DecayStartTimestamp: 10,
+			DecayEndTimestamp:   20,
+			Digest:              bidHashBytes,
+			Signature:           bidSigBytes,
 		}
 
-		preConfirmation := &preconfencryptor.PreConfirmation{
-			Bid: *bid,
+		preConfirmation := &preconfpb.PreConfirmation{
+			Bid: bid,
 		}
 
 		hash, err := preconfencryptor.GetPreConfirmationHash(preConfirmation)
@@ -162,12 +172,58 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "33a9d7e3fb407f57ecb3b5e1503e71180289cc8c2e05df682d6a16f34fa00291"
+		expHash := "7492710e0487466ee0cd9f795ce1bb72e1b17ebe6d7b0bb729f2a65a8e756f9b"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}
 	})
 }
+
+// todo: mock key encryptor
+// func TestSignature(t *testing.T) {
+// 	t.Parallel()
+// 	// alice keys 0x328809Bc894f92807417D2dAD6b7C998c1aFdac6
+// 	pkey, err := crypto.HexToECDSA("9C0257114EB9399A2985F8E75DAD7600C5D89FE3824FFA99EC1C3EB8BF3B0501")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	keySigner := mockkeysigner.NewMockKeySigner(pkey, crypto.PubkeyToAddress(pkey.PublicKey))
+// 	bidderKK, err := keykeeper.NewBidderKeyKeeper(keySigner)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	bidder := preconfencryptor.NewEncryptor(bidderKK)
+
+// 	bid, _, err := bidder.ConstructEncryptedBid("0xkartik", "2", 2, 10, 20)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	// bob keys 0x1D96F2f6BeF1202E4Ce1Ff6Dad0c2CB002861d3e
+// 	providerKey, err := crypto.HexToECDSA("38E47A7B719DCE63662AEAF43440326F551B8A7EE198CEE35CB5D517F2D296A2")
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
+// 	providerKK, err := keykeeper.NewProviderKeyKeeper(keySigner)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	provider := preconfencryptor.NewEncryptor(providerKK)
+// 	preconf, err := provider.ConstructEncryptedPreConfirmation(bid)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	// expCommitmentDigest := "1a85d596184bc14bcc974fcc276430f5295e24d8a6e09cda91a2fd2f72257d29"
+// 	// expCommitmentSig := "9a7a3b1a0cbbc50e4bea5991f0005db26cd5d20f80595df433b837039b20a4e62078edb2390085d1a01aad16fddb9eea0b2f641433c946c9ab1708db7d5065c91b"
+// 	// if hex.EncodeToString(preconf.Commitment) != expCommitmentDigest {
+// 	// 	t.Fatalf("digest mismatch: %s != %s", hex.EncodeToString(preconf.Commitment), expCommitmentDigest)
+// 	// }
+// 	// if hex.EncodeToString(preconf.Signature) != expCommitmentSig {
+// 		// t.Fatalf("signature mismatch: %s != %s", hex.EncodeToString(preconf.Signature), expCommitmentSig)
+// 	}
+// }
 
 func TestVerify(t *testing.T) {
 	t.Parallel()

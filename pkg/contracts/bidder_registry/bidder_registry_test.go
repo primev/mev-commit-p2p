@@ -81,8 +81,8 @@ func TestBidderRegistryContract(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
-
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("getAllowance", address)
+		window := big.NewInt(1)
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("getAllowance", address, window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -110,8 +110,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			mockClient,
 			util.NewTestLogger(os.Stdout),
 		)
-
-		stakeAmt, err := registryContract.GetAllowance(context.Background(), address)
+		stakeAmt, err := registryContract.GetAllowance(context.Background(), address, window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -190,7 +189,8 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address)
+		window := big.NewInt(1)
+		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address, window)
 		if !isRegistered {
 			t.Fatal("expected bidder to be registered")
 		}

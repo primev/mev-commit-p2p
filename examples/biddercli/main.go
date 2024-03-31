@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	pb "github.com/primevprotocol/mev-commit/gen/go/rpc/bidderapi/v1"
+	pb "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	"github.com/urfave/cli/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -55,7 +55,6 @@ func main() {
 
 	app.Before = func(c *cli.Context) error {
 		configFile := c.String(optionConfig.Name)
-		fmt.Printf("using configuration file: %s\n", configFile)
 
 		buf, err := os.ReadFile(configFile)
 		if err != nil {

@@ -3,7 +3,6 @@ package topology_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -30,7 +29,6 @@ func (a *announcer) BroadcastPeers(_ context.Context, p p2p.Peer, peers []p2p.Pe
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	fmt.Println("broadcasting peers", p)
 	a.broadcasts = append(a.broadcasts, p)
 
 	if len(peers) != 1 {

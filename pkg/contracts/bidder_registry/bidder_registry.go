@@ -25,11 +25,11 @@ type Interface interface {
 	// PrepayAllowance registers a bidder with the bidder_registry contract.
 	PrepayAllowance(ctx context.Context, amount *big.Int) error
 	// GetAllowance returns the stake of a bidder.
-	GetAllowance(ctx context.Context, address common.Address) (*big.Int, error)
+	GetAllowance(ctx context.Context, address common.Address, window *big.Int) (*big.Int, error)
 	// GetMinAllowance returns the minimum stake required to register as a bidder.
 	GetMinAllowance(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
-	CheckBidderAllowance(ctx context.Context, address common.Address) bool
+	CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int) bool
 }
 
 type bidderRegistryContract struct {
@@ -90,8 +90,9 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 func (r *bidderRegistryContract) GetAllowance(
 	ctx context.Context,
 	address common.Address,
+	window *big.Int,
 ) (*big.Int, error) {
-	callData, err := r.bidderRegistryABI.Pack("getAllowance", address)
+	callData, err := r.bidderRegistryABI.Pack("getAllowance", address, window)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -141,15 +142,15 @@ func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int,
 func (r *bidderRegistryContract) CheckBidderAllowance(
 	ctx context.Context,
 	address common.Address,
+	window *big.Int,
 ) bool {
-
 	minStake, err := r.GetMinAllowance(ctx)
 	if err != nil {
 		r.logger.Error("error getting min stake", "error", err)
 		return false
 	}
 
-	stake, err := r.GetAllowance(ctx, address)
+	stake, err := r.GetAllowance(ctx, address, window)
 	if err != nil {
 		r.logger.Error("error getting stake", "error", err)
 		return false

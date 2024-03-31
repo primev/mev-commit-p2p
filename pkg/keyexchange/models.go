@@ -34,18 +34,6 @@ type KeyExchange struct {
 	logger    *slog.Logger
 }
 
-// EncryptedKeysMessage represents a message containing encrypted keys.
-type EncryptedKeysMessage struct {
-	EncryptedKeys    [][]byte `json:"encryptedKeys"`
-	TimestampMessage []byte   `json:"timestampMessage"`
-}
-
-// EKMWithSignature wraps a message and its signature.
-type EKMWithSignature struct {
-	Message   []byte `json:"message"`
-	Signature []byte `json:"signature"`
-}
-
 // Topology interface to get peers.
 type Topology interface {
 	GetPeers(topology.Query) []p2p.Peer

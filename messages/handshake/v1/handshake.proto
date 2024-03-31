@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package handshake.v1;
+
+// Defines a message for SerializedKeys equivalent to the Go struct
+message SerializedKeys {
+  bytes PKEPublicKey = 1;   // Maps Go's []byte to proto's bytes type
+  bytes NIKEPublicKey = 2;  // Maps Go's []byte to proto's bytes type
+}
+
+message HandshakeReq {
+  string peer_type = 1;
+  string token = 2;
+  bytes sig = 3;
+  SerializedKeys keys = 4;      // References another message type for the pointer to SerializedKeys
+};
+
+message HandshakeResp {
+  bytes observed_address = 1;
+  string peer_type = 2;
+};
+
