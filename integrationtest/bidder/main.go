@@ -217,7 +217,7 @@ func checkOrPrepay(
 	bidderClient pb.BidderClient,
 	logger *slog.Logger,
 ) error {
-	allowance, err := bidderClient.GetAllowance(context.Background(), &pb.EmptyMessage{})
+	allowance, err := bidderClient.GetAllowance(context.Background(), &pb.GetAllowanceRequest{})
 	if err != nil {
 		logger.Error("failed to get allowance", "error", err)
 		return err
