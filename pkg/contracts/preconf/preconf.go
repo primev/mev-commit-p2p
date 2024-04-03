@@ -2,7 +2,9 @@ package preconfcontract
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"math/big"
 	"strings"
 	"time"
 
@@ -27,7 +29,19 @@ type Interface interface {
 		ctx context.Context,
 		commitmentDigest []byte,
 		commitmentSignature []byte,
-	) error
+	) (common.Hash, error)
+	OpenCommitment(
+		ctx context.Context,
+		encryptedCommitmentIndex []byte,
+		bid string,
+		blockNumber int64,
+		txnHash string,
+		decayStartTimeStamp int64,
+		decayEndTimeStamp int64,
+		bidSignature []byte,
+		commitmentSignature []byte,
+		sharedSecretKey []byte,
+	) (common.Hash, error)
 }
 
 type preconfContract struct {
@@ -54,8 +68,7 @@ func (p *preconfContract) StoreEncryptedCommitment(
 	ctx context.Context,
 	commitmentDigest []byte,
 	commitmentSignature []byte,
-) error {
-
+) (common.Hash, error) {
 	callData, err := p.preconfABI.Pack(
 		"storeEncryptedCommitment",
 		[32]byte(commitmentDigest),
@@ -63,7 +76,7 @@ func (p *preconfContract) StoreEncryptedCommitment(
 	)
 	if err != nil {
 		p.logger.Error("preconf contract storeEncryptedCommitment pack error", "err", err)
-		return err
+		return common.Hash{}, err
 	}
 
 	txnHash, err := p.client.Send(ctx, &evmclient.TxRequest{
@@ -71,10 +84,86 @@ func (p *preconfContract) StoreEncryptedCommitment(
 		CallData: callData,
 	})
 	if err != nil {
-		return err
+		return common.Hash{}, err
+	}
+
+	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
+	if err != nil {
+		return common.Hash{}, err // Updated to return common.Hash{}
 	}
 
 	p.logger.Info("preconf contract storeEncryptedCommitment successful", "txnHash", txnHash)
+	eventTopicHash := p.preconfABI.Events["EncryptedCommitmentStored"].ID // This is the event signature hash
 
-	return nil
+	for _, log := range receipt.Logs {
+		if len(log.Topics) > 0 && log.Topics[0] == eventTopicHash {
+			commitmentIndex := log.Topics[1] // Topics[0] is the event signature, Topics[1] should be the first indexed argument
+			p.logger.Info("Encrypted commitment stored", "commitmentIndex", commitmentIndex.Hex())
+
+			return commitmentIndex, nil // Return the extracted commitmentIndex
+		}
+	}
+
+	return common.Hash{}, nil
+}
+
+func (p *preconfContract) OpenCommitment(
+	ctx context.Context,
+	encryptedCommitmentIndex []byte,
+	bid string,
+	blockNumber int64,
+	txnHash string,
+	decayStartTimeStamp int64,
+	decayEndTimeStamp int64,
+	bidSignature []byte,
+	commitmentSignature []byte,
+	sharedSecretKey []byte,
+) (common.Hash, error) {
+	bidAmt, _ := new(big.Int).SetString(bid, 10)
+	callData, err := p.preconfABI.Pack(
+		"openCommitment",
+		encryptedCommitmentIndex,
+		bidAmt,
+		big.NewInt(blockNumber),
+		txnHash,
+		big.NewInt(decayStartTimeStamp),
+		big.NewInt(decayEndTimeStamp),
+		bidSignature,
+		commitmentSignature,
+		sharedSecretKey,
+	)
+	if err != nil {
+		p.logger.Error("Error packing call data for openCommitment", "error", err)
+		return common.Hash{}, err
+	}
+
+	txHash, err := p.client.Send(ctx, &evmclient.TxRequest{
+		To:       &p.preconfContractAddr,
+		CallData: callData,
+	})
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	receipt, err := p.client.WaitForReceipt(ctx, txHash)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	p.logger.Info("OpenCommitment transaction successful", "txnHash", txnHash)
+
+	// Assuming "CommitmentOpened" is the event that gets emitted when openCommitment is successfully called
+	eventTopicHash := p.preconfABI.Events["CommitmentOpened"].ID
+
+	for _, log := range receipt.Logs {
+		if len(log.Topics) > 0 && log.Topics[0] == eventTopicHash {
+			// Assuming the first indexed argument (Topics[1]) is the commitmentIndex
+			commitmentIndex := log.Topics[1]
+			p.logger.Info("Commitment opened", "commitmentIndex", commitmentIndex.Hex())
+
+			return commitmentIndex, nil
+		}
+	}
+
+	return common.Hash{}, fmt.Errorf("commitmentIndex not found in transaction receipt")
 }

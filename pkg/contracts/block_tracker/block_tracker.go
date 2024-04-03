@@ -7,11 +7,12 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker" // Update this import path
-	"github.com/primevprotocol/mev-commit/pkg/evmclient"                        // Update this import path accordingly
+	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
+	"github.com/primevprotocol/mev-commit/pkg/evmclient"                     
 )
 
 var blockTrackerABI = func() abi.ABI {
@@ -37,6 +38,8 @@ type Interface interface {
 	GetCurrentWindow(ctx context.Context) (uint64, error)
 	// GetBlockWinner returns the winner of a specific block.
 	GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error)
+	// SubscribeNewL1Block subscribes to the NewL1Block events emitted by the contract.
+	SubscribeNewL1Block(ctx context.Context, eventCh chan<- NewL1BlockEvent) (ethereum.Subscription, error)
 }
 
 type blockTrackerContract struct {
@@ -44,6 +47,12 @@ type blockTrackerContract struct {
 	blockTrackerContractAddr common.Address
 	client                   evmclient.Interface
 	logger                   *slog.Logger
+}
+
+type NewL1BlockEvent struct {
+	BlockNumber *big.Int
+	Winner      common.Address
+	Window      *big.Int
 }
 
 func New(
@@ -266,4 +275,41 @@ func (btc *blockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber
 	}
 
 	return winnerAddress, nil
+}
+
+// SubscribeNewL1Block subscribes to the NewL1Block events emitted by the contract.
+func (btc *blockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- NewL1BlockEvent) (ethereum.Subscription, error) {
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{btc.blockTrackerContractAddr},
+		Topics:    [][]common.Hash{{blockTrackerABI.Events["NewL1Block"].ID}},
+	}
+
+	logsCh := make(chan types.Log)
+	sub, err := btc.client.SubscribeFilterLogs(ctx, query, logsCh)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		for {
+			select {
+			case log := <-logsCh:
+				event := NewL1BlockEvent{}
+				err := blockTrackerABI.UnpackIntoInterface(&event, "NewL1Block", log.Data)
+				if err != nil {
+					btc.logger.Error("error unpacking NewL1Block event", "error", err)
+					continue
+				}
+				event.BlockNumber = new(big.Int).SetBytes(log.Topics[1].Bytes())
+				event.Winner = common.HexToAddress(log.Topics[2].Hex())
+				event.Window = new(big.Int).SetBytes(log.Topics[3].Bytes())
+				eventCh <- event
+			case <-ctx.Done():
+				sub.Unsubscribe()
+				return
+			}
+		}
+	}()
+
+	return sub, nil
 }

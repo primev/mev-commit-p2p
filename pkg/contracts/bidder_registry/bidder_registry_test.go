@@ -165,12 +165,16 @@ func TestBidderRegistryContract(t *testing.T) {
 
 	t.Run("CheckBidderAllowance", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
-		amount := big.NewInt(1000000000000000000)
+		blocksPerWindow := big.NewInt(64)
+		amount := new(big.Int).Mul(big.NewInt(1000000000000000000), blocksPerWindow)
 		address := common.HexToAddress("abcdef")
+
+		callCount := 0
 
 		mockClient := mockevmclient.New(
 			mockevmclient.WithCallFunc(
 				func(ctx context.Context, req *evmclient.TxRequest) ([]byte, error) {
+					callCount++;
 					if req.To.Cmp(registryContractAddr) != 0 {
 						t.Fatalf(
 							"expected to address to be %s, got %s",
@@ -178,6 +182,10 @@ func TestBidderRegistryContract(t *testing.T) {
 						)
 					}
 
+					if callCount == 1 {
+						return new(big.Int).Div(amount, blocksPerWindow).FillBytes(make([]byte, 32)), nil
+					} 
+					
 					return amount.FillBytes(make([]byte, 32)), nil
 				},
 			),
@@ -190,7 +198,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		)
 
 		window := big.NewInt(1)
-		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address, window)
+		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address, window, blocksPerWindow)
 		if !isRegistered {
 			t.Fatal("expected bidder to be registered")
 		}

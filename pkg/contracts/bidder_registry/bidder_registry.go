@@ -29,7 +29,7 @@ type Interface interface {
 	// GetMinAllowance returns the minimum stake required to register as a bidder.
 	GetMinAllowance(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
-	CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int) bool
+	CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int, blocksPerWindow *big.Int) bool
 }
 
 type bidderRegistryContract struct {
@@ -143,6 +143,7 @@ func (r *bidderRegistryContract) CheckBidderAllowance(
 	ctx context.Context,
 	address common.Address,
 	window *big.Int,
+	blocksPerWindow *big.Int,
 ) bool {
 	minStake, err := r.GetMinAllowance(ctx)
 	if err != nil {
@@ -155,6 +156,5 @@ func (r *bidderRegistryContract) CheckBidderAllowance(
 		r.logger.Error("error getting stake", "error", err)
 		return false
 	}
-
-	return stake.Cmp(minStake) >= 0
+	return (stake.Div(stake, blocksPerWindow)).Cmp(minStake) >= 0
 }

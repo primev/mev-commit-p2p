@@ -100,12 +100,12 @@ func TestBids(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		encryptedPreConfirmation, err := providerEncryptor.ConstructEncryptedPreConfirmation(decryptedBid)
+		_, encryptedPreConfirmation, err := providerEncryptor.ConstructEncryptedPreConfirmation(decryptedBid)
 		if err != nil {
 			t.Fail()
 		}
 
-		address, err := bidderEncryptor.VerifyEncryptedPreConfirmation(providerKeyKeeper.GetNIKEPublicKey(), bid.Digest, encryptedPreConfirmation)
+		_, address, err := bidderEncryptor.VerifyEncryptedPreConfirmation(providerKeyKeeper.GetNIKEPublicKey(), bid.Digest, encryptedPreConfirmation)
 		if err != nil {
 			t.Fail()
 		}

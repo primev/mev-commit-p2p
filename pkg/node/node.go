@@ -63,6 +63,7 @@ type Options struct {
 	ProviderRegistryContract string
 	BidderRegistryContract   string
 	RPCEndpoint              string
+	L1RPCUrl                 string
 	NatAddr                  string
 	TLSCertificateFile       string
 	TLSPrivateKeyFile        string
@@ -93,6 +94,17 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 	nd.closers = append(nd.closers, evmClient)
+
+	l1RPC, err := ethclient.Dial(opts.L1RPCUrl)
+	evmL1Client, err := evmclient.New(
+		opts.KeySigner,
+		evmclient.WrapEthClient(l1RPC),
+		opts.Logger.With("component", "evmclient"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	nd.closers = append(nd.closers, evmL1Client)
 
 	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
 
@@ -197,7 +209,6 @@ func NewNode(opts *Options) (*Node, error) {
 			opts.Logger.With("component", "blocktrackercontract"),
 		)
 
-
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
 			providerAPI := providerapi.NewService(
@@ -220,6 +231,7 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 
 			preconfProto := preconfirmation.New(
+				keyKeeper.GetAddress(),
 				topo,
 				p2pSvc,
 				preconfEncryptor,
@@ -227,6 +239,7 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
+				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			// Only register handler for provider
@@ -244,6 +257,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
+				keyKeeper.GetAddress(),
 				topo,
 				p2pSvc,
 				preconfEncryptor,
@@ -251,6 +265,7 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
+				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
@@ -422,8 +437,23 @@ func (noOpCommitmentDA) StoreEncryptedCommitment(
 	_ context.Context,
 	_ []byte,
 	_ []byte,
-) error {
-	return nil
+) (common.Hash, error) {
+	return common.Hash{}, nil
+}
+
+func (noOpCommitmentDA) OpenCommitment(
+	_ context.Context,
+	_ []byte,
+	_ string,
+	_ int64,
+	_ string,
+	_ int64,
+	_ int64,
+	_ []byte,
+	_ []byte,
+	_ []byte,
+) (common.Hash, error) {
+	return common.Hash{}, nil
 }
 
 func (noOpCommitmentDA) Close() error {

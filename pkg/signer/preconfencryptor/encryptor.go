@@ -24,12 +24,11 @@ var (
 	ErrInvalidCommitment            = errors.New("commitment is incorrect")
 )
 
-
 type Encryptor interface {
 	ConstructEncryptedBid(string, string, int64, int64, int64) (*preconfpb.Bid, *preconfpb.EncryptedBid, error)
-	ConstructEncryptedPreConfirmation(*preconfpb.Bid) (*preconfpb.EncryptedPreConfirmation, error)
+	ConstructEncryptedPreConfirmation(*preconfpb.Bid) (*preconfpb.PreConfirmation, *preconfpb.EncryptedPreConfirmation, error)
 	VerifyBid(*preconfpb.Bid) (*common.Address, error)
-	VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfpb.EncryptedPreConfirmation) (*common.Address, error)
+	VerifyEncryptedPreConfirmation(providerNikePK *ecdh.PublicKey, bidHash []byte, c *preconfpb.EncryptedPreConfirmation) ([]byte, *common.Address, error)
 	DecryptBidData(common.Address, *preconfpb.EncryptedBid) (*preconfpb.Bid, error)
 }
 
@@ -105,21 +104,21 @@ func (e *encryptor) ConstructEncryptedBid(
 	return bid, &preconfpb.EncryptedBid{Ciphertext: encryptedBidData}, nil
 }
 
-func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*preconfpb.EncryptedPreConfirmation, error) {
+func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*preconfpb.PreConfirmation, *preconfpb.EncryptedPreConfirmation, error) {
 	_, err := e.VerifyBid(bid)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	bidDataPublicKey, err := ecdh.Curve.NewPublicKey(ecdh.P256(), bid.NikePublicKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	providerKK := e.keyKeeper.(*keykeeper.ProviderKeyKeeper)
 	sharedSecredProviderSk, err := providerKK.GetNIKEPrivateKey().ECDH(bidDataPublicKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	preConfirmation := &preconfpb.PreConfirmation{
@@ -130,19 +129,19 @@ func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*prec
 	// todo: update to take preconf hash into hash calculation
 	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	sig, err := e.keyKeeper.SignHash(preConfirmationHash)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if sig[64] == 0 || sig[64] == 1 {
 		sig[64] += 27 // Transform V from 0/1 to 27/28
 	}
 
-	return &preconfpb.EncryptedPreConfirmation{
+	return preConfirmation, &preconfpb.EncryptedPreConfirmation{
 		Commitment: preConfirmationHash,
 		Signature:  sig,
 	}, nil
@@ -183,9 +182,9 @@ func (e *encryptor) DecryptBidData(bidderAddress common.Address, bid *preconfpb.
 
 // VerifyPreConfirmation verifies the preconfirmation message, and returns the address of the provider
 // that signed the preconfirmation.
-func (e *encryptor) VerifyEncryptedPreConfirmation(providerNikePK *ecdh.PublicKey, bidHash []byte, c *preconfpb.EncryptedPreConfirmation) (*common.Address, error) {
+func (e *encryptor) VerifyEncryptedPreConfirmation(providerNikePK *ecdh.PublicKey, bidHash []byte, c *preconfpb.EncryptedPreConfirmation) ([]byte, *common.Address, error) {
 	if c.Signature == nil {
-		return nil, ErrMissingHashSignature
+		return nil, nil, ErrMissingHashSignature
 	}
 
 	bidHashStr := hex.EncodeToString(bidHash)
@@ -194,20 +193,27 @@ func (e *encryptor) VerifyEncryptedPreConfirmation(providerNikePK *ecdh.PublicKe
 	bidderKK := e.keyKeeper.(*keykeeper.BidderKeyKeeper)
 	sharedSecredBidderSk, err := bidderKK.BidHashesToNIKE[bidHashStr].ECDH(providerNikePK)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	preConfirmation := &preconfpb.PreConfirmation{
 		Bid:          bid,
+		Digest:       bidHash,
+		Signature:    c.Signature,
 		SharedSecret: sharedSecredBidderSk,
 	}
 
 	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return eipVerify(preConfirmationHash, c.Commitment, c.Signature)
+	address, err := eipVerify(preConfirmationHash, c.Commitment, c.Signature)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return sharedSecredBidderSk, address, nil
 }
 
 func eipVerify(

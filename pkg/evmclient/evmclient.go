@@ -43,6 +43,8 @@ type Interface interface {
 	WaitForReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 	Call(ctx context.Context, tx *TxRequest) ([]byte, error)
 	CancelTx(ctx context.Context, txHash common.Hash) (common.Hash, error)
+	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
+	BlockByNumber(ctx context.Context, blockNumber *big.Int) (*types.Block, error)
 }
 
 type EvmClient struct {
@@ -381,6 +383,14 @@ func (c *EvmClient) CancelTx(ctx context.Context, txnHash common.Hash) (common.H
 	c.waitForTxn(signedTx.Hash(), txn.Nonce())
 
 	return signedTx.Hash(), nil
+}
+
+func (c *EvmClient) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, logsCh chan<- types.Log) (ethereum.Subscription, error) {
+    return c.ethClient.SubscribeFilterLogs(ctx, query, logsCh)
+}
+
+func (c *EvmClient) BlockByNumber(ctx context.Context, blockNumber *big.Int) (*types.Block, error) {
+	return c.ethClient.BlockByNumber(ctx, blockNumber)
 }
 
 type TxnInfo struct {

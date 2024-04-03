@@ -66,7 +66,7 @@ func TestPreconfContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		err = preConfContractClient.StoreEncryptedCommitment(
+		_, err = preConfContractClient.StoreEncryptedCommitment(
 			context.Background(),
 			commitment[:],
 			commitmentSignature,

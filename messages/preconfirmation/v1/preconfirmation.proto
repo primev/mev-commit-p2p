@@ -28,4 +28,5 @@ message PreConfirmation {
 message EncryptedPreConfirmation {
   bytes commitment = 1;
   bytes signature = 2;
+  bytes commitmentIndex = 3;
 }

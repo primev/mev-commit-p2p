@@ -12,10 +12,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
+	mockevmclient "github.com/primevprotocol/mev-commit/pkg/evmclient/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -32,25 +35,27 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 
 type testBidderStore struct{}
 
-func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address, _ *big.Int) bool {
+func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address, _ *big.Int, _ *big.Int) bool {
 	return true
 }
 
 type testEncryptor struct {
-	bidHash               []byte
-	encryptedBid          *preconfpb.EncryptedBid
-	bid                   *preconfpb.Bid
-	preConfirmation       *preconfpb.EncryptedPreConfirmation
-	bidSigner             common.Address
-	preConfirmationSigner common.Address
+	bidHash                  []byte
+	encryptedBid             *preconfpb.EncryptedBid
+	bid                      *preconfpb.Bid
+	encryptedPreConfirmation *preconfpb.EncryptedPreConfirmation
+	preConfirmation          *preconfpb.PreConfirmation
+	sharedSecretKey          []byte
+	bidSigner                common.Address
+	preConfirmationSigner    common.Address
 }
 
 func (t *testEncryptor) ConstructEncryptedBid(_ string, _ string, _ int64, _ int64, _ int64) (*preconfpb.Bid, *preconfpb.EncryptedBid, error) {
 	return t.bid, t.encryptedBid, nil
 }
 
-func (t *testEncryptor) ConstructEncryptedPreConfirmation(_ *preconfpb.Bid) (*preconfpb.EncryptedPreConfirmation, error) {
-	return t.preConfirmation, nil
+func (t *testEncryptor) ConstructEncryptedPreConfirmation(_ *preconfpb.Bid) (*preconfpb.PreConfirmation, *preconfpb.EncryptedPreConfirmation, error) {
+	return t.preConfirmation, t.encryptedPreConfirmation, nil
 }
 
 func (t *testEncryptor) VerifyBid(_ *preconfpb.Bid) (*common.Address, error) {
@@ -65,8 +70,8 @@ func (t *testEncryptor) DecryptBidData(_ common.Address, _ *preconfpb.EncryptedB
 	return t.bid, nil
 }
 
-func (t *testEncryptor) VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfpb.EncryptedPreConfirmation) (*common.Address, error) {
-	return &t.preConfirmationSigner, nil
+func (t *testEncryptor) VerifyEncryptedPreConfirmation(*ecdh.PublicKey, []byte, *preconfpb.EncryptedPreConfirmation) ([]byte, *common.Address, error) {
+	return t.sharedSecretKey, &t.preConfirmationSigner, nil
 }
 
 type testProcessor struct {
@@ -87,8 +92,23 @@ func (t *testCommitmentDA) StoreEncryptedCommitment(
 	_ context.Context,
 	_ []byte,
 	_ []byte,
-) error {
-	return nil
+) (common.Hash, error) {
+	return common.Hash{}, nil
+}
+
+func (t *testCommitmentDA) OpenCommitment(
+	_ context.Context,
+	_ []byte,
+	_ string,
+	_ int64,
+	_ string,
+	_ int64,
+	_ int64,
+	_ []byte,
+	_ []byte,
+	_ []byte,
+) (common.Hash, error) {
+	return common.Hash{}, nil
 }
 
 func (t *testCommitmentDA) Close() error {
@@ -97,9 +117,9 @@ func (t *testCommitmentDA) Close() error {
 
 type testBlockTrackerContract struct {
 	blockNumberToWinner map[uint64]common.Address
-	lastBlockNumber uint64
-	lastBlockWinner common.Address
-	blocksPerWindow uint64
+	lastBlockNumber     uint64
+	lastBlockWinner     common.Address
+	blocksPerWindow     uint64
 }
 
 // RecordBlock records a new block and its winner.
@@ -136,6 +156,10 @@ func (btc *testBlockTrackerContract) SetBlocksPerWindow(ctx context.Context, blo
 // GetBlocksPerWindow returns the number of blocks per window.
 func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (uint64, error) {
 	return btc.blocksPerWindow, nil
+}
+
+func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent) (ethereum.Subscription, error) {
+	return nil, nil
 }
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
@@ -189,11 +213,11 @@ func TestPreconfBidSubmission(t *testing.T) {
 			Ciphertext: []byte("test"),
 		}
 
-		// preConfirmation := &preconfencryptor.PreConfirmation{
-		// 	Bid:       *bid,
-		// 	Digest:    []byte("test"),
-		// 	Signature: []byte("test"),
-		// }
+		preConfirmation := &preconfpb.PreConfirmation{
+			Bid:       bid,
+			Digest:    []byte("test"),
+			Signature: []byte("test"),
+		}
 
 		encryptedPreConfirmation := &preconfpb.EncryptedPreConfirmation{
 			Commitment: []byte("test"),
@@ -209,15 +233,18 @@ func TestPreconfBidSubmission(t *testing.T) {
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}
 		signer := &testEncryptor{
-			bidHash:               bid.Digest,
-			encryptedBid:          encryptedBid,
-			bid:                   bid,
-			preConfirmation:       encryptedPreConfirmation,
-			bidSigner:             common.HexToAddress("0x1"),
-			preConfirmationSigner: common.HexToAddress("0x2"),
+			bidHash:                  bid.Digest,
+			encryptedBid:             encryptedBid,
+			bid:                      bid,
+			preConfirmation:          preConfirmation,
+			encryptedPreConfirmation: encryptedPreConfirmation,
+			bidSigner:                common.HexToAddress("0x1"),
+			preConfirmationSigner:    common.HexToAddress("0x2"),
 		}
 
+		mockL1Client := mockevmclient.New()
 		p := preconfirmation.New(
+			client.EthAddress,
 			topo,
 			svc,
 			signer,
@@ -225,6 +252,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			proc,
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
+			mockL1Client,
 			newTestLogger(t, os.Stdout),
 		)
 

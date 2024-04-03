@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ethereum/go-ethereum"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
@@ -93,7 +95,7 @@ func (t *testRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int, e
 	return t.minAllowance, nil
 }
 
-func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int) bool {
+func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int, numberOfRounds *big.Int) bool {
 	return t.allowance.Cmp(t.minAllowance) > 0
 }
 
@@ -140,6 +142,9 @@ func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (ui
 	return btc.blocksPerWindow, nil
 }
 
+func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent) (ethereum.Subscription, error) {
+	return nil, nil
+}
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {
 	lis := bufconn.Listen(bufferSize)
