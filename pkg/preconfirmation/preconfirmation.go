@@ -324,7 +324,7 @@ func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, 
 	}
 }
 
-func (p *Preconfirmation) handleProviderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
+func (p *Preconfirmation) HandleProviderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
 	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
 
 	block, err := p.evmL1Client.BlockByNumber(context.Background(), event.BlockNumber)
@@ -367,7 +367,7 @@ func (p *Preconfirmation) handleProviderNewL1BlockEvent(ctx context.Context, eve
 }
 
 
-func (p *Preconfirmation) handleBidderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
+func (p *Preconfirmation) HandleBidderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
 	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
 
 	block, err := p.evmL1Client.BlockByNumber(context.Background(), event.BlockNumber)

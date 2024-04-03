@@ -242,6 +242,8 @@ func NewNode(opts *Options) (*Node, error) {
 				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
+			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleProviderNewL1BlockEvent)
+
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
 
@@ -268,6 +270,7 @@ func NewNode(opts *Options) (*Node, error) {
 				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
+			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleBidderNewL1BlockEvent)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 			bidderAPI := bidderapi.NewService(
