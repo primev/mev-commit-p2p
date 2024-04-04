@@ -180,11 +180,12 @@ func TestBidHandling(t *testing.T) {
 	t.Parallel()
 
 	type testCase struct {
-		name       string
-		bid        *preconfpb.Bid
-		status     providerapiv1.BidResponse_Status
-		noStatus   bool
-		processErr string
+		name                    string
+		bid                     *preconfpb.Bid
+		status                  providerapiv1.BidResponse_Status
+		noStatus                bool
+		processErr              string
+		decayPublishedTimestamp int64
 	}
 
 	for _, tc := range []testCase{
@@ -204,7 +205,8 @@ func TestBidHandling(t *testing.T) {
 				DecayStartTimestamp: 199,
 				DecayEndTimestamp:   299,
 			},
-			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
+			status:                  providerapiv1.BidResponse_STATUS_ACCEPTED,
+			decayPublishedTimestamp: 10,
 		},
 		{
 			name: "rejected bid",
@@ -217,7 +219,8 @@ func TestBidHandling(t *testing.T) {
 				DecayStartTimestamp: 199,
 				DecayEndTimestamp:   299,
 			},
-			status: providerapiv1.BidResponse_STATUS_REJECTED,
+			status:                  providerapiv1.BidResponse_STATUS_REJECTED,
+			decayPublishedTimestamp: 10,
 		},
 		{
 			name: "invalid bid status",
@@ -320,8 +323,9 @@ func TestBidHandling(t *testing.T) {
 						break
 					}
 					err := sndr.Send(&providerapiv1.BidResponse{
-						BidDigest: bid.BidDigest,
-						Status:    tc.status,
+						BidDigest:               bid.BidDigest,
+						Status:                  tc.status,
+						DecayPublishedTimestamp: tc.decayPublishedTimestamp,
 					})
 					if err != nil {
 						break
