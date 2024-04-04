@@ -131,12 +131,12 @@ func NewNode(opts *Options) (*Node, error) {
 	var keyKeeper keykeeper.KeyKeeper
 	switch opts.PeerType {
 	case p2p.PeerTypeProvider.String():
-		keyKeeper, err = keykeeper.NewBidderKeyKeeper(opts.KeySigner)
+		keyKeeper, err = keykeeper.NewProviderKeyKeeper(opts.KeySigner)
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
 		}
 	case p2p.PeerTypeBidder.String():
-		keyKeeper, err = keykeeper.NewProviderKeyKeeper(opts.KeySigner)
+		keyKeeper, err = keykeeper.NewBidderKeyKeeper(opts.KeySigner)
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
 		}
