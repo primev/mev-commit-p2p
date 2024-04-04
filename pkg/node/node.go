@@ -96,6 +96,10 @@ func NewNode(opts *Options) (*Node, error) {
 	nd.closers = append(nd.closers, evmClient)
 
 	l1RPC, err := ethclient.Dial(opts.L1RPCUrl)
+	if err != nil {
+		return nil, err
+	}
+	
 	evmL1Client, err := evmclient.New(
 		opts.KeySigner,
 		evmclient.WrapEthClient(l1RPC),

@@ -199,6 +199,12 @@ var (
 		Value:   "http://localhost:8545",
 	})
 
+	optionL1RPCUrl = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "l1-rpc-url",
+		Usage:   "rpc url of the L1 node",
+		EnvVars: []string{"MEV_COMMIT_L1_RPC_URL"},
+	})
+	
 	optionNATAddr = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "nat-addr",
 		Usage:   "external address of the node",
@@ -247,6 +253,7 @@ func main() {
 		optionProviderRegistryAddr,
 		optionPreconfStoreAddr,
 		optionSettlementRPCEndpoint,
+		optionL1RPCUrl,
 		optionNATAddr,
 		optionNATPort,
 		optionServerTLSCert,
