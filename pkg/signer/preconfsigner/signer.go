@@ -23,7 +23,7 @@ var (
 
 type Signer interface {
 	ConstructSignedBid(string, string, int64, int64, int64) (*preconfpb.Bid, error)
-	ConstructPreConfirmation(*preconfpb.Bid) (*preconfpb.PreConfirmation, error)
+	ConstructPreConfirmation(*preconfpb.Bid, int64) (*preconfpb.PreConfirmation, error)
 	VerifyBid(*preconfpb.Bid) (*common.Address, error)
 	VerifyPreConfirmation(*preconfpb.PreConfirmation) (*common.Address, error)
 }
@@ -77,14 +77,15 @@ func (p *privateKeySigner) ConstructSignedBid(
 	return bid, nil
 }
 
-func (p *privateKeySigner) ConstructPreConfirmation(bid *preconfpb.Bid) (*preconfpb.PreConfirmation, error) {
+func (p *privateKeySigner) ConstructPreConfirmation(bid *preconfpb.Bid, decayPublishTimestamp int64) (*preconfpb.PreConfirmation, error) {
 	_, err := p.VerifyBid(bid)
 	if err != nil {
 		return nil, err
 	}
 
 	preConfirmation := &preconfpb.PreConfirmation{
-		Bid: bid,
+		Bid:                   bid,
+		DecayPublishTimestamp: decayPublishTimestamp,
 	}
 
 	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
@@ -242,7 +243,7 @@ func GetPreConfirmationHash(c *preconfpb.PreConfirmation) ([]byte, error) {
 
 	// EIP712_MESSAGE_TYPEHASH
 	eip712MessageTypeHash := crypto.Keccak256Hash(
-		[]byte("PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,string bidHash,string signature)"),
+		[]byte("PreConfCommitment(string txnHash,uint64 bid,uint64 blockNumber,uint64 decayStartTimeStamp,uint64 decayEndTimeStamp,string bidHash,string signature,uint64 decayPublishTimestamp)"),
 	)
 
 	// Convert the txnHash to a byte array and hash it
@@ -258,6 +259,7 @@ func GetPreConfirmationHash(c *preconfpb.PreConfirmation) ([]byte, error) {
 	data = append(data, math.U256Bytes(big.NewInt(c.Bid.DecayEndTimestamp))...)
 	data = append(data, bidDigestHash.Bytes()...)
 	data = append(data, bidSigHash.Bytes()...)
+	data = append(data, math.U256Bytes(big.NewInt(c.DecayPublishTimestamp))...)
 	dataHash := crypto.Keccak256Hash(data)
 
 	rawData := append([]byte("\x19\x01"), append(domainSeparatorBid.Bytes(), dataHash.Bytes()...)...)

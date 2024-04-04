@@ -68,7 +68,7 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		preConfirmation, err := providerSigner.ConstructPreConfirmation(bid)
+		preConfirmation, err := providerSigner.ConstructPreConfirmation(bid, 10)
 		if err != nil {
 			t.Fail()
 		}
@@ -131,7 +131,8 @@ func TestHashing(t *testing.T) {
 		}
 
 		preConfirmation := &preconfpb.PreConfirmation{
-			Bid: bid,
+			Bid:                   bid,
+			DecayPublishTimestamp: 10,
 		}
 
 		hash, err := preconfsigner.GetPreConfirmationHash(preConfirmation)
@@ -140,7 +141,7 @@ func TestHashing(t *testing.T) {
 		}
 
 		hashStr := hex.EncodeToString(hash)
-		expHash := "54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc"
+		expHash := "6a59e79e8ab974d8db3225687a305fb21a0b7d8158f4c23ab5fc0ec72fb8a1f5"
 		if hashStr != expHash {
 			t.Fatalf("hash mismatch: %s != %s", hashStr, expHash)
 		}
@@ -169,15 +170,15 @@ func TestSignature(t *testing.T) {
 	}
 	keySigner = mockkeysigner.NewMockKeySigner(providerKey, crypto.PubkeyToAddress(providerKey.PublicKey))
 	provider := preconfsigner.NewSigner(keySigner)
-	preconf, err := provider.ConstructPreConfirmation(bid)
+	preconf, err := provider.ConstructPreConfirmation(bid, 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	expBidDigest := "a0327970258c49b922969af74d60299a648c50f69a2d98d6ab43f32f64ac2100"
 	expBidSig := "876c1216c232828be9fabb14981c8788cebdf6ed66e563c4a2ccc82a577d052543207aeeb158a32d8977736797ae250c63ef69a82cd85b727da21e20d030fb311b"
-	expCommitmentDigest := "54c118e537dd7cf63b5388a5fc8322f0286a978265d0338b108a8ca9d155dccc"
-	expCommitmentSig := "ec0f11f77a9e96bb9c2345f031a5d12dca8d01de8a2e957cf635be14802f9ad01c6183688f0c2672639e90cc2dce0662d9bea3337306ca7d4b56dd80326aaa231b"
+	expCommitmentDigest := "6a59e79e8ab974d8db3225687a305fb21a0b7d8158f4c23ab5fc0ec72fb8a1f5"
+	expCommitmentSig := "399c12c2cd21de19538e049f281752f40ce20f94a70ee1a4ab9b5965ffbf0bdf7de947f0efab28c8f8c292d7c48b01d4d8ace7afa41d420591bf2ec566fdaf8a1b"
 	if hex.EncodeToString(preconf.Bid.Digest) != expBidDigest {
 		t.Fatalf("digest mismatch: %s != %s", hex.EncodeToString(preconf.Bid.Digest), expBidDigest)
 	}
