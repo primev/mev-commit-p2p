@@ -346,8 +346,8 @@ func TestBidHandling(t *testing.T) {
 
 			select {
 			case resp := <-respC:
-				if resp != tc.status {
-					t.Fatalf("expected status to be %v, got %v", tc.status, resp)
+				if resp.Status != tc.status {
+					t.Fatalf("expected status to be %v, got %v", tc.status, resp.Status)
 				}
 				if tc.noStatus {
 					t.Fatalf("expected no status, got %v", resp)
