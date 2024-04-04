@@ -204,7 +204,7 @@ var (
 		Usage:   "rpc url of the L1 node",
 		EnvVars: []string{"MEV_COMMIT_L1_RPC_URL"},
 	})
-	
+
 	optionNATAddr = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "nat-addr",
 		Usage:   "external address of the node",
@@ -338,6 +338,7 @@ func launchNodeWithConfig(c *cli.Context) error {
 		ProviderRegistryContract: c.String(optionProviderRegistryAddr.Name),
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
+		L1RPCUrl:                 c.String(optionL1RPCUrl.Name),
 		NatAddr:                  natAddr,
 		TLSCertificateFile:       crtFile,
 		TLSPrivateKeyFile:        keyFile,
