@@ -166,7 +166,10 @@ func (e *encryptor) VerifyBid(bid *preconfpb.Bid) (*common.Address, error) {
 
 func (e *encryptor) DecryptBidData(bidderAddress common.Address, bid *preconfpb.EncryptedBid) (*preconfpb.Bid, error) {
 	pkk := e.keyKeeper.(*keykeeper.ProviderKeyKeeper)
-	aesKey := pkk.BiddersAESKeys[bidderAddress]
+	aesKey, exists := pkk.GetAESKey(bidderAddress)
+	if !exists {
+		return nil, errors.New("no AES key found for bidder")
+	}
 	decryptedBytes, err := keykeeper.DecryptWithAESGCM(aesKey, bid.Ciphertext)
 	if err != nil {
 		return nil, err
