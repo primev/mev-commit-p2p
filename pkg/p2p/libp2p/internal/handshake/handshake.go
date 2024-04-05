@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/libp2p/go-libp2p/core"
 	"github.com/libp2p/go-libp2p/core/protocol"
-	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	handshakepb "github.com/primevprotocol/mev-commit/gen/go/handshake/v1"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 )
@@ -255,8 +255,25 @@ func (h *Service) Handshake(
 		return nil, err
 	}
 
-	return &p2p.Peer{
+	p := &p2p.Peer{
 		EthAddress: ethAddress,
 		Type:       p2p.FromString(ack.PeerType),
-	}, nil
+	}
+
+	if ack.PeerType == p2p.PeerTypeProvider.String() {
+		ppk, err := keykeeper.DeserializePublicKey(ack.Keys.PKEPublicKey)
+		if err != nil {
+			return &p2p.Peer{}, err
+		}
+		npk, err := ecdh.P256().NewPublicKey(ack.Keys.NIKEPublicKey)
+		if err != nil {
+			return &p2p.Peer{}, err
+		}
+		p.Keys = &p2p.Keys{
+			PKEPublicKey:  ppk,
+			NIKEPublicKey: npk,
+		}
+	}
+
+	return p, nil
 }

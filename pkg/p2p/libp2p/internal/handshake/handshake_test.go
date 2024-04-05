@@ -132,6 +132,12 @@ func TestHandshake(t *testing.T) {
 		if p.Type != p2p.PeerTypeProvider {
 			t.Fatalf("expected peer type %s, got %s", p2p.PeerTypeProvider, p.Type)
 		}
+		if !p.Keys.NIKEPublicKey.Equal(kk1.GetNIKEPublicKey()) {
+			t.Fatalf("expected nike pk %s, got %s", p.Keys.NIKEPublicKey.Bytes(), kk1.GetNIKEPublicKey().Bytes())
+		}
+		if !p.Keys.PKEPublicKey.ExportECDSA().Equal(kk1.GetECIESPublicKey().ExportECDSA()) {
+			t.Fatalf("expected pke pk is not equal to present")
+		}
 		<-done
 	})
 }
