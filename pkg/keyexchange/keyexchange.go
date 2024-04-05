@@ -27,11 +27,11 @@ func New(
 	signer signer.Signer,
 ) *KeyExchange {
 	return &KeyExchange{
-		topo:      topo,
-		streamer:  streamer,
-		keyKeeper: keyKeeper,
-		logger:    logger,
-		signer:    signer,
+		topo:              topo,
+		streamer:          streamer,
+		keyKeeper:         keyKeeper,
+		logger:            logger,
+		signer:            signer,
 	}
 }
 
@@ -195,7 +195,7 @@ func (ke *KeyExchange) handleTimestampMessage(ctx context.Context, peer p2p.Peer
 		return fmt.Errorf("validate and process timestamp failed: %w", err)
 	}
 
-	ke.keyKeeper.(*keykeeper.ProviderKeyKeeper).BiddersAESKeys[peer.EthAddress] = aesKey
+	ke.keyKeeper.(*keykeeper.ProviderKeyKeeper).SetAESKey(peer.EthAddress, aesKey)
 
 	return nil
 }
@@ -245,7 +245,7 @@ func (ke *KeyExchange) decryptMessage(ekmWithSignature *keyexchangepb.EKMWithSig
 		message   keyexchangepb.EncryptedKeysMessage
 	)
 
-    err = proto.Unmarshal(ekmWithSignature.Message, &message)
+	err = proto.Unmarshal(ekmWithSignature.Message, &message)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to unmarshal message: %w", err)
 	}

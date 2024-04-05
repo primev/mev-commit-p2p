@@ -41,7 +41,7 @@ func TestBids(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		providerKeyKeeper.BiddersAESKeys[address] = keyKeeper.AESKey
+		providerKeyKeeper.SetAESKey(address, keyKeeper.AESKey)
 		encryptorProvider := preconfencryptor.NewEncryptor(providerKeyKeeper)
 		bid, err := encryptorProvider.DecryptBidData(address, encryptedBid)
 		if err != nil {
@@ -85,8 +85,7 @@ func TestBids(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		providerKeyKeeper.BiddersAESKeys[bidderAddress] = bidderKeyKeeper.AESKey
-
+		providerKeyKeeper.SetAESKey(bidderAddress, bidderKeyKeeper.AESKey)
 		providerEncryptor := preconfencryptor.NewEncryptor(providerKeyKeeper)
 		start := time.Now().UnixMilli()
 		end := start + 100000

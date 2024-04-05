@@ -94,8 +94,8 @@ func TestKeyExchange_SendAndHandleTimestampMessage(t *testing.T) {
 		if time.Since(start) > 5*time.Second {
 			t.Fatal("timed out")
 		}
-		if _, exists := providerKK.BiddersAESKeys[bidderPeer.EthAddress]; exists {
-			aesKey := providerKK.BiddersAESKeys[bidderPeer.EthAddress]
+		aesKey, exists := providerKK.GetAESKey(bidderPeer.EthAddress)
+		if exists {
 			if !bytes.Equal(bidderKK.AESKey, aesKey) {
 				t.Fatal("AES keys are not equal")
 			}
