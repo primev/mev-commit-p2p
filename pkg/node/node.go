@@ -294,7 +294,10 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)
-			keyexchange.SendTimestampMessage()
+			err := keyexchange.SendTimestampMessage()
+			if err != nil {
+				return nil, errors.Join(err, nd.Close())
+			}
 
 			srv.RegisterMetricsCollectors(bidderAPI.Metrics()...)
 		}

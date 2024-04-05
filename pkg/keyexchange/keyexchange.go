@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
-	keyexchangepb "github.com/primevprotocol/mev-commit/gen/go/keyexchange"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	keyexchangepb "github.com/primevprotocol/mev-commit/gen/go/keyexchange"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
+	"google.golang.org/protobuf/proto"
 )
 
 func New(
@@ -137,7 +138,7 @@ func (ke *KeyExchange) createSignedMessage(encryptedKeys [][]byte, timestampMess
 		TimestampMessage: timestampMessage,
 	}
 
-	messageBytes, err := json.Marshal(message)
+	messageBytes, err := proto.Marshal(&message)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal message: %w", err)
 	}
@@ -245,7 +246,7 @@ func (ke *KeyExchange) decryptMessage(ekmWithSignature *keyexchangepb.EKMWithSig
 		message   keyexchangepb.EncryptedKeysMessage
 	)
 
-	err = json.Unmarshal(ekmWithSignature.Message, &message)
+    err = proto.Unmarshal(ekmWithSignature.Message, &message)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to unmarshal message: %w", err)
 	}
