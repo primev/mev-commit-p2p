@@ -194,7 +194,7 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		grpcServer := grpc.NewServer(grpc.Creds(tlsCredentials))
-		preconfEncryptor := preconfencryptor.NewEncryptor(opts.KeySigner)
+		preconfEncryptor := preconfencryptor.NewEncryptor(keyKeeper)
 		validator, err := protovalidate.New()
 		if err != nil {
 			return nil, errors.Join(err, nd.Close())
