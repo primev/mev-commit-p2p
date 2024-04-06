@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"math/big"
 	"math/rand"
 	"net/http"
@@ -144,17 +145,19 @@ func main() {
 			if err != nil || len(block) == 0 {
 				logger.Error("failed to get block", "err", err)
 			} else {
-				throtle := time.Duration(time.Second * 24)
-				logger.Info("thortling set", "throtle", throtle.String())
-				// bundle := 1
-				// for j := 0; j < len(block); j += bundle {
-				// bundle := rand.Intn(10)
-				logger.Info("Sending a bid", "block", block[0:2], "blockNumber", blkNum)
-				err = sendBid(bidderClient, logger, rpcClient, block[0:2], int64(blkNum), (time.Now().UnixMilli() - int64(time.Second*4)), (time.Now().UnixMilli() + int64(time.Second*5)))
+				throttle := time.Duration(time.Second * 10)
+				throttle = time.Duration(math.Max(0, float64(throttle)*0.95))
+				logger.Info("thortling set", "throtle", throttle.String())
+				time.Sleep(throttle)
+				for i := 0; i < len(block); i++ {
+					for j := i + 1; j <= len(block); j++ {
+						logger.Info("Sending a bid", "block", block[i:j], "blockNumber", blkNum)
+						err = sendBid(bidderClient, logger, rpcClient, block[i:j], int64(blkNum), time.Now().UnixMilli(), (time.Now().UnixMilli() + int64(time.Second*5)))
+					}
+				}
 				if err != nil {
 					logger.Error("failed to send bid", "err", err)
 				}
-				time.Sleep(throtle)
 				// }
 			}
 		}
