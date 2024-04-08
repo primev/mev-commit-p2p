@@ -99,7 +99,7 @@ func NewNode(opts *Options) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	evmL1Client, err := evmclient.New(
 		opts.KeySigner,
 		evmclient.WrapEthClient(l1RPC),
@@ -294,10 +294,13 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			topo.SubscribePeer(func(p p2p.Peer) {
 				if p.Type == p2p.PeerTypeProvider {
-					keyexchange.SendTimestampMessage()
+					err = keyexchange.SendTimestampMessage()
+					if err != nil {
+						opts.Logger.Error("failed to send timestamp message", "error", err)
+					}
 				}
 			})
-			
+
 			srv.RegisterMetricsCollectors(bidderAPI.Metrics()...)
 		}
 

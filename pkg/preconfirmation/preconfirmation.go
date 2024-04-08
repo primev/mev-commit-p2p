@@ -33,16 +33,16 @@ type EncryptedPreConfirmationWithDecrypted struct {
 type Preconfirmation struct {
 	owner common.Address
 	// todo: store the commitments in a database
-	commitmentByBlockNumber              map[int64][]*EncryptedPreConfirmationWithDecrypted
-	encryptor                            encryptor.Encryptor
-	topo                                 Topology
-	streamer                             p2p.Streamer
-	us                                   BidderStore
-	processer                            BidProcessor
-	commitmentDA                         preconfcontract.Interface
-	blockTracker                         blocktrackercontract.Interface
-	logger                               *slog.Logger
-	metrics                              *metrics
+	commitmentByBlockNumber map[int64][]*EncryptedPreConfirmationWithDecrypted
+	encryptor               encryptor.Encryptor
+	topo                    Topology
+	streamer                p2p.Streamer
+	us                      BidderStore
+	processer               BidProcessor
+	commitmentDA            preconfcontract.Interface
+	blockTracker            blocktrackercontract.Interface
+	logger                  *slog.Logger
+	metrics                 *metrics
 }
 
 type Topology interface {
@@ -70,17 +70,17 @@ func New(
 ) *Preconfirmation {
 	commitmentsByBlockNumber := make(map[int64][]*EncryptedPreConfirmationWithDecrypted)
 	return &Preconfirmation{
-		owner:                                owner,
-		commitmentByBlockNumber:              commitmentsByBlockNumber,
-		topo:                                 topo,
-		streamer:                             streamer,
-		encryptor:                            encryptor,
-		us:                                   us,
-		processer:                            processor,
-		commitmentDA:                         commitmentDA,
-		blockTracker:                         blockTracker,
-		logger:                               logger,
-		metrics:                              newMetrics(),
+		owner:                   owner,
+		commitmentByBlockNumber: commitmentsByBlockNumber,
+		topo:                    topo,
+		streamer:                streamer,
+		encryptor:               encryptor,
+		us:                      us,
+		processer:               processor,
+		commitmentDA:            commitmentDA,
+		blockTracker:            blockTracker,
+		logger:                  logger,
+		metrics:                 newMetrics(),
 	}
 }
 
@@ -185,11 +185,7 @@ func (p *Preconfirmation) SendBid(
 				PreConfirmation:          preConfirmation,
 			}
 
-			if _, exists := p.commitmentByBlockNumber[blockNumber]; exists {
-				p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
-			} else {
-				p.commitmentByBlockNumber[blockNumber] = []*EncryptedPreConfirmationWithDecrypted{encryptedAndDecryptedPreconfirmation}
-			}
+			p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
 
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
@@ -295,11 +291,7 @@ func (p *Preconfirmation) handleBid(
 			}
 			blockNumber := preConfirmation.Bid.BlockNumber
 
-			if _, exists := p.commitmentByBlockNumber[blockNumber]; exists {
-				p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
-			} else {
-				p.commitmentByBlockNumber[blockNumber] = []*EncryptedPreConfirmationWithDecrypted{encryptedAndDecryptedPreconfirmation}
-			}
+			p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
 
 			return stream.WriteMsg(ctx, encryptedPreConfirmation)
 		}
