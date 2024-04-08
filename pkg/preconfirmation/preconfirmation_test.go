@@ -18,7 +18,6 @@ import (
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
-	mockevmclient "github.com/primevprotocol/mev-commit/pkg/evmclient/mock"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -242,7 +241,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 			preConfirmationSigner:    common.HexToAddress("0x2"),
 		}
 
-		mockL1Client := mockevmclient.New()
 		p := preconfirmation.New(
 			client.EthAddress,
 			topo,
@@ -252,7 +250,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 			proc,
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
-			mockL1Client,
 			newTestLogger(t, os.Stdout),
 		)
 

@@ -13,7 +13,6 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
-	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	encryptor "github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
@@ -33,9 +32,8 @@ type EncryptedPreConfirmationWithDecrypted struct {
 
 type Preconfirmation struct {
 	owner common.Address
-	// todo: store the bids in a database
-	commitmentByTxHashes                 map[string]*EncryptedPreConfirmationWithDecrypted
-	commitmentsByProvidersByBlockNumbers map[int64]map[string]*EncryptedPreConfirmationWithDecrypted
+	// todo: store the commitments in a database
+	commitmentByBlockNumber              map[int64][]*EncryptedPreConfirmationWithDecrypted
 	encryptor                            encryptor.Encryptor
 	topo                                 Topology
 	streamer                             p2p.Streamer
@@ -43,7 +41,6 @@ type Preconfirmation struct {
 	processer                            BidProcessor
 	commitmentDA                         preconfcontract.Interface
 	blockTracker                         blocktrackercontract.Interface
-	evmL1Client                          evmclient.Interface
 	logger                               *slog.Logger
 	metrics                              *metrics
 }
@@ -69,14 +66,12 @@ func New(
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	blockTracker blocktrackercontract.Interface,
-	evmL1Client evmclient.Interface,
 	logger *slog.Logger,
 ) *Preconfirmation {
-	commitmentByTxHashes := make(map[string]*EncryptedPreConfirmationWithDecrypted)
-	commitmentsByProvidersByBlockNumbers := make(map[int64]map[string]*EncryptedPreConfirmationWithDecrypted)
+	commitmentsByBlockNumber := make(map[int64][]*EncryptedPreConfirmationWithDecrypted)
 	return &Preconfirmation{
-		commitmentByTxHashes:                 commitmentByTxHashes,
-		commitmentsByProvidersByBlockNumbers: commitmentsByProvidersByBlockNumbers,
+		owner:                                owner,
+		commitmentByBlockNumber:              commitmentsByBlockNumber,
 		topo:                                 topo,
 		streamer:                             streamer,
 		encryptor:                            encryptor,
@@ -84,7 +79,6 @@ func New(
 		processer:                            processor,
 		commitmentDA:                         commitmentDA,
 		blockTracker:                         blockTracker,
-		evmL1Client:                          evmL1Client,
 		logger:                               logger,
 		metrics:                              newMetrics(),
 	}
@@ -186,13 +180,17 @@ func (p *Preconfirmation) SendBid(
 			preConfirmation.ProviderAddress = make([]byte, len(providerAddress))
 			copy(preConfirmation.ProviderAddress, providerAddress[:])
 
-			if p.commitmentsByProvidersByBlockNumbers[bid.BlockNumber] == nil {
-				p.commitmentsByProvidersByBlockNumbers[bid.BlockNumber] = make(map[string]*EncryptedPreConfirmationWithDecrypted)
-			}
-			p.commitmentsByProvidersByBlockNumbers[bid.BlockNumber][providerAddress.String()] = &EncryptedPreConfirmationWithDecrypted{
+			encryptedAndDecryptedPreconfirmation := &EncryptedPreConfirmationWithDecrypted{
 				EncryptedPreConfirmation: encryptedPreConfirmation,
 				PreConfirmation:          preConfirmation,
 			}
+
+			if _, exists := p.commitmentByBlockNumber[blockNumber]; exists {
+				p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
+			} else {
+				p.commitmentByBlockNumber[blockNumber] = []*EncryptedPreConfirmationWithDecrypted{encryptedAndDecryptedPreconfirmation}
+			}
+
 			logger.Info("received preconfirmation", "preConfirmation", preConfirmation)
 			p.metrics.ReceivedPreconfsCount.Inc()
 
@@ -291,10 +289,18 @@ func (p *Preconfirmation) handleBid(
 			}
 
 			encryptedPreConfirmation.CommitmentIndex = commitmentIndex.Bytes()
-			p.commitmentByTxHashes[bid.TxHash] = &EncryptedPreConfirmationWithDecrypted{
+			encryptedAndDecryptedPreconfirmation := &EncryptedPreConfirmationWithDecrypted{
 				EncryptedPreConfirmation: encryptedPreConfirmation,
 				PreConfirmation:          preConfirmation,
 			}
+			blockNumber := preConfirmation.Bid.BlockNumber
+
+			if _, exists := p.commitmentByBlockNumber[blockNumber]; exists {
+				p.commitmentByBlockNumber[blockNumber] = append(p.commitmentByBlockNumber[blockNumber], encryptedAndDecryptedPreconfirmation)
+			} else {
+				p.commitmentByBlockNumber[blockNumber] = []*EncryptedPreConfirmationWithDecrypted{encryptedAndDecryptedPreconfirmation}
+			}
+
 			return stream.WriteMsg(ctx, encryptedPreConfirmation)
 		}
 	}
@@ -324,92 +330,27 @@ func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, 
 	}
 }
 
-func (p *Preconfirmation) HandleProviderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
+func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
 	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
-
-	block, err := p.evmL1Client.BlockByNumber(context.Background(), event.BlockNumber)
-	if err != nil {
-		p.logger.Error("Failed to fetch block", "blockNumber", event.BlockNumber, "error", err)
-		return
-	}
-
-	validatorAddress := block.Coinbase()
-	peerAddress := p.owner
-
-	if validatorAddress != peerAddress {
-		return
-	}
-
-	for _, tx := range block.Transactions() {
-		commitment := p.commitmentByTxHashes[tx.Hash().String()]
-		if commitment == nil {
-			continue
-		}
+	for _, commitment := range p.commitmentByBlockNumber[event.BlockNumber.Int64()] {
 		_, err := p.commitmentDA.OpenCommitment(
-			context.Background(),
+			ctx,
 			commitment.EncryptedPreConfirmation.CommitmentIndex,
-			commitment.Bid.BidAmount,
-			commitment.Bid.BlockNumber,
-			commitment.Bid.TxHash,
-			commitment.Bid.DecayStartTimestamp,
-			commitment.Bid.DecayEndTimestamp,
-			commitment.Bid.Signature,
+			commitment.PreConfirmation.Bid.BidAmount,
+			commitment.PreConfirmation.Bid.BlockNumber,
+			commitment.PreConfirmation.Bid.TxHash,
+			commitment.PreConfirmation.Bid.DecayStartTimestamp,
+			commitment.PreConfirmation.Bid.DecayEndTimestamp,
+			commitment.PreConfirmation.Bid.Signature,
 			commitment.PreConfirmation.Signature,
 			commitment.PreConfirmation.SharedSecret,
 		)
 		if err != nil {
 			p.logger.Error("Failed to open commitment", "error", err)
-			return
-		}
-		p.logger.Info("Opened commitment", "txHash", tx.Hash().String())
-		delete(p.commitmentByTxHashes, tx.Hash().String())
-	}
-}
-
-
-func (p *Preconfirmation) HandleBidderNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
-	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
-
-	block, err := p.evmL1Client.BlockByNumber(context.Background(), event.BlockNumber)
-	if err != nil {
-		p.logger.Error("Failed to fetch block", "blockNumber", event.BlockNumber, "error", err)
-		return
-	}
-
-	validatorAddress := block.Coinbase()
-	// todo: with that approach only one bid could be in the block, fix this
-	commitment := p.commitmentsByProvidersByBlockNumbers[event.BlockNumber.Int64()][validatorAddress.String()]
-
-	if commitment == nil {
-		return
-	}
-	isTxPresent := false
-	for _, tx := range block.Transactions() {
-		if tx.Hash().String() == commitment.Bid.TxHash {
-			isTxPresent = true
-			break
+			continue
+		} else {
+			p.logger.Info("Opened commitment", "txHash", commitment.PreConfirmation.Bid.TxHash)
 		}
 	}
-
-	if isTxPresent {
-		return
-	}
-
-	_, err = p.commitmentDA.OpenCommitment(
-		ctx,
-		commitment.EncryptedPreConfirmation.CommitmentIndex,
-		commitment.Bid.BidAmount,
-		commitment.Bid.BlockNumber,
-		commitment.Bid.TxHash,
-		commitment.Bid.DecayStartTimestamp,
-		commitment.Bid.DecayEndTimestamp,
-		commitment.Bid.Signature,
-		commitment.PreConfirmation.Signature,
-		commitment.PreConfirmation.SharedSecret,
-	)
-	if err != nil {
-		p.logger.Error("Failed to open commitment", "error", err)
-		return
-	}
-	p.logger.Info("Opened commitment", "txHash", commitment.Bid.TxHash)
+	delete(p.commitmentByBlockNumber, event.BlockNumber.Int64())
 }

@@ -243,10 +243,9 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
-				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleProviderNewL1BlockEvent)
+			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
 
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
@@ -271,10 +270,9 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
-				evmL1Client,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleBidderNewL1BlockEvent)
+			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 			bidderAPI := bidderapi.NewService(
@@ -294,11 +292,12 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)
-			err := keyexchange.SendTimestampMessage()
-			if err != nil {
-				return nil, errors.Join(err, nd.Close())
-			}
-
+			topo.SubscribePeer(func(p p2p.Peer) {
+				if p.Type == p2p.PeerTypeProvider {
+					keyexchange.SendTimestampMessage()
+				}
+			})
+			
 			srv.RegisterMetricsCollectors(bidderAPI.Metrics()...)
 		}
 

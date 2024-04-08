@@ -27,11 +27,11 @@ var (
 
 // KeyExchange manages the key exchange process.
 type KeyExchange struct {
-	keyKeeper keykeeper.KeyKeeper
-	topo      Topology
-	streamer  p2p.Streamer
-	signer    signer.Signer
-	logger    *slog.Logger
+	keyKeeper      keykeeper.KeyKeeper
+	topo           Topology
+	streamer       p2p.Streamer
+	signer         signer.Signer
+	logger         *slog.Logger
 }
 
 // Topology interface to get peers.
