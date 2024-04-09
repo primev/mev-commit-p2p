@@ -240,6 +240,7 @@ func (p *Preconfirmation) handleBid(
 				uint64(preConfirmation.Bid.DecayEndTimestamp),
 				preConfirmation.Bid.Signature,
 				preConfirmation.Signature,
+				// TODO(@ckartik): Pass in the dispatch timestamp here once contracts PR (#88) has been merged.
 			)
 			if err != nil {
 				p.logger.Error("storing commitment", "error", err)
