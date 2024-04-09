@@ -66,7 +66,7 @@ func (t *testProcessor) ProcessBid(
 	_ *preconfpb.Bid,
 ) (chan providerapi.ProcessedBidResponse, error) {
 	statusC := make(chan providerapi.ProcessedBidResponse, 1)
-	statusC <- providerapi.ProcessedBidResponse{t.status, t.timestamp}
+	statusC <- providerapi.ProcessedBidResponse{Status: t.status, DispatchTimestamp: t.timestamp}
 	return statusC, nil
 }
 
