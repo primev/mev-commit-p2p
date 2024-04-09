@@ -57,7 +57,7 @@ type Options struct {
 	P2PAddr                  string
 	HTTPAddr                 string
 	RPCAddr                  string
-	WSRPCAddr				 string
+	WSRPCAddr                string
 	Bootnodes                []string
 	PreconfContract          string
 	BlockTrackerContract     string
@@ -208,9 +208,10 @@ func NewNode(opts *Options) (*Node, error) {
 				validator,
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
+			opts.Logger.Info("registered provider api")
 			bidProcessor = providerAPI
 			srv.RegisterMetricsCollectors(providerAPI.Metrics()...)
-
+			opts.Logger.Info("registered provider api metrics")
 			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
 
 			commitmentDA = preconfcontract.New(
@@ -218,7 +219,7 @@ func NewNode(opts *Options) (*Node, error) {
 				evmClient,
 				opts.Logger.With("component", "preconfcontract"),
 			)
-
+			opts.Logger.Info("registered preconf contract")
 			preconfProto := preconfirmation.New(
 				keyKeeper.GetAddress(),
 				topo,
@@ -230,11 +231,12 @@ func NewNode(opts *Options) (*Node, error) {
 				blockTracker,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
+			opts.Logger.Info("registered preconfirmation protocol")
 			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
 
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
-
+			opts.Logger.Info("registered stream handlers")
 			keyexchange := keyexchange.New(
 				topo,
 				p2pSvc,
@@ -242,8 +244,10 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)
+			opts.Logger.Info("registered keyexchange protocol")
 			p2pSvc.AddStreamHandlers(keyexchange.Streams()...)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
+			opts.Logger.Info("registered metrics collectors")
 
 		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
@@ -375,6 +379,7 @@ func NewNode(opts *Options) (*Node, error) {
 				},
 			),
 		)
+		opts.Logger.Info("grpc server connected and handlers are started", "state", grpcConn.GetState())
 	}
 
 	server := &http.Server{
