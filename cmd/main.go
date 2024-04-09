@@ -347,7 +347,6 @@ func launchNodeWithConfig(c *cli.Context) error {
 		ProviderRegistryContract: c.String(optionProviderRegistryAddr.Name),
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
-		L1RPCUrl:                 c.String(optionL1RPCUrl.Name),
 		NatAddr:                  natAddr,
 		TLSCertificateFile:       crtFile,
 		TLSPrivateKeyFile:        keyFile,
