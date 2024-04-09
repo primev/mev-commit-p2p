@@ -335,15 +335,17 @@ func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, 
 		}
 	}()
 
-	for {
-		select {
-		case event := <-ch:
-			handler(ctx, event)
-		case <-ctx.Done():
-			p.logger.Info("Polling context cancelled")
-			return
+	go func() {
+		for {
+			select {
+			case event := <-ch:
+				handler(ctx, event)
+			case <-ctx.Done():
+				p.logger.Info("Polling context cancelled")
+				return
+			}
 		}
-	}
+	}()
 }
 
 func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
