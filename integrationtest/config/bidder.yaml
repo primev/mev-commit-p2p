@@ -13,4 +13,3 @@ provider-registry-contract: <PROVIDER_REGISTRY>
 settlement-rpc-endpoint: <RPC_URL>
 bootnodes:
   - /ip4/172.29.18.2/tcp/13522/p2p/16Uiu2HAmLYUvthfDCewNMdfPhrVefBbsfaPL22fWWfC2zuoh5SpV
-l1-rpc-url: <L1_RPC_URL>

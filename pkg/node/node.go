@@ -64,7 +64,6 @@ type Options struct {
 	ProviderRegistryContract string
 	BidderRegistryContract   string
 	RPCEndpoint              string
-	L1RPCUrl                 string
 	NatAddr                  string
 	TLSCertificateFile       string
 	TLSPrivateKeyFile        string
@@ -95,21 +94,6 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 	nd.closers = append(nd.closers, evmClient)
-
-	l1RPC, err := ethclient.Dial(opts.L1RPCUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	evmL1Client, err := evmclient.New(
-		opts.KeySigner,
-		evmclient.WrapEthClient(l1RPC),
-		opts.Logger.With("component", "evmclient"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	nd.closers = append(nd.closers, evmL1Client)
 
 	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
 
