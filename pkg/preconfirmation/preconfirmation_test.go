@@ -44,7 +44,7 @@ func (t *testSigner) ConstructSignedBid(_ string, _ string, _ int64, _ int64, _ 
 	return t.bid, nil
 }
 
-func (t *testSigner) ConstructPreConfirmation(_ *preconfpb.Bid, _ int64) (*preconfpb.PreConfirmation, error) {
+func (t *testSigner) ConstructPreConfirmation(_ *preconfpb.Bid) (*preconfpb.PreConfirmation, error) {
 	return t.preConfirmation, nil
 }
 
