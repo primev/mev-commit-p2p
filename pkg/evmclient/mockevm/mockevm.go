@@ -27,6 +27,7 @@ type mockEvm struct {
 	transactionReceiptFunc func(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
 	transactionByHasFunc   func(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error)
 	subscribeLogsFunc      func(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
+	filterLogsFunc         func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 }
 
 type Option func(*mockEvm)
@@ -114,6 +115,12 @@ func WithTransactionByHashFunc(transactionByHashFunc func(ctx context.Context, t
 func WithSubscribeLogsFunc(subscribeLogsFunc func(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)) Option {
 	return func(m *mockEvm) {
 		m.subscribeLogsFunc = subscribeLogsFunc
+	}
+}
+
+func WithFilterLogs(filterLogsFunc func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)) Option {
+	return func(m *mockEvm) {
+		m.filterLogsFunc = filterLogsFunc
 	}
 }
 
@@ -233,6 +240,16 @@ func (m *mockEvm) SubscribeFilterLogs(
 ) (ethereum.Subscription, error) {
 	if m.subscribeLogsFunc != nil {
 		return m.subscribeLogsFunc(ctx, query, ch)
+	}
+	return nil, ErrNotImplemented
+}
+
+func (m *mockEvm) FilterLogs(
+	ctx context.Context,
+	query ethereum.FilterQuery,
+) ([]types.Log, error) {
+	if m.filterLogsFunc != nil {
+		return m.filterLogsFunc(ctx, query)
 	}
 	return nil, ErrNotImplemented
 }

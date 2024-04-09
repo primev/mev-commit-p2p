@@ -23,6 +23,7 @@ const (
 
 	defaultHTTPPort = 13523
 	defaultRPCPort  = 13524
+	defaultWSRPCPort = 13525
 
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
@@ -126,6 +127,13 @@ var (
 		Usage:   "address to bind for RPC connections",
 		EnvVars: []string{"MEV_COMMIT_RPC_ADDR"},
 		Value:   "",
+	})
+
+	optionWSRPCPort = altsrc.NewIntFlag(&cli.IntFlag{
+		Name:    "ws-rpc-port",
+		Usage:   "port to listen for websocket rpc connections",
+		EnvVars: []string{"MEV_COMMIT_WS_RPC_PORT"},
+		Value:   0,
 	})
 
 	optionBootnodes = altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
@@ -258,6 +266,7 @@ func main() {
 		optionNATPort,
 		optionServerTLSCert,
 		optionServerTLSPrivateKey,
+		optionWSRPCPort,
 	}
 
 	app := &cli.App{

@@ -57,6 +57,7 @@ type Options struct {
 	P2PAddr                  string
 	HTTPAddr                 string
 	RPCAddr                  string
+	WSRPCAddr				 string
 	Bootnodes                []string
 	PreconfContract          string
 	BlockTrackerContract     string

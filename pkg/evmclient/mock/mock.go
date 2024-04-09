@@ -69,6 +69,14 @@ func WithBlockByNumber(
 	}
 }
 
+func WithFilterLogs(
+	f func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error),
+) Option {
+	return func(m *mockEvmClient) {
+		m.FilterLogsFunc = f
+	}
+}
+
 type mockEvmClient struct {
 	SendFunc                func(ctx context.Context, req *evmclient.TxRequest) (common.Hash, error)
 	WaitForReceiptFunc      func(ctx context.Context, txnHash common.Hash) (*types.Receipt, error)
@@ -76,6 +84,7 @@ type mockEvmClient struct {
 	CancelFunc              func(ctx context.Context, txHash common.Hash) (common.Hash, error)
 	SubscribeFilterLogsFunc func(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 	BlockByNumberFunc       func(ctx context.Context, number *big.Int) (*types.Block, error)
+	FilterLogsFunc 			func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 }
 
 func (m *mockEvmClient) Send(
@@ -131,4 +140,11 @@ func (m *mockEvmClient) BlockByNumber(
 		return nil, errors.New("not implemented")
 	}
 	return m.BlockByNumber(ctx, number)
+}
+
+func (m *mockEvmClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
+	if m.FilterLogsFunc == nil {
+		return nil, errors.New("not implemented")
+	}
+	return m.FilterLogsFunc(ctx, query)
 }

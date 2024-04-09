@@ -103,8 +103,10 @@ type EVM interface {
 	// mined yet. Note that the transaction may not be part of the canonical chain even if
 	// it's not pending.
 	TransactionByHash(ctx context.Context, txHash common.Hash) (tx *types.Transaction, isPending bool, err error)
-	// FilterLogs executes a filter query to return the logs that satisfy the specified
+	// SubscribeFilterLogs creates a new subscription to filter logs. It returns a subscription
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
+	// FilterLogs executes a filter query to return the logs that satisfy the specified
+	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 }
 
 type Batcher interface {

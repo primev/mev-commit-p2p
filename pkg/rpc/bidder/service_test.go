@@ -10,19 +10,20 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/ethereum/go-ethereum"
-	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
+	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -144,6 +145,10 @@ func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (ui
 
 func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent) (ethereum.Subscription, error) {
 	return nil, nil
+}
+
+func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
+	return nil
 }
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {

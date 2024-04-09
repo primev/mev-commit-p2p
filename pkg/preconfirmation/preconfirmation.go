@@ -299,24 +299,48 @@ func (p *Preconfirmation) handleBid(
 	return nil
 }
 
+// func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, handler func(context.Context, blocktrackercontract.NewL1BlockEvent)) {
+// 	ch := make(chan blocktrackercontract.NewL1BlockEvent)
+
+// 	sub, err := p.blockTracker.SubscribeNewL1Block(ctx, ch)
+// 	if err != nil {
+// 		p.logger.Error("Failed to subscribe to NewL1Block events", "error", err)
+// 		return
+// 	}
+// 	defer sub.Unsubscribe()
+
+// 	for {
+// 		select {
+// 		case event := <-ch:
+// 			handler(ctx, event)
+// 		case err := <-sub.Err():
+// 			p.logger.Error("Subscription error", "error", err)
+// 			return
+// 		case <-ctx.Done():
+// 			p.logger.Info("Subscription context cancelled")
+// 			return
+// 		}
+// 	}
+// }
+
 func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, handler func(context.Context, blocktrackercontract.NewL1BlockEvent)) {
 	ch := make(chan blocktrackercontract.NewL1BlockEvent)
-	sub, err := p.blockTracker.SubscribeNewL1Block(ctx, ch) // Use ctx instead of context.Background()
-	if err != nil {
-		p.logger.Error("Failed to subscribe to NewL1Block events", "error", err)
-		return
-	}
-	defer sub.Unsubscribe()
+
+	pollInterval := time.Second * 10
+
+	go func() {
+		err := p.blockTracker.PollNewL1BlockEvents(ctx, ch, pollInterval)
+		if err != nil {
+			p.logger.Error("Failed to poll NewL1Block events", "error", err)
+		}
+	}()
 
 	for {
 		select {
 		case event := <-ch:
-			handler(ctx, event) // Call the handler function
-		case err := <-sub.Err():
-			p.logger.Error("Subscription error", "error", err)
-			return
-		case <-ctx.Done(): // Handle cancellation
-			p.logger.Info("Subscription context cancelled")
+			handler(ctx, event)
+		case <-ctx.Done():
+			p.logger.Info("Polling context cancelled")
 			return
 		}
 	}
