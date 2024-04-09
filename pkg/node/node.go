@@ -83,6 +83,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 	contractRPC, err := ethclient.Dial(opts.RPCEndpoint)
 	if err != nil {
+		opts.Logger.Error("failed to connect to rpc", "error", err)
 		return nil, err
 	}
 	evmClient, err := evmclient.New(
@@ -91,6 +92,7 @@ func NewNode(opts *Options) (*Node, error) {
 		opts.Logger.With("component", "evmclient"),
 	)
 	if err != nil {
+		opts.Logger.Error("failed to create evm client", "error", err)
 		return nil, err
 	}
 	nd.closers = append(nd.closers, evmClient)
@@ -118,11 +120,13 @@ func NewNode(opts *Options) (*Node, error) {
 	case p2p.PeerTypeProvider.String():
 		keyKeeper, err = keykeeper.NewProviderKeyKeeper(opts.KeySigner)
 		if err != nil {
+			opts.Logger.Error("failed to create provider key keeper", "error", err)
 			return nil, errors.Join(err, nd.Close())
 		}
 	case p2p.PeerTypeBidder.String():
 		keyKeeper, err = keykeeper.NewBidderKeyKeeper(opts.KeySigner)
 		if err != nil {
+			opts.Logger.Error("failed to create bidder key keeper", "error", err)
 			return nil, errors.Join(err, nd.Close())
 		}
 	default:
@@ -141,6 +145,7 @@ func NewNode(opts *Options) (*Node, error) {
 		NatAddr:        opts.NatAddr,
 	})
 	if err != nil {
+		opts.Logger.Error("failed to create p2p service", "error", err)
 		return nil, err
 	}
 	nd.closers = append(nd.closers, p2pSvc)
@@ -164,6 +169,7 @@ func NewNode(opts *Options) (*Node, error) {
 	if opts.PeerType != p2p.PeerTypeBootnode.String() {
 		lis, err := net.Listen("tcp", opts.RPCAddr)
 		if err != nil {
+			opts.Logger.Error("failed to listen", "error", err)
 			return nil, errors.Join(err, nd.Close())
 		}
 
@@ -174,6 +180,7 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.TLSPrivateKeyFile,
 			)
 			if err != nil {
+				opts.Logger.Error("failed to load TLS credentials", "error", err)
 				return nil, fmt.Errorf("unable to load TLS credentials: %w", err)
 			}
 		}
@@ -182,6 +189,7 @@ func NewNode(opts *Options) (*Node, error) {
 		preconfEncryptor := preconfencryptor.NewEncryptor(keyKeeper)
 		validator, err := protovalidate.New()
 		if err != nil {
+			opts.Logger.Error("failed to create proto validator", "error", err)
 			return nil, errors.Join(err, nd.Close())
 		}
 
