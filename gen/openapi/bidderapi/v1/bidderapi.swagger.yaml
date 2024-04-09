@@ -181,7 +181,7 @@ definitions:
         type: string
         format: int64
         description: Timestamp at which the bid ends decaying.
-      decayPublishTimestamp:
+      dispatchTimestamp:
         type: string
         format: int64
         description: Timestamp at which the commitment is published.

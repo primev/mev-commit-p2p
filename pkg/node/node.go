@@ -360,7 +360,7 @@ func (noOpBidProcessor) ProcessBid(
 	_ *preconfpb.Bid,
 ) (chan providerapi.ProcessedBidResponse, error) {
 	statusC := make(chan providerapi.ProcessedBidResponse, 5)
-	statusC <- providerapi.ProcessedBidResponse{Status: providerapiv1.BidResponse_STATUS_ACCEPTED, PublishedTimestamp: time.Now().UnixMilli()}
+	statusC <- providerapi.ProcessedBidResponse{Status: providerapiv1.BidResponse_STATUS_ACCEPTED, DispatchTimestamp: time.Now().UnixMilli()}
 	close(statusC)
 
 	return statusC, nil

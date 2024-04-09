@@ -17,5 +17,5 @@ message PreConfirmation {
   bytes digest = 2;
   bytes signature = 3;
   bytes provider_address = 4;
-  int64 decay_publish_timestamp = 5;
+  int64 dispatch_timestamp = 5;
 };

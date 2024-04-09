@@ -206,7 +206,7 @@ definitions:
     type: object
     example:
       bidDigest: 9dJinwL+FZ6B1xsIQQo8t8B0ZXJubJwY86l/Yu7yAH159QrPHU0qj2P+YFj+llbuI1ZygdxGsX8+P3byMEA5ig==
-      decayPublishedTimestamp: 1.23456789e+09
+      decayDispatchTimestamp: 1.23456789e+09
       status: STATUS_ACCEPTED
     properties:
       bidDigest:
@@ -225,7 +225,7 @@ definitions:
     required:
       - bidDigest
       - status
-      - decayPublishedTimestamp
+      - decayDispatchTimestamp
   v1BidResponseStatus:
     type: string
     enum:

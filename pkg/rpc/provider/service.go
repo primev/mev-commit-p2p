@@ -34,8 +34,8 @@ type Service struct {
 }
 
 type ProcessedBidResponse struct {
-	Status             providerapiv1.BidResponse_Status
-	PublishedTimestamp int64
+	Status            providerapiv1.BidResponse_Status
+	DispatchTimestamp int64
 }
 
 type EvmClient interface {
@@ -156,7 +156,7 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 				"bidDigest", hex.EncodeToString(status.BidDigest),
 				"status", status.Status.String(),
 			)
-			callback(status.Status, status.DecayPublishedTimestamp)
+			callback(status.Status, status.DecayDispatchTimestamp)
 			if status.Status == providerapiv1.BidResponse_STATUS_ACCEPTED {
 				s.metrics.BidsAcceptedByProviderCount.Inc()
 			} else {
