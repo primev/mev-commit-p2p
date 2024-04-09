@@ -15,6 +15,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
+	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -56,15 +57,16 @@ func (t *testSigner) VerifyPreConfirmation(_ *preconfpb.PreConfirmation) (*commo
 }
 
 type testProcessor struct {
-	status providerapiv1.BidResponse_Status
+	status    providerapiv1.BidResponse_Status
+	timestamp int64
 }
 
 func (t *testProcessor) ProcessBid(
 	_ context.Context,
 	_ *preconfpb.Bid,
-) (chan providerapiv1.BidResponse_Status, error) {
-	statusC := make(chan providerapiv1.BidResponse_Status, 1)
-	statusC <- t.status
+) (chan providerapi.ProcessedBidResponse, error) {
+	statusC := make(chan providerapi.ProcessedBidResponse, 1)
+	statusC <- providerapi.ProcessedBidResponse{Status: t.status, DispatchTimestamp: t.timestamp}
 	return statusC, nil
 }
 
@@ -132,7 +134,8 @@ func TestPreconfBidSubmission(t *testing.T) {
 		topo := &testTopo{server}
 		us := &testBidderStore{}
 		proc := &testProcessor{
-			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
+			status:    providerapiv1.BidResponse_STATUS_ACCEPTED,
+			timestamp: 10,
 		}
 		signer := &testSigner{
 			bid:                   bid,

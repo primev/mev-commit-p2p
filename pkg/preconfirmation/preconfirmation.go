@@ -13,6 +13,7 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
+	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	signer "github.com/primevprotocol/mev-commit/pkg/signer/preconfsigner"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc/codes"
@@ -44,7 +45,7 @@ type BidderStore interface {
 }
 
 type BidProcessor interface {
-	ProcessBid(context.Context, *preconfpb.Bid) (chan providerapiv1.BidResponse_Status, error)
+	ProcessBid(context.Context, *preconfpb.Bid) (chan providerapi.ProcessedBidResponse, error)
 }
 
 func New(
@@ -221,7 +222,7 @@ func (p *Preconfirmation) handleBid(
 	case <-ctx.Done():
 		return ctx.Err()
 	case st := <-statusC:
-		switch st {
+		switch st.Status {
 		case providerapiv1.BidResponse_STATUS_REJECTED:
 			return status.Errorf(codes.Internal, "bid rejected")
 		case providerapiv1.BidResponse_STATUS_ACCEPTED:
@@ -239,6 +240,7 @@ func (p *Preconfirmation) handleBid(
 				uint64(preConfirmation.Bid.DecayEndTimestamp),
 				preConfirmation.Bid.Signature,
 				preConfirmation.Signature,
+				// TODO(@ckartik): Pass in the dispatch timestamp here once contracts PR (#88) has been merged.
 			)
 			if err != nil {
 				p.logger.Error("storing commitment", "error", err)

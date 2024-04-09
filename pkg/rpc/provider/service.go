@@ -23,7 +23,7 @@ import (
 type Service struct {
 	providerapiv1.UnimplementedProviderServer
 	receiver         chan *providerapiv1.Bid
-	bidsInProcess    map[string]func(providerapiv1.BidResponse_Status)
+	bidsInProcess    map[string]func(providerapiv1.BidResponse_Status, int64)
 	bidsMu           sync.Mutex
 	logger           *slog.Logger
 	owner            common.Address
@@ -31,6 +31,11 @@ type Service struct {
 	evmClient        EvmClient
 	metrics          *metrics
 	validator        *protovalidate.Validator
+}
+
+type ProcessedBidResponse struct {
+	Status            providerapiv1.BidResponse_Status
+	DispatchTimestamp int64
 }
 
 type EvmClient interface {
@@ -47,7 +52,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		receiver:         make(chan *providerapiv1.Bid),
-		bidsInProcess:    make(map[string]func(providerapiv1.BidResponse_Status)),
+		bidsInProcess:    make(map[string]func(providerapiv1.BidResponse_Status, int64)),
 		registryContract: registryContract,
 		owner:            owner,
 		logger:           logger,
@@ -67,7 +72,7 @@ func toString(bid *providerapiv1.Bid) string {
 func (s *Service) ProcessBid(
 	ctx context.Context,
 	bid *preconfpb.Bid,
-) (chan providerapiv1.BidResponse_Status, error) {
+) (chan ProcessedBidResponse, error) {
 	bidMsg := &providerapiv1.Bid{
 		TxHashes:            strings.Split(bid.TxHash, ","),
 		BidAmount:           bid.BidAmount,
@@ -82,10 +87,11 @@ func (s *Service) ProcessBid(
 		return nil, err
 	}
 
-	respC := make(chan providerapiv1.BidResponse_Status, 1)
+	respC := make(chan ProcessedBidResponse, 1)
+
 	s.bidsMu.Lock()
-	s.bidsInProcess[string(bid.Digest)] = func(status providerapiv1.BidResponse_Status) {
-		respC <- status
+	s.bidsInProcess[string(bid.Digest)] = func(status providerapiv1.BidResponse_Status, timestamp int64) {
+		respC <- ProcessedBidResponse{status, timestamp}
 		close(respC)
 	}
 	s.bidsMu.Unlock()
@@ -150,7 +156,7 @@ func (s *Service) SendProcessedBids(srv providerapiv1.Provider_SendProcessedBids
 				"bidDigest", hex.EncodeToString(status.BidDigest),
 				"status", status.Status.String(),
 			)
-			callback(status.Status)
+			callback(status.Status, status.DecayDispatchTimestamp)
 			if status.Status == providerapiv1.BidResponse_STATUS_ACCEPTED {
 				s.metrics.BidsAcceptedByProviderCount.Inc()
 			} else {
