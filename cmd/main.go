@@ -200,6 +200,13 @@ var (
 		Value:   contracts.TestnetContracts.PreconfCommitmentStore,
 	})
 
+	optionBlockTrackerAddr = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "block-tracker-contract",
+		Usage:   "address of the block tracker contract",
+		EnvVars: []string{"MEV_COMMIT_BLOCK_TRACKER_ADDR"},
+		Value:   contracts.TestnetContracts.BlockTracker,
+	})
+
 	optionSettlementRPCEndpoint = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "settlement-rpc-endpoint",
 		Usage:   "rpc endpoint of the settlement layer",
@@ -254,6 +261,7 @@ func main() {
 		optionBidderRegistryAddr,
 		optionProviderRegistryAddr,
 		optionPreconfStoreAddr,
+		optionBlockTrackerAddr,
 		optionSettlementRPCEndpoint,
 		optionNATAddr,
 		optionNATPort,
@@ -339,6 +347,7 @@ func launchNodeWithConfig(c *cli.Context) error {
 		PreconfContract:          c.String(optionPreconfStoreAddr.Name),
 		ProviderRegistryContract: c.String(optionProviderRegistryAddr.Name),
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
+		BlockTrackerContract:     c.String(optionBlockTrackerAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
 		NatAddr:                  natAddr,
 		TLSCertificateFile:       crtFile,
