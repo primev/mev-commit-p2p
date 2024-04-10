@@ -333,7 +333,6 @@ func (btc *blockTrackerContract) PollNewL1BlockEvents(ctx context.Context, event
 				Topics:    [][]common.Hash{{blockTrackerABI.Events["NewL1Block"].ID}},
 			}
 
-			// Use FilterLogs to get the logs synchronously
 			logs, err := btc.client.FilterLogs(ctx, query)
 			if err != nil {
 				btc.logger.Error("error filtering NewL1Block events", "error", err)
