@@ -198,7 +198,7 @@ func NewNode(opts *Options) (*Node, error) {
 			commitmentDA preconfcontract.Interface    = noOpCommitmentDA{}
 		)
 
-		blockTrackerAddr := common.HexToAddress(opts.PreconfContract)
+		blockTrackerAddr := common.HexToAddress(opts.BlockTrackerContract)
 
 		blockTracker := blocktrackercontract.New(
 			blockTrackerAddr,
