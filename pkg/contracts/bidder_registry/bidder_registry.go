@@ -156,5 +156,12 @@ func (r *bidderRegistryContract) CheckBidderAllowance(
 		r.logger.Error("error getting stake", "error", err)
 		return false
 	}
+	r.logger.Info("checking bidder allowance",
+		"stake", stake.Int64(),
+		"blocksPerWindow", blocksPerWindow.Int64(),
+		"minStake", minStake.Int64(),
+		"window", window.Int64(),
+		"address", address.Hex(),
+	)
 	return (stake.Div(stake, blocksPerWindow)).Cmp(minStake) >= 0
 }

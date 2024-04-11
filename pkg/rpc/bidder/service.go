@@ -136,6 +136,8 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
+	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", currentWindow+1)
+
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }
 

@@ -196,6 +196,8 @@ func (ke *KeyExchange) handleTimestampMessage(ctx context.Context, peer p2p.Peer
 	}
 
 	ke.keyKeeper.(*keykeeper.ProviderKeyKeeper).SetAESKey(peer.EthAddress, aesKey)
+	
+	ke.logger.Info("successfully processed timestamp message", "peer", peer.EthAddress, "key", aesKey)
 
 	return nil
 }
