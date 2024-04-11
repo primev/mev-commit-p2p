@@ -23,7 +23,6 @@ const (
 
 	defaultHTTPPort = 13523
 	defaultRPCPort  = 13524
-	defaultWSRPCPort = 13525
 
 	defaultConfigDir = "~/.mev-commit"
 	defaultKeyFile   = "key"
@@ -129,13 +128,6 @@ var (
 		Value:   "",
 	})
 
-	optionWSRPCPort = altsrc.NewIntFlag(&cli.IntFlag{
-		Name:    "ws-rpc-port",
-		Usage:   "port to listen for websocket rpc connections",
-		EnvVars: []string{"MEV_COMMIT_WS_RPC_PORT"},
-		Value:   0,
-	})
-
 	optionBootnodes = altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 		Name:    "bootnodes",
 		Usage:   "list of bootnodes to connect to",
@@ -214,6 +206,13 @@ var (
 		Value:   "http://localhost:8545",
 	})
 
+	optionSettlementWSRPCEndpoint = altsrc.NewStringFlag(&cli.StringFlag{
+		Name:    "settlement-ws-rpc-endpoint",
+		Usage:   "ws rpc endpoint of the settlement layer",
+		EnvVars: []string{"MEV_COMMIT_SETTLEMENT_WS_RPC_ENDPOINT"},
+		Value:   "ws://localhost:8546",
+	})
+
 	optionNATAddr = altsrc.NewStringFlag(&cli.StringFlag{
 		Name:    "nat-addr",
 		Usage:   "external address of the node",
@@ -263,11 +262,11 @@ func main() {
 		optionPreconfStoreAddr,
 		optionBlockTrackerAddr,
 		optionSettlementRPCEndpoint,
+		optionSettlementWSRPCEndpoint,
 		optionNATAddr,
 		optionNATPort,
 		optionServerTLSCert,
 		optionServerTLSPrivateKey,
-		optionWSRPCPort,
 	}
 
 	app := &cli.App{
@@ -349,6 +348,7 @@ func launchNodeWithConfig(c *cli.Context) error {
 		BidderRegistryContract:   c.String(optionBidderRegistryAddr.Name),
 		BlockTrackerContract:     c.String(optionBlockTrackerAddr.Name),
 		RPCEndpoint:              c.String(optionSettlementRPCEndpoint.Name),
+		WSRPCEndpoint:            c.String(optionSettlementWSRPCEndpoint.Name),
 		NatAddr:                  natAddr,
 		TLSCertificateFile:       crtFile,
 		TLSPrivateKeyFile:        keyFile,

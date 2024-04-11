@@ -130,7 +130,6 @@ func (r *registryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
 		return nil, err
 	}
 
-	r.logger.Info("minStake result", "result", result)
 	results, err := r.registryABI.Unpack("minStake", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)

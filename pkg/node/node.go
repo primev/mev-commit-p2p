@@ -57,13 +57,13 @@ type Options struct {
 	P2PAddr                  string
 	HTTPAddr                 string
 	RPCAddr                  string
-	WSRPCAddr                string
 	Bootnodes                []string
 	PreconfContract          string
 	BlockTrackerContract     string
 	ProviderRegistryContract string
 	BidderRegistryContract   string
 	RPCEndpoint              string
+	WSRPCEndpoint            string
 	NatAddr                  string
 	TLSCertificateFile       string
 	TLSPrivateKeyFile        string
@@ -96,8 +96,24 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 	nd.closers = append(nd.closers, evmClient)
-
 	srv.MetricsRegistry().MustRegister(evmClient.Metrics()...)
+
+	wsRPC, err := ethclient.Dial(opts.WSRPCEndpoint)
+	if err != nil {
+		opts.Logger.Error("failed to connect to ws rpc", "error", err)
+		return nil, err
+	}
+	wsEvmClient, err := evmclient.New(
+		opts.KeySigner,
+		evmclient.WrapEthClient(wsRPC),
+		opts.Logger.With("component", "wsevmclient"),
+	)
+	if err != nil {
+		opts.Logger.Error("failed to create ws evm client", "error", err)
+		return nil, err
+	}
+	nd.closers = append(nd.closers, wsEvmClient)
+	srv.MetricsRegistry().MustRegister(wsEvmClient.Metrics()...)
 
 	bidderRegistryContractAddr := common.HexToAddress(opts.BidderRegistryContract)
 
@@ -240,7 +256,7 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			opts.Logger.Info("registered preconfirmation protocol")
-			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
+			go preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
 
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
@@ -269,7 +285,7 @@ func NewNode(opts *Options) (*Node, error) {
 				blockTracker,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
+			go preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 			bidderAPI := bidderapi.NewService(

@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"math/big"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -42,7 +41,7 @@ type Interface interface {
 	// SubscribeNewL1Block subscribes to the NewL1Block events emitted by the contract.
 	SubscribeNewL1Block(ctx context.Context, eventCh chan<- NewL1BlockEvent) (ethereum.Subscription, error)
 	// PollNewL1BlockEvents polls for NewL1Block events and sends them to the event channel.
-	PollNewL1BlockEvents(ctx context.Context, eventCh chan<- NewL1BlockEvent, pollInterval time.Duration) error
+	// PollNewL1BlockEvents(ctx context.Context, eventCh chan<- NewL1BlockEvent, pollInterval time.Duration) error
 }
 
 type blockTrackerContract struct {
@@ -317,50 +316,50 @@ func (btc *blockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventC
 	return sub, nil
 }
 
-func (btc *blockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- NewL1BlockEvent, pollInterval time.Duration) error {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
+// func (btc *blockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- NewL1BlockEvent, pollInterval time.Duration) error {
+// 	ticker := time.NewTicker(pollInterval)
+// 	defer ticker.Stop()
 
-	startBlock := uint64(0) // todo: take this variable from config
+// 	startBlock := uint64(0) // todo: take this variable from config
 
-	for {
-		select {
-		case <-ticker.C:
-			// Update the query to search for events from startBlock to the latest block
-			query := ethereum.FilterQuery{
-				FromBlock: big.NewInt(int64(startBlock)),
-				Addresses: []common.Address{btc.blockTrackerContractAddr},
-				Topics:    [][]common.Hash{{blockTrackerABI.Events["NewL1Block"].ID}},
-			}
+// 	for {
+// 		select {
+// 		case <-ticker.C:
+// 			// Update the query to search for events from startBlock to the latest block
+// 			query := ethereum.FilterQuery{
+// 				FromBlock: big.NewInt(int64(startBlock)),
+// 				Addresses: []common.Address{btc.blockTrackerContractAddr},
+// 				Topics:    [][]common.Hash{{blockTrackerABI.Events["NewL1Block"].ID}},
+// 			}
 
-			logs, err := btc.client.FilterLogs(ctx, query)
-			if err != nil {
-				btc.logger.Error("error filtering NewL1Block events", "error", err)
-				continue
-			}
+// 			logs, err := btc.client.FilterLogs(ctx, query)
+// 			if err != nil {
+// 				btc.logger.Error("error filtering NewL1Block events", "error", err)
+// 				continue
+// 			}
 
-			for _, log := range logs {
-				event := NewL1BlockEvent{}
-				err := blockTrackerABI.UnpackIntoInterface(&event, "NewL1Block", log.Data)
-				if err != nil {
-					btc.logger.Error("error unpacking NewL1Block event", "error", err)
-					continue
-				}
-				event.BlockNumber = new(big.Int).SetBytes(log.Topics[1].Bytes())
-				event.Winner = common.HexToAddress(log.Topics[2].Hex())
-				event.Window = new(big.Int).SetBytes(log.Topics[3].Bytes())
+// 			for _, log := range logs {
+// 				event := NewL1BlockEvent{}
+// 				err := blockTrackerABI.UnpackIntoInterface(&event, "NewL1Block", log.Data)
+// 				if err != nil {
+// 					btc.logger.Error("error unpacking NewL1Block event", "error", err)
+// 					continue
+// 				}
+// 				event.BlockNumber = new(big.Int).SetBytes(log.Topics[1].Bytes())
+// 				event.Winner = common.HexToAddress(log.Topics[2].Hex())
+// 				event.Window = new(big.Int).SetBytes(log.Topics[3].Bytes())
 
-				eventCh <- event
-			}
+// 				eventCh <- event
+// 			}
 
-			// Update startBlock for the next query to start from the latest checked block
-			if len(logs) > 0 {
-				lastLog := logs[len(logs)-1]
-				startBlock = lastLog.BlockNumber + 1
-			}
+// 			// Update startBlock for the next query to start from the latest checked block
+// 			if len(logs) > 0 {
+// 				lastLog := logs[len(logs)-1]
+// 				startBlock = lastLog.BlockNumber + 1
+// 			}
 
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
-}
+// 		case <-ctx.Done():
+// 			return ctx.Err()
+// 		}
+// 	}
+// }

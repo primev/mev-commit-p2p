@@ -161,9 +161,9 @@ func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, ev
 	return nil, nil
 }
 
-func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
-	return nil
-}
+// func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
+// 	return nil
+// }
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()

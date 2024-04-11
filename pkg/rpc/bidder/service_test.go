@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/bufbuild/protovalidate-go"
 	"github.com/ethereum/go-ethereum"
@@ -147,9 +146,9 @@ func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, ev
 	return nil, nil
 }
 
-func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
-	return nil
-}
+// func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
+// 	return nil
+// }
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {
 	lis := bufconn.Listen(bufferSize)
