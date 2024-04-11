@@ -48,6 +48,7 @@ type blockTrackerContract struct {
 	blockTrackerABI          abi.ABI
 	blockTrackerContractAddr common.Address
 	client                   evmclient.Interface
+	wsClient                 evmclient.Interface
 	logger                   *slog.Logger
 }
 
@@ -60,12 +61,14 @@ type NewL1BlockEvent struct {
 func New(
 	blockTrackerContractAddr common.Address,
 	client evmclient.Interface,
+	wsClient evmclient.Interface,
 	logger *slog.Logger,
 ) Interface {
 	return &blockTrackerContract{
 		blockTrackerABI:          blockTrackerABI,
 		blockTrackerContractAddr: blockTrackerContractAddr,
 		client:                   client,
+		wsClient:                 wsClient,
 		logger:                   logger,
 	}
 }
@@ -287,7 +290,7 @@ func (btc *blockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventC
 	}
 
 	logsCh := make(chan types.Log)
-	sub, err := btc.client.SubscribeFilterLogs(ctx, query, logsCh)
+	sub, err := btc.wsClient.SubscribeFilterLogs(ctx, query, logsCh)
 	if err != nil {
 		return nil, err
 	}

@@ -113,7 +113,6 @@ func NewNode(opts *Options) (*Node, error) {
 		return nil, err
 	}
 	nd.closers = append(nd.closers, wsEvmClient)
-	srv.MetricsRegistry().MustRegister(wsEvmClient.Metrics()...)
 
 	bidderRegistryContractAddr := common.HexToAddress(opts.BidderRegistryContract)
 
@@ -219,6 +218,7 @@ func NewNode(opts *Options) (*Node, error) {
 		blockTracker := blocktrackercontract.New(
 			blockTrackerAddr,
 			evmClient,
+			wsEvmClient,
 			opts.Logger.With("component", "blocktrackercontract"),
 		)
 
