@@ -87,6 +87,7 @@ func (p *preconfContract) StoreEncryptedCommitment(
 		return common.Hash{}, err
 	}
 
+	// todo: add event tracker to add commitment to avoid waiting
 	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
 	if err != nil {
 		return common.Hash{}, err // Updated to return common.Hash{}
@@ -137,32 +138,12 @@ func (p *preconfContract) OpenCommitment(
 		return common.Hash{}, err
 	}
 
-	txHash, err := p.client.Send(ctx, &evmclient.TxRequest{
+	_, err = p.client.Send(ctx, &evmclient.TxRequest{
 		To:       &p.preconfContractAddr,
 		CallData: callData,
 	})
 	if err != nil {
 		return common.Hash{}, err
-	}
-
-	receipt, err := p.client.WaitForReceipt(ctx, txHash)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	p.logger.Info("OpenCommitment transaction successful", "txnHash", txnHash)
-
-	// Assuming "CommitmentOpened" is the event that gets emitted when openCommitment is successfully called
-	eventTopicHash := p.preconfABI.Events["CommitmentOpened"].ID
-
-	for _, log := range receipt.Logs {
-		if len(log.Topics) > 0 && log.Topics[0] == eventTopicHash {
-			// Assuming the first indexed argument (Topics[1]) is the commitmentIndex
-			commitmentIndex := log.Topics[1]
-			p.logger.Info("Commitment opened", "commitmentIndex", commitmentIndex.Hex())
-
-			return commitmentIndex, nil
-		}
 	}
 
 	return common.Hash{}, fmt.Errorf("commitmentIndex not found in transaction receipt")
