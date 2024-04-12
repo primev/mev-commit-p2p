@@ -154,6 +154,7 @@ func (s *Service) GetAllowance(
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
 		}
+		window++
 	} else {
 		window = r.WindowNumber.Value
 	}

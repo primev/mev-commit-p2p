@@ -335,7 +335,6 @@ func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, 
 // 		}
 // 	}()
 
-// 	// todo: fix this
 // 	go func() {
 // 		for {
 // 			select {

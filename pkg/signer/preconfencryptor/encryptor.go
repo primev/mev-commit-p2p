@@ -126,7 +126,6 @@ func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*prec
 		SharedSecret: sharedSecredProviderSk,
 	}
 
-	// todo: update to take preconf hash into hash calculation
 	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
 	if err != nil {
 		return nil, nil, err
