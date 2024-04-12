@@ -82,6 +82,20 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 		return err
 	}
 
+	var bidderRegistered struct {
+		Bidder        common.Address
+		PrepaidAmount *big.Int
+		WindowNumber  *big.Int
+	}
+	for _, log := range receipt.Logs {
+		err := r.bidderRegistryABI.UnpackIntoInterface(&bidderRegistered, "BidderRegistered", log.Data)
+		if err != nil {
+			r.logger.Debug("Failed to unpack event", "err", err)
+			continue
+		}
+		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "prepaidAmount", bidderRegistered.PrepaidAmount.Uint64(), "windowNumber", bidderRegistered.WindowNumber.Int64())
+	}
+
 	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash)
 
 	return nil

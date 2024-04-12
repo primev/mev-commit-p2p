@@ -350,6 +350,7 @@ func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, 
 
 func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
 	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
+	// todo: for provider check if winner == providerAddress, for bidder if committerAddress
 	for _, commitment := range p.commitmentByBlockNumber[event.BlockNumber.Int64()] {
 		_, err := p.commitmentDA.OpenCommitment(
 			ctx,
