@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto/ecies"
-	keyexchangepb "github.com/primevprotocol/mev-commit/gen/go/keyexchange"
+	keyexchangepb "github.com/primevprotocol/mev-commit/gen/go/keyexchange/v1"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
@@ -196,7 +196,7 @@ func (ke *KeyExchange) handleTimestampMessage(ctx context.Context, peer p2p.Peer
 	}
 
 	ke.keyKeeper.(*keykeeper.ProviderKeyKeeper).SetAESKey(peer.EthAddress, aesKey)
-	
+
 	ke.logger.Info("successfully processed timestamp message", "peer", peer.EthAddress, "key", aesKey)
 
 	return nil
