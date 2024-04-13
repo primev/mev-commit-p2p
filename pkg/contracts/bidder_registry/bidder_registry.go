@@ -83,11 +83,12 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 	}
 
 	var bidderRegistered struct {
-		Bidder        common.Address
+		Bidder        string
 		PrepaidAmount *big.Int
 		WindowNumber  *big.Int
 	}
 	for _, log := range receipt.Logs {
+		r.logger.Info("bidder registry log", "logData", log.Data)
 		err := r.bidderRegistryABI.UnpackIntoInterface(&bidderRegistered, "BidderRegistered", log.Data)
 		if err != nil {
 			r.logger.Debug("Failed to unpack event", "err", err)
@@ -96,7 +97,7 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "prepaidAmount", bidderRegistered.PrepaidAmount.Uint64(), "windowNumber", bidderRegistered.WindowNumber.Int64())
 	}
 
-	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash)
+	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash, "bidder", bidderRegistered.Bidder)
 
 	return nil
 }
@@ -171,10 +172,10 @@ func (r *bidderRegistryContract) CheckBidderAllowance(
 		return false
 	}
 	r.logger.Info("checking bidder allowance",
-		"stake", stake.Int64(),
-		"blocksPerWindow", blocksPerWindow.Int64(),
-		"minStake", minStake.Int64(),
-		"window", window.Int64(),
+		"stake", stake.Uint64(),
+		"blocksPerWindow", blocksPerWindow.Uint64(),
+		"minStake", minStake.Uint64(),
+		"window", window.Uint64(),
 		"address", address.Hex(),
 	)
 	return (stake.Div(stake, blocksPerWindow)).Cmp(minStake) >= 0
