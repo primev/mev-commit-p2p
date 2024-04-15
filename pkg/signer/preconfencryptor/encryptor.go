@@ -122,8 +122,11 @@ func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*prec
 	}
 
 	preConfirmation := &preconfpb.PreConfirmation{
-		Bid:          bid,
-		SharedSecret: sharedSecredProviderSk,
+		Bid:             bid,
+		Digest:          bid.Digest,
+		Signature:       bid.Signature,
+		SharedSecret:    sharedSecredProviderSk,
+		ProviderAddress: providerKK.GetAddress().Bytes(),
 	}
 
 	preConfirmationHash, err := GetPreConfirmationHash(preConfirmation)
