@@ -2,7 +2,6 @@ package preconfcontract
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"math/big"
 	"strings"
