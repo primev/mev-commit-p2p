@@ -121,8 +121,8 @@ func (p *preconfContract) OpenCommitment(
 	sharedSecretKey []byte,
 ) (common.Hash, error) {
 	bidAmt, _ := new(big.Int).SetString(bid, 10)
+
 	var eciBytes [32]byte
-	
 	copy(eciBytes[:], encryptedCommitmentIndex)
 
 	callData, err := p.preconfABI.Pack(
