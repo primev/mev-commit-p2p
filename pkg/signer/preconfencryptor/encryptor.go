@@ -123,8 +123,6 @@ func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*prec
 
 	preConfirmation := &preconfpb.PreConfirmation{
 		Bid:             bid,
-		Digest:          bid.Digest,
-		Signature:       bid.Signature,
 		SharedSecret:    sharedSecredProviderSk,
 		ProviderAddress: providerKK.GetAddress().Bytes(),
 	}
@@ -142,6 +140,9 @@ func (e *encryptor) ConstructEncryptedPreConfirmation(bid *preconfpb.Bid) (*prec
 	if sig[64] == 0 || sig[64] == 1 {
 		sig[64] += 27 // Transform V from 0/1 to 27/28
 	}
+
+	preConfirmation.Digest = preConfirmationHash
+	preConfirmation.Signature = sig
 
 	return preConfirmation, &preconfpb.EncryptedPreConfirmation{
 		Commitment: preConfirmationHash,
