@@ -352,7 +352,7 @@ func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event block
 	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
 	// todo: for provider check if winner == providerAddress, for bidder if committerAddress
 	for _, commitment := range p.commitmentByBlockNumber[event.BlockNumber.Int64()] {
-		_, err := p.commitmentDA.OpenCommitment(
+		txHash, err := p.commitmentDA.OpenCommitment(
 			ctx,
 			commitment.EncryptedPreConfirmation.CommitmentIndex,
 			commitment.PreConfirmation.Bid.BidAmount,
@@ -368,7 +368,7 @@ func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event block
 			p.logger.Error("Failed to open commitment", "error", err)
 			continue
 		} else {
-			p.logger.Info("Opened commitment", "txHash", commitment.PreConfirmation.Bid.TxHash)
+			p.logger.Info("Opened commitment", "txHash", txHash)
 		}
 	}
 	delete(p.commitmentByBlockNumber, event.BlockNumber.Int64())

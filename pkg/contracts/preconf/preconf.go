@@ -128,11 +128,11 @@ func (p *preconfContract) OpenCommitment(
 	callData, err := p.preconfABI.Pack(
 		"openCommitment",
 		eciBytes,
-		bidAmt,
-		big.NewInt(blockNumber),
+		bidAmt.Uint64(),
+		big.NewInt(blockNumber).Uint64(),
 		txnHash,
-		big.NewInt(decayStartTimeStamp),
-		big.NewInt(decayEndTimeStamp),
+		big.NewInt(decayStartTimeStamp).Uint64(),
+		big.NewInt(decayEndTimeStamp).Uint64(),
 		bidSignature,
 		commitmentSignature,
 		sharedSecretKey,
@@ -142,7 +142,7 @@ func (p *preconfContract) OpenCommitment(
 		return common.Hash{}, err
 	}
 
-	_, err = p.client.Send(ctx, &evmclient.TxRequest{
+	txHash, err := p.client.Send(ctx, &evmclient.TxRequest{
 		To:       &p.preconfContractAddr,
 		CallData: callData,
 	})
@@ -150,5 +150,5 @@ func (p *preconfContract) OpenCommitment(
 		return common.Hash{}, err
 	}
 
-	return common.Hash{}, fmt.Errorf("commitmentIndex not found in transaction receipt")
+	return txHash, nil
 }
