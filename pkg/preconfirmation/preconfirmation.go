@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
@@ -327,7 +328,7 @@ func (p *Preconfirmation) handleBid(
 func (p *Preconfirmation) subscribeNewL1Block(ctx context.Context) error {
 	ev := events.NewEventHandler(
 		"NewL1Block",
-		func(newL1Block *blocktrackercontract.NewL1BlockEvent) error {
+		func(newL1Block *blocktracker.BlocktrackerNewL1Block) error {
 			p.logger.Info("New L1 Block event received", "blockNumber", newL1Block.BlockNumber, "winner", newL1Block.Winner, "window", newL1Block.Window)
 			// todo: for provider check if winner == providerAddress, for bidder if committerAddress
 			for _, commitment := range p.commitmentByBlockNumber[newL1Block.BlockNumber.Int64()] {
