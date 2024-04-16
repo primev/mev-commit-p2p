@@ -77,7 +77,7 @@ type Options struct {
 
 type Node struct {
 	waitClose func()
-	closers []io.Closer
+	closers   []io.Closer
 }
 
 func NewNode(opts *Options) (*Node, error) {
@@ -192,6 +192,22 @@ func NewNode(opts *Options) (*Node, error) {
 	defer cancel()
 
 	var preconfProtoClosed <-chan struct{}
+	st := store.NewStore()
+
+	contracts, err := getContractABIs(opts)
+	if err != nil {
+		opts.Logger.Error("failed to get contract ABIs", "error", err)
+		return nil, err
+	}
+
+	evtMgr := events.NewListener(
+		opts.Logger.With("component", "events"),
+		evmClient,
+		st,
+		contracts,
+	)
+
+	evtMgrDone := evtMgr.Start(ctx)
 
 	if opts.PeerType != p2p.PeerTypeBootnode.String() {
 		lis, err := net.Listen("tcp", opts.RPCAddr)
@@ -232,21 +248,6 @@ func NewNode(opts *Options) (*Node, error) {
 			evmClient,
 			wsEvmClient,
 			opts.Logger.With("component", "blocktrackercontract"),
-		)
-
-		st := store.NewStore()
-
-		contracts, err := getContractABIs(opts)
-		if err != nil {
-			opts.Logger.Error("failed to get contract ABIs", "error", err)
-			return nil, err
-		}
-
-		evtMgr := events.NewListener(
-			opts.Logger.With("component", "events"),
-			evmClient,
-			st,
-			contracts,
 		)
 
 		switch opts.PeerType {
@@ -468,6 +469,7 @@ func NewNode(opts *Options) (*Node, error) {
 		go func() {
 			defer close(closeChan)
 
+			<-evtMgrDone
 			<-preconfProtoClosed
 		}()
 
