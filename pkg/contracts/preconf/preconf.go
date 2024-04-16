@@ -2,6 +2,7 @@ package preconfcontract
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"strings"
@@ -119,7 +120,11 @@ func (p *preconfContract) OpenCommitment(
 	commitmentSignature []byte,
 	sharedSecretKey []byte,
 ) (common.Hash, error) {
-	bidAmt, _ := new(big.Int).SetString(bid, 10)
+	bidAmt, ok := new(big.Int).SetString(bid, 10)
+	if !ok {
+		p.logger.Error("Error converting bid to big.Int", "bid", bid)
+		return common.Hash{}, fmt.Errorf("error converting bid to big.Int, bid: %s", bid)
+	}
 
 	var eciBytes [32]byte
 	copy(eciBytes[:], encryptedCommitmentIndex)
