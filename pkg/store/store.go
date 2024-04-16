@@ -5,13 +5,13 @@ import (
 )
 
 type Store struct {
-	data map[string]int64
+	data map[string]uint64
 	mu   sync.RWMutex
 }
 
 func NewStore() *Store {
 	return &Store{
-		data: make(map[string]int64),
+		data: make(map[string]uint64),
 	}
 }
 
@@ -20,7 +20,7 @@ func (s *Store) LastBlock() (uint64, error) {
 	defer s.mu.RUnlock()
 
 	if value, exists := s.data["last_block"]; exists {
-		return uint64(value), nil
+		return value, nil
 	}
 	return 0, nil
 }
@@ -29,6 +29,6 @@ func (s *Store) SetLastBlock(blockNum uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.data["last_block"] = int64(blockNum)
+	s.data["last_block"] = blockNum
 	return nil
 }
