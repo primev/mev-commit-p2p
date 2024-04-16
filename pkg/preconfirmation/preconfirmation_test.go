@@ -5,19 +5,24 @@ import (
 	"crypto/ecdh"
 	"crypto/elliptic"
 	"crypto/rand"
+	"errors"
 	"io"
 	"log/slog"
 	"math/big"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
+	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
+	"github.com/primevprotocol/mev-commit/pkg/events"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
@@ -161,9 +166,33 @@ func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, ev
 	return nil, nil
 }
 
-// func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
-// 	return nil
-// }
+type testEventManager struct {
+	btABI      *abi.ABI
+	handler    events.EventHandler
+	handlerSub chan struct{}
+	sub        *testSub
+}
+
+type testSub struct {
+	errC chan error
+}
+
+func (t *testSub) Unsubscribe() {}
+
+func (t *testSub) Err() <-chan error {
+	return t.errC
+}
+
+func (t *testEventManager) Subscribe(evt events.EventHandler) (events.Subscription, error) {
+	if evt.EventName() != "NewL1Block" {
+		return nil, errors.New("invalid event")
+	}
+	evt.SetTopicAndContract(t.btABI.Events["NewL1Block"].ID, t.btABI)
+	t.handler = evt
+	close(t.handlerSub)
+
+	return t.sub, nil
+}
 
 func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	t.Helper()
@@ -245,6 +274,16 @@ func TestPreconfBidSubmission(t *testing.T) {
 			preConfirmationSigner:    common.HexToAddress("0x2"),
 		}
 
+		btABI, err := abi.JSON(strings.NewReader(blocktracker.BlocktrackerABI))
+		if err != nil {
+			t.Fatal(err)
+		}
+		eventManager := &testEventManager{
+			btABI:      &btABI,
+			sub:        &testSub{errC: make(chan error)},
+			handlerSub: make(chan struct{}),
+		}
+
 		p := preconfirmation.New(
 			client.EthAddress,
 			topo,
@@ -254,6 +293,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			proc,
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
+			eventManager,
 			newTestLogger(t, os.Stdout),
 		)
 

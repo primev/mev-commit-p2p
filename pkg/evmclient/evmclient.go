@@ -45,6 +45,7 @@ type Interface interface {
 	CancelTx(ctx context.Context, txHash common.Hash) (common.Hash, error)
 	SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 	BlockByNumber(ctx context.Context, blockNumber *big.Int) (*types.Block, error)
+	BlockNumber(ctx context.Context) (uint64, error)
 	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
 }
 
@@ -392,6 +393,10 @@ func (c *EvmClient) SubscribeFilterLogs(ctx context.Context, query ethereum.Filt
 
 func (c *EvmClient) BlockByNumber(ctx context.Context, blockNumber *big.Int) (*types.Block, error) {
 	return c.ethClient.BlockByNumber(ctx, blockNumber)
+}
+
+func (c *EvmClient) BlockNumber(ctx context.Context) (uint64, error) {
+	return c.ethClient.BlockNumber(ctx)
 }
 
 func (c *EvmClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {

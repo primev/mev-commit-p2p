@@ -9,12 +9,16 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
+	preconf "github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
@@ -25,6 +29,7 @@ import (
 	provider_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/provider_registry"
 	"github.com/primevprotocol/mev-commit/pkg/debugapi"
 	"github.com/primevprotocol/mev-commit/pkg/discovery"
+	"github.com/primevprotocol/mev-commit/pkg/events"
 	"github.com/primevprotocol/mev-commit/pkg/evmclient"
 	"github.com/primevprotocol/mev-commit/pkg/keyexchange"
 	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
@@ -36,6 +41,7 @@ import (
 	providerapi "github.com/primevprotocol/mev-commit/pkg/rpc/provider"
 	"github.com/primevprotocol/mev-commit/pkg/signer"
 	"github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
+	"github.com/primevprotocol/mev-commit/pkg/store"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -70,6 +76,7 @@ type Options struct {
 }
 
 type Node struct {
+	waitClose func()
 	closers []io.Closer
 }
 
@@ -181,6 +188,11 @@ func NewNode(opts *Options) (*Node, error) {
 
 	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger.With("component", "debugapi"))
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var preconfProtoClosed <-chan struct{}
+
 	if opts.PeerType != p2p.PeerTypeBootnode.String() {
 		lis, err := net.Listen("tcp", opts.RPCAddr)
 		if err != nil {
@@ -222,6 +234,21 @@ func NewNode(opts *Options) (*Node, error) {
 			opts.Logger.With("component", "blocktrackercontract"),
 		)
 
+		st := store.NewStore()
+
+		contracts, err := getContractABIs(opts)
+		if err != nil {
+			opts.Logger.Error("failed to get contract ABIs", "error", err)
+			return nil, err
+		}
+
+		evtMgr := events.NewListener(
+			opts.Logger.With("component", "events"),
+			evmClient,
+			st,
+			contracts,
+		)
+
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
 			providerAPI := providerapi.NewService(
@@ -253,10 +280,12 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
+				evtMgr,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			opts.Logger.Info("registered preconfirmation protocol")
-			go preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
+
+			preconfProtoClosed = preconfProto.Start(ctx)
 
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
@@ -283,9 +312,12 @@ func NewNode(opts *Options) (*Node, error) {
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
+				evtMgr,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			go preconfProto.StartListeningToNewL1BlockEvents(context.Background(), preconfProto.HandleNewL1BlockEvent)
+
+			preconfProtoClosed = preconfProto.Start(ctx)
+
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
 
 			bidderAPI := bidderapi.NewService(
@@ -372,8 +404,6 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		gatewayMux := runtime.NewServeMux()
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
 			err := providerapiv1.RegisterProviderHandler(ctx, gatewayMux, grpcConn)
@@ -431,10 +461,50 @@ func NewNode(opts *Options) (*Node, error) {
 	}()
 	nd.closers = append(nd.closers, server)
 
+	nd.waitClose = func() {
+		cancel()
+
+		closeChan := make(chan struct{})
+		go func() {
+			defer close(closeChan)
+
+			<-preconfProtoClosed
+		}()
+
+		<-closeChan
+	}
+
 	return nd, nil
 }
 
+func getContractABIs(opts *Options) (map[common.Address]*abi.ABI, error) {
+	abis := make(map[common.Address]*abi.ABI)
+
+	btABI, err := abi.JSON(strings.NewReader(blocktracker.BlocktrackerABI))
+	if err != nil {
+		return nil, err
+	}
+	abis[common.HexToAddress(opts.BlockTrackerContract)] = &btABI
+
+	pcABI, err := abi.JSON(strings.NewReader(preconf.PreconfcommitmentstoreABI))
+	if err != nil {
+		return nil, err
+	}
+	abis[common.HexToAddress(opts.PreconfContract)] = &pcABI
+
+	return abis, nil
+}
+
 func (n *Node) Close() error {
+	workersClosed := make(chan struct{})
+	go func() {
+		defer close(workersClosed)
+
+		if n.waitClose != nil {
+			n.waitClose()
+		}
+	}()
+
 	var err error
 	for _, c := range n.closers {
 		err = errors.Join(err, c.Close())

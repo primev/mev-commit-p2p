@@ -3,6 +3,7 @@ package preconfirmation
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"sync"
@@ -13,9 +14,11 @@ import (
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
+	"github.com/primevprotocol/mev-commit/pkg/events"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	encryptor "github.com/primevprotocol/mev-commit/pkg/signer/preconfencryptor"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -41,6 +44,7 @@ type Preconfirmation struct {
 	processer               BidProcessor
 	commitmentDA            preconfcontract.Interface
 	blockTracker            blocktrackercontract.Interface
+	evtMgr                  events.EventManager
 	logger                  *slog.Logger
 	metrics                 *metrics
 }
@@ -66,6 +70,7 @@ func New(
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	blockTracker blocktrackercontract.Interface,
+	evtMgr events.EventManager,
 	logger *slog.Logger,
 ) *Preconfirmation {
 	commitmentsByBlockNumber := make(map[int64][]*EncryptedPreConfirmationWithDecrypted)
@@ -79,6 +84,7 @@ func New(
 		processer:               processor,
 		commitmentDA:            commitmentDA,
 		blockTracker:            blockTracker,
+		evtMgr:                  evtMgr,
 		logger:                  logger,
 		metrics:                 newMetrics(),
 	}
@@ -94,6 +100,25 @@ func (p *Preconfirmation) bidStream() p2p.StreamDesc {
 
 func (p *Preconfirmation) Streams() []p2p.StreamDesc {
 	return []p2p.StreamDesc{p.bidStream()}
+}
+
+func (p *Preconfirmation) Start(ctx context.Context) <-chan struct{} {
+	doneChan := make(chan struct{})
+
+	eg, egCtx := errgroup.WithContext(ctx)
+
+	eg.Go(func() error {
+		return p.subscribeNewL1Block(egCtx)
+	})
+
+	go func() {
+		defer close(doneChan)
+		if err := eg.Wait(); err != nil {
+			p.logger.Error("failed to start preconfirmation", "error", err)
+		}
+	}()
+
+	return doneChan
 }
 
 // SendBid is meant to be called by the bidder to construct and send bids to the provider.
@@ -299,77 +324,48 @@ func (p *Preconfirmation) handleBid(
 	return nil
 }
 
-func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, handler func(context.Context, blocktrackercontract.NewL1BlockEvent)) {
-	ch := make(chan blocktrackercontract.NewL1BlockEvent)
+func (p *Preconfirmation) subscribeNewL1Block(ctx context.Context) error {
+	ev := events.NewEventHandler(
+		"NewL1Block",
+		func(newL1Block *blocktrackercontract.NewL1BlockEvent) error {
+			p.logger.Info("New L1 Block event received", "blockNumber", newL1Block.BlockNumber, "winner", newL1Block.Winner, "window", newL1Block.Window)
+			// todo: for provider check if winner == providerAddress, for bidder if committerAddress
+			for _, commitment := range p.commitmentByBlockNumber[newL1Block.BlockNumber.Int64()] {
+				txHash, err := p.commitmentDA.OpenCommitment(
+					ctx,
+					commitment.EncryptedPreConfirmation.CommitmentIndex,
+					commitment.PreConfirmation.Bid.BidAmount,
+					commitment.PreConfirmation.Bid.BlockNumber,
+					commitment.PreConfirmation.Bid.TxHash,
+					commitment.PreConfirmation.Bid.DecayStartTimestamp,
+					commitment.PreConfirmation.Bid.DecayEndTimestamp,
+					commitment.PreConfirmation.Bid.Signature,
+					commitment.PreConfirmation.Signature,
+					commitment.PreConfirmation.SharedSecret,
+				)
+				if err != nil {
+					// todo: retry mechanism?
+					p.logger.Error("failed to open commitment", "error", err)
+					continue
+				} else {
+					p.logger.Info("opened commitment", "txHash", txHash)
+				}
+			}
+			delete(p.commitmentByBlockNumber, newL1Block.BlockNumber.Int64())
+			return nil
+		},
+	)
 
-	sub, err := p.blockTracker.SubscribeNewL1Block(ctx, ch)
+	sub, err := p.evtMgr.Subscribe(ev)
 	if err != nil {
-		p.logger.Error("Failed to subscribe to NewL1Block events", "error", err)
-		return
+		return fmt.Errorf("failed to subscribe to NewL1Block event: %w", err)
 	}
 	defer sub.Unsubscribe()
 
-	for {
-		select {
-		case event := <-ch:
-			handler(ctx, event)
-		case err := <-sub.Err():
-			p.logger.Error("Subscription error", "error", err)
-			return
-		case <-ctx.Done():
-			p.logger.Info("Subscription context cancelled")
-			return
-		}
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-sub.Err():
+		return fmt.Errorf("subscription error: %w", err)
 	}
-}
-
-// func (p *Preconfirmation) StartListeningToNewL1BlockEvents(ctx context.Context, handler func(context.Context, blocktrackercontract.NewL1BlockEvent)) {
-// 	ch := make(chan blocktrackercontract.NewL1BlockEvent)
-
-// 	pollInterval := time.Second * 10
-
-// 	go func() {
-// 		err := p.blockTracker.PollNewL1BlockEvents(ctx, ch, pollInterval)
-// 		if err != nil {
-// 			p.logger.Error("Failed to poll NewL1Block events", "error", err)
-// 		}
-// 	}()
-
-// 	go func() {
-// 		for {
-// 			select {
-// 			case event := <-ch:
-// 				handler(ctx, event)
-// 			case <-ctx.Done():
-// 				p.logger.Info("Polling context cancelled")
-// 				return
-// 			}
-// 		}
-// 	}()
-// }
-
-func (p *Preconfirmation) HandleNewL1BlockEvent(ctx context.Context, event blocktrackercontract.NewL1BlockEvent) {
-	p.logger.Info("New L1 Block event received", "blockNumber", event.BlockNumber, "winner", event.Winner, "window", event.Window)
-	// todo: for provider check if winner == providerAddress, for bidder if committerAddress
-	for _, commitment := range p.commitmentByBlockNumber[event.BlockNumber.Int64()] {
-		txHash, err := p.commitmentDA.OpenCommitment(
-			ctx,
-			commitment.EncryptedPreConfirmation.CommitmentIndex,
-			commitment.PreConfirmation.Bid.BidAmount,
-			commitment.PreConfirmation.Bid.BlockNumber,
-			commitment.PreConfirmation.Bid.TxHash,
-			commitment.PreConfirmation.Bid.DecayStartTimestamp,
-			commitment.PreConfirmation.Bid.DecayEndTimestamp,
-			commitment.PreConfirmation.Bid.Signature,
-			commitment.PreConfirmation.Signature,
-			commitment.PreConfirmation.SharedSecret,
-		)
-		if err != nil {
-			p.logger.Error("Failed to open commitment", "error", err)
-			continue
-		} else {
-			p.logger.Info("Opened commitment", "txHash", txHash)
-		}
-	}
-	delete(p.commitmentByBlockNumber, event.BlockNumber.Int64())
 }

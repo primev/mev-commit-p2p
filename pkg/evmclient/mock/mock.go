@@ -69,6 +69,14 @@ func WithBlockByNumber(
 	}
 }
 
+func WithBlockNumber(
+	f func(ctx context.Context) (uint64, error),
+) Option {
+	return func(m *mockEvmClient) {
+		m.BlockNumberFunc = f
+	}
+}
+
 func WithFilterLogs(
 	f func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error),
 ) Option {
@@ -84,7 +92,15 @@ type mockEvmClient struct {
 	CancelFunc              func(ctx context.Context, txHash common.Hash) (common.Hash, error)
 	SubscribeFilterLogsFunc func(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error)
 	BlockByNumberFunc       func(ctx context.Context, number *big.Int) (*types.Block, error)
-	FilterLogsFunc 			func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
+	BlockNumberFunc         func(ctx context.Context) (uint64, error)
+	FilterLogsFunc          func(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
+}
+
+func (m *mockEvmClient) BlockNumber(ctx context.Context) (uint64, error) {
+	if m.BlockNumberFunc == nil {
+		return 0, errors.New("not implemented")
+	}
+	return m.BlockNumberFunc(ctx)
 }
 
 func (m *mockEvmClient) Send(
