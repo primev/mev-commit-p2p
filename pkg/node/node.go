@@ -404,6 +404,9 @@ func NewNode(opts *Options) (*Node, error) {
 			return nil, errors.New("dialing of grpc server failed")
 		}
 
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+	
 		gatewayMux := runtime.NewServeMux()
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():

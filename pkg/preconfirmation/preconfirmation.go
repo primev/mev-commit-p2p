@@ -111,7 +111,7 @@ func (p *Preconfirmation) Start(ctx context.Context) <-chan struct{} {
 	eg.Go(func() error {
 		return p.subscribeNewL1Block(egCtx)
 	})
-
+	
 	go func() {
 		defer close(doneChan)
 		if err := eg.Wait(); err != nil {
