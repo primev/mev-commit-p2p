@@ -26,6 +26,7 @@ import (
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
 	"github.com/primevprotocol/mev-commit/pkg/preconfirmation"
+	"github.com/primevprotocol/mev-commit/pkg/store"
 	"github.com/primevprotocol/mev-commit/pkg/topology"
 )
 
@@ -294,6 +295,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
 			eventManager,
+			store.NewStore(),
 			newTestLogger(t, os.Stdout),
 		)
 

@@ -253,6 +253,8 @@ func NewNode(opts *Options) (*Node, error) {
 			opts.Logger.With("component", "blocktrackercontract"),
 		)
 
+		store := store.NewStore()
+
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
 			providerAPI := providerapi.NewService(
@@ -285,6 +287,7 @@ func NewNode(opts *Options) (*Node, error) {
 				commitmentDA,
 				blockTracker,
 				evtMgr,
+				store,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 			opts.Logger.Info("registered preconfirmation protocol")
@@ -317,6 +320,7 @@ func NewNode(opts *Options) (*Node, error) {
 				commitmentDA,
 				blockTracker,
 				evtMgr,
+				store,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
 
