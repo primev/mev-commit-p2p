@@ -91,7 +91,10 @@ func (s *Store) DeleteCommitmentByBlockNumber(blockNum int64) error {
 	defer s.commitmentByBlockNumberMu.Unlock()
 
 	for _, v := range s.commitmentsByBlockNumber[blockNum] {
-		s.deleteCommitmentByHash(common.Bytes2Hex(v.Commitment))
+		err := s.deleteCommitmentByHash(common.Bytes2Hex(v.Commitment))
+		if err != nil {
+			return err
+		}
 	}
 	delete(s.commitmentsByBlockNumber, blockNum)
 	return nil

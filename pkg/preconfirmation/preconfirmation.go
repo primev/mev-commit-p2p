@@ -364,7 +364,11 @@ func (p *Preconfirmation) subscribeNewL1Block(ctx context.Context) error {
 					p.logger.Info("opened commitment", "txHash", txHash)
 				}
 			}
-			p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
+			err = p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
+			if err != nil {
+				p.logger.Error("failed to delete commitments by block number", "error", err)
+				return err
+			}
 			return nil
 		},
 	)
