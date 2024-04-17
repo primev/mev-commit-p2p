@@ -87,25 +87,7 @@ func (p *preconfContract) StoreEncryptedCommitment(
 		return common.Hash{}, err
 	}
 
-	// todo: add event tracker to add commitment to avoid waiting
-	receipt, err := p.client.WaitForReceipt(ctx, txnHash)
-	if err != nil {
-		return common.Hash{}, err // Updated to return common.Hash{}
-	}
-
-	p.logger.Info("preconf contract storeEncryptedCommitment successful", "txnHash", txnHash)
-	eventTopicHash := p.preconfABI.Events["EncryptedCommitmentStored"].ID // This is the event signature hash
-
-	for _, log := range receipt.Logs {
-		if len(log.Topics) > 0 && log.Topics[0] == eventTopicHash {
-			commitmentIndex := log.Topics[1] // Topics[0] is the event signature, Topics[1] should be the first indexed argument
-			p.logger.Info("Encrypted commitment stored", "commitmentIndex", commitmentIndex.Hex())
-
-			return commitmentIndex, nil // Return the extracted commitmentIndex
-		}
-	}
-
-	return common.Hash{}, nil
+	return txnHash, nil
 }
 
 func (p *preconfContract) OpenCommitment(

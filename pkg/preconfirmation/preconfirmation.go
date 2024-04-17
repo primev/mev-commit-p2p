@@ -391,9 +391,14 @@ func (p *Preconfirmation) subscribeEncryptedCommitmentStored(ctx context.Context
 	ev := events.NewEventHandler(
 		"EncryptedCommitmentStored",
 		func(ec *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored) error {
-			commitment, err := p.ecds.GetCommitmentByHash(string(common.Bytes2Hex(ec.CommitmentDigest[:])))
+			p.logger.Info("Encrypted Commitment Stored event received", "commitmentDigest", ec.CommitmentDigest, "commitmentIndex", ec.CommitmentIndex)
+			commitment, err := p.ecds.GetCommitmentByHash(common.Bytes2Hex(ec.CommitmentDigest[:]))
 			if err != nil {
 				return fmt.Errorf("failed to get commitment by hash: %w", err)
+			}
+			if commitment == nil {
+				p.logger.Debug("commitment not found", "commitmentDigest", ec.CommitmentDigest)
+				return nil
 			}
 			commitment.EncryptedPreConfirmation.CommitmentIndex = ec.CommitmentIndex[:]
 			return nil
