@@ -414,7 +414,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 		handlerCtx, handlerCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer handlerCancel()
-	
+
 		gatewayMux := runtime.NewServeMux()
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
@@ -540,33 +540,4 @@ func (noOpBidProcessor) ProcessBid(
 	close(statusC)
 
 	return statusC, nil
-}
-
-type noOpCommitmentDA struct{}
-
-func (noOpCommitmentDA) StoreEncryptedCommitment(
-	_ context.Context,
-	_ []byte,
-	_ []byte,
-) (common.Hash, error) {
-	return common.Hash{}, nil
-}
-
-func (noOpCommitmentDA) OpenCommitment(
-	_ context.Context,
-	_ []byte,
-	_ string,
-	_ int64,
-	_ string,
-	_ int64,
-	_ int64,
-	_ []byte,
-	_ []byte,
-	_ []byte,
-) (common.Hash, error) {
-	return common.Hash{}, nil
-}
-
-func (noOpCommitmentDA) Close() error {
-	return nil
 }
