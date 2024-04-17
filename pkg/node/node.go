@@ -241,7 +241,6 @@ func NewNode(opts *Options) (*Node, error) {
 
 		var (
 			bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
-			commitmentDA preconfcontract.Interface    = noOpCommitmentDA{}
 		)
 
 		blockTrackerAddr := common.HexToAddress(opts.BlockTrackerContract)
@@ -252,6 +251,14 @@ func NewNode(opts *Options) (*Node, error) {
 			wsEvmClient,
 			opts.Logger.With("component", "blocktrackercontract"),
 		)
+
+		preconfContractAddr := common.HexToAddress(opts.PreconfContract)
+		commitmentDA := preconfcontract.New(
+			preconfContractAddr,
+			evmClient,
+			opts.Logger.With("component", "preconfcontract"),
+		)
+		opts.Logger.Info("registered preconf contract")
 
 		store := store.NewStore()
 
@@ -269,13 +276,6 @@ func NewNode(opts *Options) (*Node, error) {
 			bidProcessor = providerAPI
 			srv.RegisterMetricsCollectors(providerAPI.Metrics()...)
 			opts.Logger.Info("registered provider api metrics")
-			preconfContractAddr := common.HexToAddress(opts.PreconfContract)
-			commitmentDA = preconfcontract.New(
-				preconfContractAddr,
-				evmClient,
-				opts.Logger.With("component", "preconfcontract"),
-			)
-			opts.Logger.Info("registered preconf contract")
 
 			preconfProto := preconfirmation.New(
 				keyKeeper.GetAddress(),
