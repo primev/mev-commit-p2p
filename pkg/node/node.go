@@ -189,7 +189,6 @@ func NewNode(opts *Options) (*Node, error) {
 	debugapi.RegisterAPI(srv, topo, p2pSvc, opts.Logger.With("component", "debugapi"))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	var preconfProtoClosed <-chan struct{}
 	st := store.NewStore()
@@ -197,6 +196,7 @@ func NewNode(opts *Options) (*Node, error) {
 	contracts, err := getContractABIs(opts)
 	if err != nil {
 		opts.Logger.Error("failed to get contract ABIs", "error", err)
+		cancel()
 		return nil, err
 	}
 
@@ -213,6 +213,7 @@ func NewNode(opts *Options) (*Node, error) {
 		lis, err := net.Listen("tcp", opts.RPCAddr)
 		if err != nil {
 			opts.Logger.Error("failed to listen", "error", err)
+			cancel()
 			return nil, errors.Join(err, nd.Close())
 		}
 
@@ -224,6 +225,7 @@ func NewNode(opts *Options) (*Node, error) {
 			)
 			if err != nil {
 				opts.Logger.Error("failed to load TLS credentials", "error", err)
+				cancel()
 				return nil, fmt.Errorf("unable to load TLS credentials: %w", err)
 			}
 		}
@@ -233,6 +235,7 @@ func NewNode(opts *Options) (*Node, error) {
 		validator, err := protovalidate.New()
 		if err != nil {
 			opts.Logger.Error("failed to create proto validator", "error", err)
+			cancel()
 			return nil, errors.Join(err, nd.Close())
 		}
 
@@ -401,24 +404,27 @@ func NewNode(opts *Options) (*Node, error) {
 			break
 		}
 		if grpcConn == nil {
+			cancel()
 			return nil, errors.New("dialing of grpc server failed")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer cancel()
+		handlerCtx, handlerCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer handlerCancel()
 	
 		gatewayMux := runtime.NewServeMux()
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
-			err := providerapiv1.RegisterProviderHandler(ctx, gatewayMux, grpcConn)
+			err := providerapiv1.RegisterProviderHandler(handlerCtx, gatewayMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register provider handler", "err", err)
+				cancel()
 				return nil, errors.Join(err, nd.Close())
 			}
 		case p2p.PeerTypeBidder.String():
-			err := bidderapiv1.RegisterBidderHandler(ctx, gatewayMux, grpcConn)
+			err := bidderapiv1.RegisterBidderHandler(handlerCtx, gatewayMux, grpcConn)
 			if err != nil {
 				opts.Logger.Error("failed to register bidder handler", "err", err)
+				cancel()
 				return nil, errors.Join(err, nd.Close())
 			}
 		}
