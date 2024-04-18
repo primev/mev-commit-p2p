@@ -40,6 +40,9 @@ func NewStore() *Store {
 			commitmentsByBlockNumber:    make(map[int64][]*EncryptedPreConfirmationWithDecrypted),
 			commitmentsByCommitmentHash: make(map[string]*EncryptedPreConfirmationWithDecrypted),
 		},
+		BidderBalancesStore: &BidderBalancesStore{
+			balances: make(map[string]*big.Int),
+		},
 	}
 }
 
