@@ -124,6 +124,7 @@ func NewNode(opts *Options) (*Node, error) {
 	bidderRegistryContractAddr := common.HexToAddress(opts.BidderRegistryContract)
 
 	bidderRegistry := bidder_registrycontract.New(
+		opts.KeySigner.GetAddress(),
 		bidderRegistryContractAddr,
 		evmClient,
 		opts.Logger.With("component", "bidderregistry"),

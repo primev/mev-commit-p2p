@@ -124,7 +124,7 @@ func main() {
 
 	wg.Add(1)
 	go func() {
-		ticker := time.NewTicker(1 * time.Hour)
+		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 
 		for {

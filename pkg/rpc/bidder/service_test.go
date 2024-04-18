@@ -99,11 +99,15 @@ func (t *testRegistryContract) CheckBidderAllowance(ctx context.Context, address
 	return t.allowance.Cmp(t.minAllowance) > 0
 }
 
+func (t *testRegistryContract) WithdrawAllowance(ctx context.Context, window *big.Int) error {
+	return nil
+}
+
 type testBlockTrackerContract struct {
 	blockNumberToWinner map[uint64]common.Address
-	lastBlockNumber uint64
-	lastBlockWinner common.Address
-	blocksPerWindow uint64
+	lastBlockNumber     uint64
+	lastBlockWinner     common.Address
+	blocksPerWindow     uint64
 }
 
 // RecordBlock records a new block and its winner.
