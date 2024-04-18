@@ -100,6 +100,11 @@ func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Ad
 		return status.Errorf(codes.Internal, "failed to get balance: %v", err)
 	}
 
+	if balance == nil {
+		a.logger.Error("bidder balance not found", "address", address.Hex(), "window", window)
+		return status.Errorf(codes.FailedPrecondition, "balance not found")
+	}
+
 	a.logger.Info("checking bidder allowance",
 		"stake", balance.Uint64(),
 		"blocksPerWindow", a.blocksPerWindow,
@@ -107,7 +112,7 @@ func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Ad
 		"window", window.Uint64(),
 		"address", address.Hex(),
 	)
-	
+
 	isEnoughAllowance := (balance.Div(balance, a.blocksPerWindow)).Cmp(a.minAllowance) >= 0
 
 	if !isEnoughAllowance {
