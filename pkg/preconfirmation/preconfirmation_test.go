@@ -38,12 +38,6 @@ func (t *testTopo) GetPeers(q topology.Query) []p2p.Peer {
 	return []p2p.Peer{t.peer}
 }
 
-type testBidderStore struct{}
-
-func (t *testBidderStore) CheckBidderAllowance(_ context.Context, _ common.Address, _ *big.Int, _ *big.Int) bool {
-	return true
-}
-
 type testEncryptor struct {
 	bidHash                  []byte
 	encryptedBid             *preconfpb.EncryptedBid
