@@ -49,6 +49,7 @@ func New(
 	logger *slog.Logger,
 ) Interface {
 	return &bidderRegistryContract{
+		owner:                      owner,
 		bidderRegistryABI:          bidderRegistryABI(),
 		bidderRegistryContractAddr: bidderRegistryContractAddr,
 		client:                     client,
