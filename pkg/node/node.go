@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	bidderregistry "github.com/primevprotocol/contracts-abi/clients/BidderRegistry"
 	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
 	preconf "github.com/primevprotocol/contracts-abi/clients/PreConfCommitmentStore"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
@@ -512,6 +513,12 @@ func getContractABIs(opts *Options) (map[common.Address]*abi.ABI, error) {
 	}
 	abis[common.HexToAddress(opts.PreconfContract)] = &pcABI
 
+	brABI, err := abi.JSON(strings.NewReader(bidderregistry.BidderregistryABI))
+	if err != nil {
+		return nil, err
+	}
+	abis[common.HexToAddress(opts.BidderRegistryContract)] = &brABI
+	
 	return abis, nil
 }
 
