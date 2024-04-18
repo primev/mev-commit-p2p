@@ -28,7 +28,7 @@ import (
 
 const (
 	ProtocolName    = "preconfirmation"
-	ProtocolVersion = "1.0.0"
+	ProtocolVersion = "3.0.0"
 )
 
 type Preconfirmation struct {
@@ -36,7 +36,7 @@ type Preconfirmation struct {
 	encryptor    encryptor.Encryptor
 	topo         Topology
 	streamer     p2p.Streamer
-	us           BidderStore
+	allowanceMgr AllowanceManager
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
 	blockTracker blocktrackercontract.Interface
@@ -50,10 +50,6 @@ type Topology interface {
 	GetPeers(topology.Query) []p2p.Peer
 }
 
-type BidderStore interface {
-	CheckBidderAllowance(context.Context, common.Address, *big.Int, *big.Int) bool
-}
-
 type BidProcessor interface {
 	ProcessBid(context.Context, *preconfpb.Bid) (chan providerapiv1.BidResponse_Status, error)
 }
@@ -65,12 +61,18 @@ type EncrDecrCommitmentStore interface {
 	DeleteCommitmentByBlockNumber(blockNum int64) error
 }
 
+type AllowanceManager interface {
+	Start(ctx context.Context) <-chan struct{}
+	CheckAllowance(ctx context.Context, ethAddress common.Address, window *big.Int) error
+}
+
 func New(
 	owner common.Address,
 	topo Topology,
 	streamer p2p.Streamer,
 	encryptor encryptor.Encryptor,
-	us BidderStore,
+	// us BidderStore,
+	allowanceMgr AllowanceManager,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	blockTracker blocktrackercontract.Interface,
@@ -79,11 +81,12 @@ func New(
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
-		owner:        owner,
-		topo:         topo,
-		streamer:     streamer,
-		encryptor:    encryptor,
-		us:           us,
+		owner:     owner,
+		topo:      topo,
+		streamer:  streamer,
+		encryptor: encryptor,
+		// us:           us,
+		allowanceMgr: allowanceMgr,
 		processer:    processor,
 		commitmentDA: commitmentDA,
 		blockTracker: blockTracker,
@@ -268,23 +271,18 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
+	// todo: move to the event listening to allowance manager
 	window, err := p.blockTracker.GetCurrentWindow(ctx)
 	if err != nil {
 		p.logger.Error("getting window", "error", err)
 		return status.Errorf(codes.Internal, "failed to get window: %v", err)
 	}
 
-	blocksPerWindow, err := p.blockTracker.GetBlocksPerWindow(ctx)
+	err = p.allowanceMgr.CheckAllowance(ctx, *ethAddress, new(big.Int).SetUint64(window))
 	if err != nil {
-		p.logger.Error("getting blocks per window", "error", err)
-		return status.Errorf(codes.Internal, "failed to get blocks per window: %v", err)
+		p.logger.Error("checking allowance", "error", err)
+		return err
 	}
-
-	if !p.us.CheckBidderAllowance(ctx, *ethAddress, new(big.Int).SetUint64(window), new(big.Int).SetUint64(blocksPerWindow)) {
-		p.logger.Error("bidder does not have enough allowance", "ethAddress", ethAddress)
-		return status.Errorf(codes.FailedPrecondition, "bidder not allowed")
-	}
-
 	// try to enqueue for 5 seconds
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()

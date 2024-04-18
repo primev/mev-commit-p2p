@@ -204,6 +204,16 @@ func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	return slog.New(testLogger)
 }
 
+type testAllowanceManager struct{}
+
+func (t *testAllowanceManager) Start(ctx context.Context) <-chan struct{} {
+	return nil
+}
+
+func (t *testAllowanceManager) CheckAllowance(ctx context.Context, address common.Address, window *big.Int) error {
+	return nil
+}
+
 func TestPreconfBidSubmission(t *testing.T) {
 	t.Parallel()
 
@@ -261,7 +271,6 @@ func TestPreconfBidSubmission(t *testing.T) {
 		)
 
 		topo := &testTopo{server}
-		us := &testBidderStore{}
 		proc := &testProcessor{
 			status: providerapiv1.BidResponse_STATUS_ACCEPTED,
 		}
@@ -285,12 +294,13 @@ func TestPreconfBidSubmission(t *testing.T) {
 			handlerSub: make(chan struct{}),
 		}
 
+		allowanceMgr := &testAllowanceManager{}
 		p := preconfirmation.New(
 			client.EthAddress,
 			topo,
 			svc,
 			signer,
-			us,
+			allowanceMgr,
 			proc,
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},

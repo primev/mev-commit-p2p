@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/big"
 	"net"
 	"net/http"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
+	"github.com/primevprotocol/mev-commit/pkg/allowancemanager"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
@@ -241,7 +243,8 @@ func NewNode(opts *Options) (*Node, error) {
 		}
 
 		var (
-			bidProcessor preconfirmation.BidProcessor = noOpBidProcessor{}
+			bidProcessor preconfirmation.BidProcessor     = noOpBidProcessor{}
+			allowanceMgr preconfirmation.AllowanceManager = noOpAllowanceManager{}
 		)
 
 		blockTrackerAddr := common.HexToAddress(opts.BlockTrackerContract)
@@ -273,17 +276,22 @@ func NewNode(opts *Options) (*Node, error) {
 				validator,
 			)
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
-			opts.Logger.Info("registered provider api")
 			bidProcessor = providerAPI
 			srv.RegisterMetricsCollectors(providerAPI.Metrics()...)
-			opts.Logger.Info("registered provider api metrics")
-
+			allowanceMgr = allowancemanager.NewAllowanceManager(bidderRegistry,
+				blockTracker,
+				commitmentDA,
+				store,
+				evtMgr,
+				opts.Logger.With("component", "allowancemanager"),
+			)
+			allowanceMgr.Start(ctx)
 			preconfProto := preconfirmation.New(
 				keyKeeper.GetAddress(),
 				topo,
 				p2pSvc,
 				preconfEncryptor,
-				bidderRegistry,
+				allowanceMgr,
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
@@ -291,13 +299,11 @@ func NewNode(opts *Options) (*Node, error) {
 				store,
 				opts.Logger.With("component", "preconfirmation_protocol"),
 			)
-			opts.Logger.Info("registered preconfirmation protocol")
 
 			preconfProtoClosed = preconfProto.Start(ctx)
 
 			// Only register handler for provider
 			p2pSvc.AddStreamHandlers(preconfProto.Streams()...)
-			opts.Logger.Info("registered stream handlers")
 			keyexchange := keyexchange.New(
 				topo,
 				p2pSvc,
@@ -305,10 +311,8 @@ func NewNode(opts *Options) (*Node, error) {
 				opts.Logger.With("component", "keyexchange_protocol"),
 				signer.New(),
 			)
-			opts.Logger.Info("registered keyexchange protocol")
 			p2pSvc.AddStreamHandlers(keyexchange.Streams()...)
 			srv.RegisterMetricsCollectors(preconfProto.Metrics()...)
-			opts.Logger.Info("registered metrics collectors")
 
 		case p2p.PeerTypeBidder.String():
 			preconfProto := preconfirmation.New(
@@ -316,7 +320,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfEncryptor,
-				bidderRegistry,
+				allowanceMgr,
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
@@ -541,4 +545,14 @@ func (noOpBidProcessor) ProcessBid(
 	close(statusC)
 
 	return statusC, nil
+}
+
+type noOpAllowanceManager struct{}
+
+func (noOpAllowanceManager) Start(_ context.Context) <-chan struct{} {
+	return nil
+}
+
+func (noOpAllowanceManager) CheckAllowance(_ context.Context, _ common.Address, _ *big.Int) error {
+	return nil
 }
