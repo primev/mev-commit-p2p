@@ -18,6 +18,8 @@ import (
 func TestBidderRegistryContract(t *testing.T) {
 	t.Parallel()
 
+	owner := common.HexToAddress("abcd")
+
 	t.Run("PrepayAllowance", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		txHash := common.HexToHash("abcdef")
@@ -66,6 +68,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		)
 
 		registryContract := bidder_registrycontract.New(
+			owner,
 			registryContractAddr,
 			mockClient,
 			util.NewTestLogger(os.Stdout),
@@ -106,6 +109,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		)
 
 		registryContract := bidder_registrycontract.New(
+			owner,
 			registryContractAddr,
 			mockClient,
 			util.NewTestLogger(os.Stdout),
@@ -148,6 +152,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		)
 
 		registryContract := bidder_registrycontract.New(
+			owner,
 			registryContractAddr,
 			mockClient,
 			util.NewTestLogger(os.Stdout),
@@ -174,7 +179,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		mockClient := mockevmclient.New(
 			mockevmclient.WithCallFunc(
 				func(ctx context.Context, req *evmclient.TxRequest) ([]byte, error) {
-					callCount++;
+					callCount++
 					if req.To.Cmp(registryContractAddr) != 0 {
 						t.Fatalf(
 							"expected to address to be %s, got %s",
@@ -184,14 +189,15 @@ func TestBidderRegistryContract(t *testing.T) {
 
 					if callCount == 1 {
 						return new(big.Int).Div(amount, blocksPerWindow).FillBytes(make([]byte, 32)), nil
-					} 
-					
+					}
+
 					return amount.FillBytes(make([]byte, 32)), nil
 				},
 			),
 		)
 
 		registryContract := bidder_registrycontract.New(
+			owner,
 			registryContractAddr,
 			mockClient,
 			util.NewTestLogger(os.Stdout),

@@ -30,9 +30,12 @@ type Interface interface {
 	GetMinAllowance(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
 	CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int, blocksPerWindow *big.Int) bool
+	// WithdrawAllowance withdraws the stake of a bidder.
+	WithdrawAllowance(ctx context.Context, window *big.Int) error
 }
 
 type bidderRegistryContract struct {
+	owner                      common.Address
 	bidderRegistryABI          abi.ABI
 	bidderRegistryContractAddr common.Address
 	client                     evmclient.Interface
@@ -40,6 +43,7 @@ type bidderRegistryContract struct {
 }
 
 func New(
+	owner common.Address,
 	bidderRegistryContractAddr common.Address,
 	client evmclient.Interface,
 	logger *slog.Logger,
@@ -91,7 +95,7 @@ func (r *bidderRegistryContract) PrepayAllowance(ctx context.Context, amount *bi
 		if len(log.Topics) > 1 {
 			bidderRegistered.Bidder = common.HexToAddress(log.Topics[1].Hex())
 		}
-	
+
 		err := r.bidderRegistryABI.UnpackIntoInterface(&bidderRegistered, "BidderRegistered", log.Data)
 		if err != nil {
 			r.logger.Debug("Failed to unpack event", "err", err)
@@ -155,6 +159,59 @@ func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int,
 	}
 
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
+}
+
+func (r *bidderRegistryContract) WithdrawAllowance(ctx context.Context, window *big.Int) error {
+	callData, err := r.bidderRegistryABI.Pack("withdrawBidderAmountFromWindow", r.owner, window)
+	if err != nil {
+		r.logger.Error("error packing call data", "error", err)
+		return err
+	}
+
+	txnHash, err := r.client.Send(ctx, &evmclient.TxRequest{
+		To:       &r.bidderRegistryContractAddr,
+		CallData: callData,
+	})
+	if err != nil {
+		return err
+	}
+
+	receipt, err := r.client.WaitForReceipt(ctx, txnHash)
+	if err != nil {
+		return err
+	}
+
+	if receipt.Status != types.ReceiptStatusSuccessful {
+		r.logger.Error(
+			"withdraw failed for bidder registry",
+			"txnHash", txnHash,
+			"receipt", receipt,
+		)
+		return err
+	}
+
+	var bidderWithdrawn struct {
+		Bidder common.Address
+		Amount *big.Int
+		Window *big.Int
+	}
+
+	for _, log := range receipt.Logs {
+		if len(log.Topics) > 1 {
+			bidderWithdrawn.Bidder = common.HexToAddress(log.Topics[1].Hex())
+		}
+
+		err := r.bidderRegistryABI.UnpackIntoInterface(&bidderWithdrawn, "BidderWithdrawn", log.Data)
+		if err != nil {
+			r.logger.Debug("Failed to unpack event", "err", err)
+			continue
+		}
+		r.logger.Info("bidder withdrawn", "address", bidderWithdrawn.Bidder, "withdrawn", bidderWithdrawn.Amount.Uint64(), "windowNumber", bidderWithdrawn.Window.Int64())
+	}
+
+	r.logger.Info("withdraw successful for bidder registry", "txnHash", txnHash, "bidder", bidderWithdrawn.Bidder)
+
+	return nil
 }
 
 func (r *bidderRegistryContract) CheckBidderAllowance(

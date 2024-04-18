@@ -27,6 +27,7 @@ type Service struct {
 	logger               *slog.Logger
 	metrics              *metrics
 	validator            *protovalidate.Validator
+	depositedWindows     map[*big.Int]struct{}
 }
 
 func NewService(
@@ -45,6 +46,7 @@ func NewService(
 		logger:               logger,
 		metrics:              newMetrics(),
 		validator:            validator,
+		depositedWindows:     make(map[*big.Int]struct{}),
 	}
 }
 
@@ -116,6 +118,26 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.InvalidArgument, "validating prepay request: %v", err)
 	}
 
+	currentWindow, err := s.blockTrackerContract.GetCurrentWindow(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
+	}
+
+	if _, ok := s.depositedWindows[new(big.Int).SetUint64(currentWindow+1)]; ok {
+		return nil, status.Errorf(codes.FailedPrecondition, "allowance already pre-paid for window %d", currentWindow+1)
+	}
+
+	for window := range s.depositedWindows {
+		if window.Cmp(new(big.Int).SetUint64(currentWindow-2)) < 0 {
+			err := s.registryContract.WithdrawAllowance(ctx, window)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "withdrawing allowance: %v", err)
+			}
+			s.logger.Info("withdrew allowance", "window", window)
+			delete(s.depositedWindows, window)
+		}
+	}
+
 	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
 	if !success {
 		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
@@ -126,17 +148,13 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
-	currentWindow, err := s.blockTrackerContract.GetCurrentWindow(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
-	}
-
 	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, new(big.Int).SetUint64(currentWindow+1))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
 	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", currentWindow+1)
+	s.depositedWindows[new(big.Int).SetUint64(currentWindow+1)] = struct{}{}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }
