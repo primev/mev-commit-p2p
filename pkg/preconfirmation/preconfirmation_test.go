@@ -116,7 +116,6 @@ func (t *testCommitmentDA) Close() error {
 type testBlockTrackerContract struct {
 	blockNumberToWinner map[uint64]common.Address
 	lastBlockNumber     uint64
-	lastBlockWinner     common.Address
 	blocksPerWindow     uint64
 }
 
