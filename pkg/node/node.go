@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math/big"
 	"net"
 	"net/http"
 	"strings"
@@ -518,7 +517,7 @@ func getContractABIs(opts *Options) (map[common.Address]*abi.ABI, error) {
 		return nil, err
 	}
 	abis[common.HexToAddress(opts.BidderRegistryContract)] = &brABI
-	
+
 	return abis, nil
 }
 
@@ -560,6 +559,6 @@ func (noOpAllowanceManager) Start(_ context.Context) <-chan struct{} {
 	return nil
 }
 
-func (noOpAllowanceManager) CheckAllowance(_ context.Context, _ common.Address, _ *big.Int) error {
+func (noOpAllowanceManager) CheckAllowance(_ context.Context, _ common.Address) error {
 	return nil
 }

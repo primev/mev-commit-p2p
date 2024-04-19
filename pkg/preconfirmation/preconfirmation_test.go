@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"math/big"
 	"os"
 	"strings"
 	"testing"
@@ -190,7 +189,7 @@ func (t *testAllowanceManager) Start(ctx context.Context) <-chan struct{} {
 	return nil
 }
 
-func (t *testAllowanceManager) CheckAllowance(ctx context.Context, address common.Address, window *big.Int) error {
+func (t *testAllowanceManager) CheckAllowance(ctx context.Context, address common.Address) error {
 	return nil
 }
 

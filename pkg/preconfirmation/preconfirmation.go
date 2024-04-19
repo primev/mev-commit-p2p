@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"sync"
 	"time"
 
@@ -63,7 +62,7 @@ type EncrDecrCommitmentStore interface {
 
 type AllowanceManager interface {
 	Start(ctx context.Context) <-chan struct{}
-	CheckAllowance(ctx context.Context, ethAddress common.Address, window *big.Int) error
+	CheckAllowance(ctx context.Context, ethAddress common.Address) error
 }
 
 func New(
@@ -71,7 +70,6 @@ func New(
 	topo Topology,
 	streamer p2p.Streamer,
 	encryptor encryptor.Encryptor,
-	// us BidderStore,
 	allowanceMgr AllowanceManager,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
@@ -271,14 +269,7 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	// todo: move to the event listening to allowance manager
-	window, err := p.blockTracker.GetCurrentWindow(ctx)
-	if err != nil {
-		p.logger.Error("getting window", "error", err)
-		return status.Errorf(codes.Internal, "failed to get window: %v", err)
-	}
-
-	err = p.allowanceMgr.CheckAllowance(ctx, *ethAddress, new(big.Int).SetUint64(window))
+	err = p.allowanceMgr.CheckAllowance(ctx, *ethAddress)
 	if err != nil {
 		p.logger.Error("checking allowance", "error", err)
 		return err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	bidderregistry "github.com/primevprotocol/contracts-abi/clients/BidderRegistry"
+	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	preconfcontract "github.com/primevprotocol/mev-commit/pkg/contracts/preconf"
 	"github.com/primevprotocol/mev-commit/pkg/events"
@@ -34,6 +35,7 @@ type AllowanceManager struct {
 	evtMgr          events.EventManager
 	blocksPerWindow *big.Int // todo: move to the store
 	minAllowance    *big.Int // todo: move to the store
+	currentWindow   *big.Int // todo: move to the store
 	logger          *slog.Logger
 }
 
@@ -64,6 +66,10 @@ func (a *AllowanceManager) Start(ctx context.Context) <-chan struct{} {
 		return a.subscribeBidderRegistered(egCtx)
 	})
 
+	eg.Go(func() error {
+		return a.subscribeNewWindow(egCtx)
+	})
+
 	go func() {
 		defer close(doneChan)
 		if err := eg.Wait(); err != nil {
@@ -74,7 +80,7 @@ func (a *AllowanceManager) Start(ctx context.Context) <-chan struct{} {
 	return doneChan
 }
 
-func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Address, window *big.Int) error {
+func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Address) error {
 	if a.blocksPerWindow == nil {
 		blocksPerWindow, err := a.blockTracker.GetBlocksPerWindow(ctx)
 		if err != nil {
@@ -94,14 +100,17 @@ func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Ad
 		a.minAllowance = minAllowance
 	}
 
-	balance, err := a.store.GetBalance(address, window)
+	// adding 2 to the current window, bcs oracle is 2 windows behind
+	windowToCheck := new(big.Int).Add(a.currentWindow, big.NewInt(2))
+
+	balance, err := a.store.GetBalance(address, windowToCheck)
 	if err != nil {
 		a.logger.Error("getting balance", "error", err)
 		return status.Errorf(codes.Internal, "failed to get balance: %v", err)
 	}
 
 	if balance == nil {
-		a.logger.Error("bidder balance not found", "address", address.Hex(), "window", window)
+		a.logger.Error("bidder balance not found", "address", address.Hex(), "window", windowToCheck)
 		return status.Errorf(codes.FailedPrecondition, "balance not found")
 	}
 
@@ -109,7 +118,7 @@ func (a *AllowanceManager) CheckAllowance(ctx context.Context, address common.Ad
 		"stake", balance.Uint64(),
 		"blocksPerWindow", a.blocksPerWindow,
 		"minStake", a.minAllowance.Uint64(),
-		"window", window.Uint64(),
+		"window", windowToCheck.Uint64(),
 		"address", address.Hex(),
 	)
 
@@ -147,5 +156,28 @@ func (a *AllowanceManager) subscribeBidderRegistered(ctx context.Context) error 
 		return nil
 	case err := <-sub.Err():
 		return fmt.Errorf("error in BidderRegistered event subscription: %w", err)
+	}
+}
+
+func (a *AllowanceManager) subscribeNewWindow(ctx context.Context) error {
+	ev := events.NewEventHandler(
+		"NewWindow",
+		func(window *blocktracker.BlocktrackerNewWindow) error {
+			a.currentWindow = window.Window
+			return nil
+		},
+	)
+
+	sub, err := a.evtMgr.Subscribe(ev)
+	if err != nil {
+		return fmt.Errorf("failed to subscribe to NewWindow event: %w", err)
+	}
+	defer sub.Unsubscribe()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case err := <-sub.Err():
+		return fmt.Errorf("error in NewWindow event subscription: %w", err)
 	}
 }
