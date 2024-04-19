@@ -92,6 +92,12 @@ paths:
           in: path
           required: true
           type: string
+        - name: windowNumber
+          description: Optional window number for querying allowances. If not specified, the current block number is used.
+          in: query
+          required: false
+          type: string
+          format: uint64
 definitions:
   bidderapiv1Bid:
     type: object
@@ -192,8 +198,12 @@ definitions:
     type: object
     example:
       amount: "1000000000000000000"
+      windowNumber: "1"
     properties:
       amount:
         type: string
+      windowNumber:
+        type: string
+        format: uint64
     description: Get prepaid allowance for bidder in the bidder registry.
     title: Prepay response

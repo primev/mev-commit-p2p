@@ -57,7 +57,7 @@ message PrepayRequest {
       description: "Prepayment for bids to be issued by the bidder in wei."
       required: ["amount"]
     }
-    example: "{\"amount\": \"1000000000000000000\" }"
+    example: "{\"amount\": \"1000000000000000000\", \"windowNumber\": 1 }"
   };
   string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
     description: "Amount of ETH to be prepaid in wei."
@@ -67,6 +67,14 @@ message PrepayRequest {
       message: "amount must be a valid integer.",
       expression: "this.matches('^[0-9]+$')"
   }];
+  google.protobuf.UInt64Value windowNumber = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Optional window number for querying allowances. If not specified, the current block number is used."
+    }, (buf.validate.field).cel = {
+      id: "windowNumber",
+      message: "windowNumber must be a positive integer if specified.",
+      expression: "this == null || (this > 0)"
+    }];
 };
 
 message PrepayResponse {
@@ -75,9 +83,10 @@ message PrepayResponse {
       title: "Prepay response"
       description: "Get prepaid allowance for bidder in the bidder registry."
     }
-    example: "{\"amount\": \"1000000000000000000\" }"
+    example: "{\"amount\": \"1000000000000000000\", \"windowNumber\": \"1\" }"
   };
   string amount = 1;
+  google.protobuf.UInt64Value windowNumber = 2;
 };
 
 message EmptyMessage {};
@@ -89,7 +98,7 @@ message GetAllowanceRequest {
     }, (buf.validate.field).cel = {
       id: "windowNumber",
       message: "windowNumber must be a positive integer if specified.",
-      expression: "this.value == null || (this.value > 0)"
+      expression: "this == null || (this > 0)"
     }];
 }
 

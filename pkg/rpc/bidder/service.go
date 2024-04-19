@@ -16,6 +16,7 @@ import (
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type Service struct {
@@ -111,9 +112,9 @@ func (s *Service) SendBid(
 
 func (s *Service) PrepayAllowance(
 	ctx context.Context,
-	stake *bidderapiv1.PrepayRequest,
+	r *bidderapiv1.PrepayRequest,
 ) (*bidderapiv1.PrepayResponse, error) {
-	err := s.validator.Validate(stake)
+	err := s.validator.Validate(r)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "validating prepay request: %v", err)
 	}
@@ -123,14 +124,20 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
 	}
 
-	nextWindow := new(big.Int).SetUint64(currentWindow + 1)
+	var windowToDeposit *big.Int
+	if r.WindowNumber == nil {
+		// adding +2 as oracle working 2 windows behind the current window
+		windowToDeposit = new(big.Int).SetUint64(currentWindow + 2)
+	} else {
+		windowToDeposit = new(big.Int).SetUint64(r.WindowNumber.Value)
+	}
 
-	if _, ok := s.depositedWindows[nextWindow]; ok {
+	if _, ok := s.depositedWindows[windowToDeposit]; ok {
 		return nil, status.Errorf(codes.FailedPrecondition, "allowance already pre-paid for window %d", currentWindow+1)
 	}
 
 	for window := range s.depositedWindows {
-		if window.Cmp(new(big.Int).SetUint64(currentWindow-2)) < 0 {
+		if window.Cmp(new(big.Int).SetUint64(currentWindow)) < 0 {
 			err := s.registryContract.WithdrawAllowance(ctx, window)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "withdrawing allowance: %v", err)
@@ -140,25 +147,25 @@ func (s *Service) PrepayAllowance(
 		}
 	}
 
-	amount, success := big.NewInt(0).SetString(stake.Amount, 10)
+	amount, success := big.NewInt(0).SetString(r.Amount, 10)
 	if !success {
-		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
+		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", r.Amount)
 	}
 
-	err = s.registryContract.PrepayAllowanceForSpecificWindow(ctx, amount, nextWindow)
+	err = s.registryContract.PrepayAllowanceForSpecificWindow(ctx, amount, windowToDeposit)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
-	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, nextWindow)
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, windowToDeposit)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
-	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", nextWindow)
-	s.depositedWindows[nextWindow] = struct{}{}
+	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", windowToDeposit)
+	s.depositedWindows[windowToDeposit] = struct{}{}
 
-	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
+	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String(), WindowNumber: wrapperspb.UInt64(windowToDeposit.Uint64())}, nil
 }
 
 func (s *Service) GetAllowance(
@@ -174,7 +181,8 @@ func (s *Service) GetAllowance(
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
 		}
-		window++
+		// as oracle working 2 windows behind the current window, we add + 2 here
+		window += 2
 	} else {
 		window = r.WindowNumber.Value
 	}
