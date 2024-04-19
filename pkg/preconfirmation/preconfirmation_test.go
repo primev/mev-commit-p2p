@@ -121,14 +121,6 @@ type testBlockTrackerContract struct {
 	blocksPerWindow     uint64
 }
 
-// RecordBlock records a new block and its winner.
-func (btc *testBlockTrackerContract) RecordL1Block(ctx context.Context, blockNumber uint64, winner common.Address) error {
-	btc.lastBlockNumber = blockNumber
-	btc.lastBlockWinner = winner
-	btc.blockNumberToWinner[blockNumber] = winner
-	return nil
-}
-
 func (btc *testBlockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error) {
 	return btc.blockNumberToWinner[blockNumber], nil
 }
@@ -144,12 +136,6 @@ func (btc *testBlockTrackerContract) GetLastL1BlockWinner(ctx context.Context) (
 
 func (btc *testBlockTrackerContract) GetLastL1BlockNumber(ctx context.Context) (uint64, error) {
 	return btc.lastBlockNumber, nil
-}
-
-// SetBlocksPerWindow sets the number of blocks per window.
-func (btc *testBlockTrackerContract) SetBlocksPerWindow(ctx context.Context, blocksPerWindow uint64) error {
-	btc.blocksPerWindow = blocksPerWindow
-	return nil
 }
 
 // GetBlocksPerWindow returns the number of blocks per window.

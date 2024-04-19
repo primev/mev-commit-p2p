@@ -24,8 +24,9 @@ func TestBidderRegistryContract(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		txHash := common.HexToHash("abcdef")
 		amount := big.NewInt(1000000000000000000)
+		window := big.NewInt(1)
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("prepay")
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("prepayAllowanceForSpecificWindow", window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,8 +74,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			mockClient,
 			util.NewTestLogger(os.Stdout),
 		)
-
-		err = registryContract.PrepayAllowance(context.Background(), amount)
+		err = registryContract.PrepayAllowanceForSpecificWindow(context.Background(), big.NewInt(1), amount)
 		if err != nil {
 			t.Fatal(err)
 		}

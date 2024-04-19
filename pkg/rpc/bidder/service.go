@@ -123,7 +123,9 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
 	}
 
-	if _, ok := s.depositedWindows[new(big.Int).SetUint64(currentWindow+1)]; ok {
+	nextWindow := new(big.Int).SetUint64(currentWindow + 1)
+
+	if _, ok := s.depositedWindows[nextWindow]; ok {
 		return nil, status.Errorf(codes.FailedPrecondition, "allowance already pre-paid for window %d", currentWindow+1)
 	}
 
@@ -143,18 +145,18 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.InvalidArgument, "parsing amount: %v", stake.Amount)
 	}
 
-	err = s.registryContract.PrepayAllowance(ctx, amount)
+	err = s.registryContract.PrepayAllowanceForSpecificWindow(ctx, amount, nextWindow)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "prepaying allowance: %v", err)
 	}
 
-	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, new(big.Int).SetUint64(currentWindow+1))
+	stakeAmount, err := s.registryContract.GetAllowance(ctx, s.owner, nextWindow)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "getting allowance: %v", err)
 	}
 
-	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", currentWindow+1)
-	s.depositedWindows[new(big.Int).SetUint64(currentWindow+1)] = struct{}{}
+	s.logger.Info("prepay successful", "amount", stakeAmount.String(), "window", nextWindow)
+	s.depositedWindows[nextWindow] = struct{}{}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String()}, nil
 }

@@ -12,11 +12,9 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protovalidate-go"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
-	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	bidderapi "github.com/primevprotocol/mev-commit/pkg/rpc/bidder"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc"
@@ -82,7 +80,7 @@ type testRegistryContract struct {
 	minAllowance *big.Int
 }
 
-func (t *testRegistryContract) PrepayAllowance(ctx context.Context, amount *big.Int) error {
+func (t *testRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Context, amount *big.Int, window *big.Int) error {
 	t.allowance = amount
 	return nil
 }
@@ -110,14 +108,6 @@ type testBlockTrackerContract struct {
 	blocksPerWindow     uint64
 }
 
-// RecordBlock records a new block and its winner.
-func (btc *testBlockTrackerContract) RecordL1Block(ctx context.Context, blockNumber uint64, winner common.Address) error {
-	btc.lastBlockNumber = blockNumber
-	btc.lastBlockWinner = winner
-	btc.blockNumberToWinner[blockNumber] = winner
-	return nil
-}
-
 func (btc *testBlockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error) {
 	return btc.blockNumberToWinner[blockNumber], nil
 }
@@ -135,24 +125,10 @@ func (btc *testBlockTrackerContract) GetLastL1BlockNumber(ctx context.Context) (
 	return btc.lastBlockNumber, nil
 }
 
-// SetBlocksPerWindow sets the number of blocks per window.
-func (btc *testBlockTrackerContract) SetBlocksPerWindow(ctx context.Context, blocksPerWindow uint64) error {
-	btc.blocksPerWindow = blocksPerWindow
-	return nil
-}
-
 // GetBlocksPerWindow returns the number of blocks per window.
 func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (uint64, error) {
 	return btc.blocksPerWindow, nil
 }
-
-func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent) (ethereum.Subscription, error) {
-	return nil, nil
-}
-
-// func (btc *testBlockTrackerContract) PollNewL1BlockEvents(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent, pollInterval time.Duration) error {
-// 	return nil
-// }
 
 func startServer(t *testing.T) bidderapiv1.BidderClient {
 	lis := bufconn.Listen(bufferSize)
