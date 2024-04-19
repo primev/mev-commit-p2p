@@ -104,25 +104,12 @@ func (t *testRegistryContract) WithdrawAllowance(ctx context.Context, window *bi
 type testBlockTrackerContract struct {
 	blockNumberToWinner map[uint64]common.Address
 	lastBlockNumber     uint64
-	lastBlockWinner     common.Address
 	blocksPerWindow     uint64
-}
-
-func (btc *testBlockTrackerContract) GetBlockWinner(ctx context.Context, blockNumber uint64) (common.Address, error) {
-	return btc.blockNumberToWinner[blockNumber], nil
 }
 
 // GetCurrentWindow returns the current window number.
 func (btc *testBlockTrackerContract) GetCurrentWindow(ctx context.Context) (uint64, error) {
 	return btc.lastBlockNumber / btc.blocksPerWindow, nil
-}
-
-func (btc *testBlockTrackerContract) GetLastL1BlockWinner(ctx context.Context) (common.Address, error) {
-	return btc.lastBlockWinner, nil
-}
-
-func (btc *testBlockTrackerContract) GetLastL1BlockNumber(ctx context.Context) (uint64, error) {
-	return btc.lastBlockNumber, nil
 }
 
 // GetBlocksPerWindow returns the number of blocks per window.
