@@ -23,7 +23,7 @@ var bidderRegistryABI = func() abi.ABI {
 
 type Interface interface {
 	// PrepayAllowanceForSpecificWindow registers a bidder with the bidder_registry contract for a specific window.
-	PrepayAllowanceForSpecificWindow(ctx context.Context, window *big.Int, amount *big.Int) error
+	PrepayAllowanceForSpecificWindow(ctx context.Context, amount, window *big.Int) error
 	// GetAllowance returns the stake of a bidder.
 	GetAllowance(ctx context.Context, address common.Address, window *big.Int) (*big.Int, error)
 	// GetMinAllowance returns the minimum stake required to register as a bidder.
@@ -57,7 +57,7 @@ func New(
 	}
 }
 
-func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Context, window *big.Int, amount *big.Int) error {
+func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Context, amount, window *big.Int) error {
 	callData, err := r.bidderRegistryABI.Pack("prepayAllowanceForSpecificWindow", window)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)

@@ -74,7 +74,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			mockClient,
 			util.NewTestLogger(os.Stdout),
 		)
-		err = registryContract.PrepayAllowanceForSpecificWindow(context.Background(), big.NewInt(1), amount)
+		err = registryContract.PrepayAllowanceForSpecificWindow(context.Background(), amount, big.NewInt(1))
 		if err != nil {
 			t.Fatal(err)
 		}
