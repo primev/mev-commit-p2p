@@ -102,7 +102,7 @@ func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Co
 			r.logger.Debug("Failed to unpack event", "err", err)
 			continue
 		}
-		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "prepaidAmount", bidderRegistered.PrepaidAmount.Uint64(), "windowNumber", bidderRegistered.WindowNumber.Int64())
+		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "prepaidAmount", bidderRegistered.PrepaidAmount.String(), "windowNumber", bidderRegistered.WindowNumber.Int64())
 	}
 
 	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash, "bidder", bidderRegistered.Bidder)
