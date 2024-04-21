@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/big"
 	"net"
 	"net/http"
 	"strings"
@@ -194,7 +195,12 @@ func NewNode(opts *Options) (*Node, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	var preconfProtoClosed <-chan struct{}
-	st := store.NewStore()
+	st, err := store.NewStore()
+	if err != nil {
+		opts.Logger.Error("failed to create store", "error", err)
+		cancel()
+		return nil, err
+	}
 
 	contracts, err := getContractABIs(opts)
 	if err != nil {
@@ -264,7 +270,12 @@ func NewNode(opts *Options) (*Node, error) {
 		)
 		opts.Logger.Info("registered preconf contract")
 
-		store := store.NewStore()
+		store, err := store.NewStore()
+		if err != nil {
+			opts.Logger.Error("failed to create store", "error", err)
+			cancel()
+			return nil, err
+		}
 
 		switch opts.PeerType {
 		case p2p.PeerTypeProvider.String():
@@ -559,6 +570,10 @@ func (noOpAllowanceManager) Start(_ context.Context) <-chan struct{} {
 	return nil
 }
 
-func (noOpAllowanceManager) CheckAllowance(_ context.Context, _ common.Address) error {
+func (noOpAllowanceManager) CheckAndDeductAllowance(_ context.Context, _ common.Address, _ string, _ int64) (*big.Int, error) {
+	return big.NewInt(0), nil
+}
+
+func (noOpAllowanceManager) RefundAllowance(_ common.Address, _ *big.Int, _ int64) error {
 	return nil
 }

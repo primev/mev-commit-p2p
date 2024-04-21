@@ -1,10 +1,12 @@
 package store
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
+	lru "github.com/hashicorp/golang-lru/v2"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 )
 
@@ -31,7 +33,11 @@ type EncryptedPreConfirmationWithDecrypted struct {
 	*preconfpb.PreConfirmation
 }
 
-func NewStore() *Store {
+func NewStore() (*Store, error) {
+	balancesByBlockCache, err := lru.New[string, *big.Int](1024)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create balancesByBlockCache: %w", err)
+	}
 	return &Store{
 		BlockStore: &BlockStore{
 			data: make(map[string]uint64),
@@ -41,9 +47,10 @@ func NewStore() *Store {
 			commitmentsByCommitmentHash: make(map[string]*EncryptedPreConfirmationWithDecrypted),
 		},
 		BidderBalancesStore: &BidderBalancesStore{
-			balances: make(map[string]*big.Int),
+			balances:        make(map[string]*big.Int),
+			balancesByBlock: balancesByBlockCache,
 		},
-	}
+	}, nil
 }
 
 func (bs *BlockStore) LastBlock() (uint64, error) {
@@ -125,9 +132,25 @@ func (cs *CommitmentsStore) deleteCommitmentByHash(hash string) error {
 	return nil
 }
 
+func (cs *CommitmentsStore) SetCommitmentIndexByCommitmentDigest(cDigest, cIndex [32]byte) error {
+	// when we will have db, this will be UPDATE query, instead of inmemory update
+	commitment, err := cs.GetCommitmentByHash(common.Bytes2Hex(cDigest[:]))
+	if err != nil {
+		return fmt.Errorf("failed to get commitment by hash: %w", err)
+	}
+	if commitment == nil {
+		// commitment could be not found in case this commitment is from another bidder/provider
+		// so no need to return error in this case
+		return nil
+	}
+	commitment.EncryptedPreConfirmation.CommitmentIndex = cIndex[:]
+	return nil
+}
+
 type BidderBalancesStore struct {
-	balances map[string]*big.Int
-	mu       sync.RWMutex
+	balances        map[string]*big.Int
+	balancesByBlock *lru.Cache[string, *big.Int]
+	mu              sync.RWMutex
 }
 
 func (bbs *BidderBalancesStore) SetBalance(bidder common.Address, windowNumber *big.Int, prepaidAmount *big.Int) error {
@@ -150,4 +173,43 @@ func (bbs *BidderBalancesStore) GetBalance(bidder common.Address, windowNumber *
 
 func getBBSKey(bidder common.Address, windowNumber *big.Int) string {
 	return bidder.String() + windowNumber.String()
+}
+
+func (bbs *BidderBalancesStore) DeductAndCheckBalanceForBlock(bidder common.Address, defaultAmount, bidAmount *big.Int, blockNumber int64) (*big.Int, error) {
+	key := getBBSforBlockKey(bidder, blockNumber)
+	if currentBalance, ok := bbs.balancesByBlock.Get(key); ok {
+		if currentBalance.Cmp(bidAmount) >= 0 {
+			newBalance := new(big.Int).Sub(currentBalance, bidAmount)
+			bbs.balancesByBlock.Add(key, newBalance)
+			return newBalance, nil
+		}
+		return nil, fmt.Errorf("insufficient funds")
+	}
+
+	// If no balance found, set balance to defaultAmount - bidAmount
+	if defaultAmount.Cmp(bidAmount) >= 0 {
+		newBalance := new(big.Int).Sub(defaultAmount, bidAmount)
+		bbs.balancesByBlock.Add(key, newBalance)
+		return newBalance, nil
+	}
+	return nil, fmt.Errorf("default amount is less than bid amount, cannot deduct")
+}
+
+
+func (bbs *BidderBalancesStore) RefundBalanceForBlock(bidder common.Address, amount *big.Int, blockNumber int64) error {
+    key := getBBSforBlockKey(bidder, blockNumber)
+    if currentBalance, ok := bbs.balancesByBlock.Get(key); ok {
+        // If a balance exists, simply add the amount back
+        updatedBalance := new(big.Int).Add(currentBalance, amount)
+        bbs.balancesByBlock.Add(key, updatedBalance)
+        return nil
+    }
+
+    // If no balance found (which should be unusual for a refund), initialize to the refund amount
+    bbs.balancesByBlock.Add(key, amount)
+    return nil
+}
+
+func getBBSforBlockKey(bidder common.Address, blockNumber int64) string {
+	return bidder.String() + fmt.Sprint(blockNumber)
 }

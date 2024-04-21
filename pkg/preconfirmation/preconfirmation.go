@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"sync"
 	"time"
 
@@ -41,6 +42,8 @@ type Preconfirmation struct {
 	blockTracker blocktrackercontract.Interface
 	evtMgr       events.EventManager
 	ecds         EncrDecrCommitmentStore
+	newL1Blocks  chan *blocktracker.BlocktrackerNewL1Block
+	enryptedCmts chan *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored
 	logger       *slog.Logger
 	metrics      *metrics
 }
@@ -58,11 +61,13 @@ type EncrDecrCommitmentStore interface {
 	GetCommitmentByHash(commitmentHash string) (*store.EncryptedPreConfirmationWithDecrypted, error)
 	AddCommitment(commitment *store.EncryptedPreConfirmationWithDecrypted)
 	DeleteCommitmentByBlockNumber(blockNum int64) error
+	SetCommitmentIndexByCommitmentDigest(commitmentDigest, commitmentIndex [32]byte) error
 }
 
 type AllowanceManager interface {
 	Start(ctx context.Context) <-chan struct{}
-	CheckAllowance(ctx context.Context, ethAddress common.Address) error
+	CheckAndDeductAllowance(ctx context.Context, ethAddress common.Address, bidAmount string, blockNumber int64) (*big.Int, error)
+	RefundAllowance(ethAddress common.Address, amount *big.Int, blockNumber int64) error
 }
 
 func New(
@@ -79,17 +84,18 @@ func New(
 	logger *slog.Logger,
 ) *Preconfirmation {
 	return &Preconfirmation{
-		owner:     owner,
-		topo:      topo,
-		streamer:  streamer,
-		encryptor: encryptor,
-		// us:           us,
+		owner:        owner,
+		topo:         topo,
+		streamer:     streamer,
+		encryptor:    encryptor,
 		allowanceMgr: allowanceMgr,
 		processer:    processor,
 		commitmentDA: commitmentDA,
 		blockTracker: blockTracker,
 		evtMgr:       evtMgr,
 		ecds:         edcs,
+		newL1Blocks:  make(chan *blocktracker.BlocktrackerNewL1Block),
+		enryptedCmts: make(chan *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored),
 		logger:       logger,
 		metrics:      newMetrics(),
 	}
@@ -113,11 +119,66 @@ func (p *Preconfirmation) Start(ctx context.Context) <-chan struct{} {
 	eg, egCtx := errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
-		return p.subscribeNewL1Block(egCtx)
+		ev1 := events.NewEventHandler(
+			"NewL1Block",
+			func(newL1Block *blocktracker.BlocktrackerNewL1Block) error {
+				select {
+				case <-egCtx.Done():
+					return nil
+				case p.newL1Blocks <- newL1Block:
+					return nil
+				}
+			},
+		)
+
+		sub1, err := p.evtMgr.Subscribe(ev1)
+		if err != nil {
+			return fmt.Errorf("failed to subscribe to NewL1Block event: %w", err)
+		}
+		defer sub1.Unsubscribe()
+
+		ev2 := events.NewEventHandler(
+			"EncryptedCommitmentStored",
+			func(ec *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored) error {
+				select {
+				case <-egCtx.Done():
+					return nil
+				case p.enryptedCmts <- ec:
+					return nil
+				}
+			},
+		)
+		sub2, err := p.evtMgr.Subscribe(ev2)
+		if err != nil {
+			return fmt.Errorf("failed to subscribe to EncryptedCommitmentStored event: %w", err)
+		}
+		defer sub2.Unsubscribe()
+
+		select {
+		case <-egCtx.Done():
+			return nil
+		case err := <-sub1.Err():
+			return fmt.Errorf("NewL1Block subscription error: %w", err)
+		case err := <-sub2.Err():
+			return fmt.Errorf("EncryptedCommitmentStored subscription error: %w", err)
+		}
 	})
 
 	eg.Go(func() error {
-		return p.subscribeEncryptedCommitmentStored(egCtx)
+		for {
+			select {
+			case <-egCtx.Done():
+				return nil
+			case newL1Block := <-p.newL1Blocks:
+				if err := p.handleNewL1Block(egCtx, newL1Block); err != nil {
+					return err
+				}
+			case ec := <-p.enryptedCmts:
+				if err := p.handleEncryptedCommitmentStored(egCtx, ec); err != nil {
+					return err
+				}
+			}
+		}
 	})
 
 	go func() {
@@ -269,11 +330,24 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	err = p.allowanceMgr.CheckAllowance(ctx, *ethAddress)
+	deductedAmount, err := p.allowanceMgr.CheckAndDeductAllowance(ctx, *ethAddress, bid.BidAmount, bid.BlockNumber)
 	if err != nil {
 		p.logger.Error("checking allowance", "error", err)
 		return err
 	}
+
+	// Setup defer for possible refund
+    successful := false
+    defer func() {
+        if !successful {
+            // Refund the deducted amount if the bid process did not succeed
+            refundErr := p.allowanceMgr.RefundAllowance(*ethAddress, deductedAmount, bid.BlockNumber)
+            if refundErr != nil {
+                p.logger.Error("refunding allowance", "error", refundErr)
+            }
+        }
+    }()
+
 	// try to enqueue for 5 seconds
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -312,98 +386,56 @@ func (p *Preconfirmation) handleBid(
 
 			p.ecds.AddCommitment(encryptedAndDecryptedPreconfirmation)
 
+			// If we reach here, the bid was successful
+			successful = true
+
 			return stream.WriteMsg(ctx, encryptedPreConfirmation)
 		}
 	}
 	return nil
 }
 
-func (p *Preconfirmation) subscribeNewL1Block(ctx context.Context) error {
-	ev := events.NewEventHandler(
-		"NewL1Block",
-		func(newL1Block *blocktracker.BlocktrackerNewL1Block) error {
-			p.logger.Info("New L1 Block event received", "blockNumber", newL1Block.BlockNumber, "winner", newL1Block.Winner, "window", newL1Block.Window)
-			commitments, err := p.ecds.GetCommitmentsByBlockNumber(newL1Block.BlockNumber.Int64())
-			if err != nil {
-				p.logger.Error("failed to get commitments by block number", "error", err)
-				return err
-			}
-			for _, commitment := range commitments {
-				if common.BytesToAddress(commitment.ProviderAddress) != newL1Block.Winner {
-					p.logger.Info("provider address does not match the winner", "providerAddress", commitment.ProviderAddress, "winner", newL1Block.Winner)
-					continue
-				}
-				txHash, err := p.commitmentDA.OpenCommitment(
-					ctx,
-					commitment.EncryptedPreConfirmation.CommitmentIndex,
-					commitment.PreConfirmation.Bid.BidAmount,
-					commitment.PreConfirmation.Bid.BlockNumber,
-					commitment.PreConfirmation.Bid.TxHash,
-					commitment.PreConfirmation.Bid.DecayStartTimestamp,
-					commitment.PreConfirmation.Bid.DecayEndTimestamp,
-					commitment.PreConfirmation.Bid.Signature,
-					commitment.PreConfirmation.Signature,
-					commitment.PreConfirmation.SharedSecret,
-				)
-				if err != nil {
-					// todo: retry mechanism?
-					p.logger.Error("failed to open commitment", "error", err)
-					continue
-				} else {
-					p.logger.Info("opened commitment", "txHash", txHash)
-				}
-			}
-			err = p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
-			if err != nil {
-				p.logger.Error("failed to delete commitments by block number", "error", err)
-				return err
-			}
-			return nil
-		},
-	)
-
-	sub, err := p.evtMgr.Subscribe(ev)
+func (p *Preconfirmation) handleNewL1Block(ctx context.Context, newL1Block *blocktracker.BlocktrackerNewL1Block) error {
+	p.logger.Info("New L1 Block event received", "blockNumber", newL1Block.BlockNumber, "winner", newL1Block.Winner, "window", newL1Block.Window)
+	commitments, err := p.ecds.GetCommitmentsByBlockNumber(newL1Block.BlockNumber.Int64())
 	if err != nil {
-		return fmt.Errorf("failed to subscribe to NewL1Block event: %w", err)
+		p.logger.Error("failed to get commitments by block number", "error", err)
+		return err
 	}
-	defer sub.Unsubscribe()
-
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-sub.Err():
-		return fmt.Errorf("subscription error: %w", err)
+	for _, commitment := range commitments {
+		if common.BytesToAddress(commitment.ProviderAddress) != newL1Block.Winner {
+			p.logger.Info("provider address does not match the winner", "providerAddress", commitment.ProviderAddress, "winner", newL1Block.Winner)
+			continue
+		}
+		txHash, err := p.commitmentDA.OpenCommitment(
+			ctx,
+			commitment.EncryptedPreConfirmation.CommitmentIndex,
+			commitment.PreConfirmation.Bid.BidAmount,
+			commitment.PreConfirmation.Bid.BlockNumber,
+			commitment.PreConfirmation.Bid.TxHash,
+			commitment.PreConfirmation.Bid.DecayStartTimestamp,
+			commitment.PreConfirmation.Bid.DecayEndTimestamp,
+			commitment.PreConfirmation.Bid.Signature,
+			commitment.PreConfirmation.Signature,
+			commitment.PreConfirmation.SharedSecret,
+		)
+		if err != nil {
+			// todo: retry mechanism?
+			p.logger.Error("failed to open commitment", "error", err)
+			continue
+		} else {
+			p.logger.Info("opened commitment", "txHash", txHash)
+		}
 	}
+	err = p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
+	if err != nil {
+		p.logger.Error("failed to delete commitments by block number", "error", err)
+		return err
+	}
+	return nil
 }
 
-func (p *Preconfirmation) subscribeEncryptedCommitmentStored(ctx context.Context) error {
-	ev := events.NewEventHandler(
-		"EncryptedCommitmentStored",
-		func(ec *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored) error {
-			p.logger.Info("Encrypted Commitment Stored event received", "commitmentDigest", ec.CommitmentDigest, "commitmentIndex", ec.CommitmentIndex)
-			commitment, err := p.ecds.GetCommitmentByHash(common.Bytes2Hex(ec.CommitmentDigest[:]))
-			if err != nil {
-				return fmt.Errorf("failed to get commitment by hash: %w", err)
-			}
-			if commitment == nil {
-				p.logger.Debug("commitment not found", "commitmentDigest", ec.CommitmentDigest)
-				return nil
-			}
-			commitment.EncryptedPreConfirmation.CommitmentIndex = ec.CommitmentIndex[:]
-			return nil
-		},
-	)
-
-	sub, err := p.evtMgr.Subscribe(ev)
-	if err != nil {
-		return fmt.Errorf("failed to subscribe to EncryptedCommitmentStored event: %w", err)
-	}
-	defer sub.Unsubscribe()
-
-	select {
-	case <-ctx.Done():
-		return nil
-	case err := <-sub.Err():
-		return fmt.Errorf("encrypted commitment stored subscription error: %w", err)
-	}
+func (p *Preconfirmation) handleEncryptedCommitmentStored(ctx context.Context, ec *preconfcommstore.PreconfcommitmentstoreEncryptedCommitmentStored) error {
+	p.logger.Info("Encrypted Commitment Stored event received", "commitmentDigest", ec.CommitmentDigest, "commitmentIndex", ec.CommitmentIndex)
+	return p.ecds.SetCommitmentIndexByCommitmentDigest(ec.CommitmentDigest, ec.CommitmentIndex)
 }

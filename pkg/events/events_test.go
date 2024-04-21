@@ -211,8 +211,17 @@ func TestEventManager(t *testing.T) {
 		t.Fatal("timed out waiting for handler to be triggered")
 	}
 
-	if b, err := store.LastBlock(); err != nil || b != 2 {
-		t.Fatalf("expected block number 1, got %d", store.blockNumber)
+	start := time.Now()
+	for {
+		if b, err := store.LastBlock(); err != nil {
+			t.Fatal(err)
+		} else if b == 2 {
+			break
+		}
+		if time.Since(start) > 5*time.Second {
+			t.Fatal("timed out waiting for block number to be updated")
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	cancel()

@@ -8,19 +8,18 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"math/big"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/ecies"
 	blocktracker "github.com/primevprotocol/contracts-abi/clients/BlockTracker"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
-	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
 	"github.com/primevprotocol/mev-commit/pkg/events"
 	"github.com/primevprotocol/mev-commit/pkg/p2p"
 	p2ptest "github.com/primevprotocol/mev-commit/pkg/p2p/testing"
@@ -129,10 +128,6 @@ func (btc *testBlockTrackerContract) GetBlocksPerWindow(ctx context.Context) (ui
 	return btc.blocksPerWindow, nil
 }
 
-func (btc *testBlockTrackerContract) SubscribeNewL1Block(ctx context.Context, eventCh chan<- blocktrackercontract.NewL1BlockEvent) (ethereum.Subscription, error) {
-	return nil, nil
-}
-
 type testEventManager struct {
 	btABI      *abi.ABI
 	handler    events.EventHandler
@@ -176,7 +171,11 @@ func (t *testAllowanceManager) Start(ctx context.Context) <-chan struct{} {
 	return nil
 }
 
-func (t *testAllowanceManager) CheckAllowance(ctx context.Context, address common.Address) error {
+func (t *testAllowanceManager) CheckAndDeductAllowance(ctx context.Context, address common.Address, bidAmountStr string, blockNumber int64) (*big.Int, error) {
+	return big.NewInt(0), nil
+}
+
+func (t *testAllowanceManager) RefundAllowance(address common.Address, deductedAmount *big.Int, blockNumber int64) error {
 	return nil
 }
 
@@ -259,7 +258,10 @@ func TestPreconfBidSubmission(t *testing.T) {
 			sub:        &testSub{errC: make(chan error)},
 			handlerSub: make(chan struct{}),
 		}
-
+		store, err := store.NewStore()
+		if err != nil {
+			t.Fatal(err)
+		}
 		allowanceMgr := &testAllowanceManager{}
 		p := preconfirmation.New(
 			client.EthAddress,
@@ -271,7 +273,7 @@ func TestPreconfBidSubmission(t *testing.T) {
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},
 			eventManager,
-			store.NewStore(),
+			store,
 			newTestLogger(t, os.Stdout),
 		)
 

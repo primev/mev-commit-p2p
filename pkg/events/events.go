@@ -199,10 +199,14 @@ func (l *Listener) publishLogEvent(ctx context.Context, log types.Log) {
 	l.subMu.RLock()
 	defer l.subMu.RUnlock()
 
+	wg := sync.WaitGroup{}
 	events := l.subscribers[log.Topics[0]]
 	for _, event := range events {
 		ev := event
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
+
 			if err := ev.event.Handle(log); err != nil {
 				l.logger.Error("failed to handle log", "error", err)
 				select {
@@ -212,6 +216,8 @@ func (l *Listener) publishLogEvent(ctx context.Context, log types.Log) {
 			}
 		}()
 	}
+
+	wg.Wait()
 }
 
 func (l *Listener) Start(ctx context.Context) <-chan struct{} {
@@ -272,7 +278,7 @@ func (l *Listener) Start(ctx context.Context) <-chan struct{} {
 						l.logger.Error("failed to set last block", "error", err)
 						return
 					}
-					l.logger.Info("processed logs", "from", lastBlock+1, "to", blockNumber, "count", len(logs))
+					l.logger.Debug("processed logs", "from", lastBlock+1, "to", blockNumber, "count", len(logs))
 					lastBlock = blockNumber
 				}
 			}
