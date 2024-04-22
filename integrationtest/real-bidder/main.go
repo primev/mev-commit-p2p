@@ -196,8 +196,8 @@ func main() {
 				rpcClient,
 				currentBlock.txns[bundleStart:bundleEnd],
 				currentBlock.blockNum,
-				time.Now().UnixMilli(),
-				(time.Now().UnixMilli())+15000,
+				(time.Now().UnixMilli())-10000,
+				(time.Now().UnixMilli())+10000,
 			)
 			if err != nil {
 				logger.Error("failed to send bid", "err", err)
