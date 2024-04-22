@@ -136,25 +136,71 @@ func main() {
 		}
 	}()
 
+	type blockWithTxns struct {
+		blockNum int64
+		txns     []string
+	}
+
+	newBlockChan := make(chan blockWithTxns, 1)
+
 	wg.Add(1)
 	go func(logger *slog.Logger) {
 		defer wg.Done()
+
+		currentBlkNum := int64(0)
 		for {
 			block, blkNum, err := RetreivedBlock(rpcClient)
 			if err != nil || len(block) == 0 {
 				logger.Error("failed to get block", "err", err)
-			} else {
-				throtle := time.Duration(12000*time.Millisecond) / time.Duration(len(block))
-				logger.Info("thortling set", "throtle", throtle.String())
-				bundle := 1
-				for j := 0; j < len(block); j += bundle {
-					bundle := rand.Intn(10)
-					err = sendBid(bidderClient, logger, rpcClient, block[j:j+bundle], int64(blkNum), (time.Now().UnixMilli())-10000, (time.Now().UnixMilli()))
-					if err != nil {
-						logger.Error("failed to send bid", "err", err)
-					}
-					time.Sleep(throtle)
-				}
+			}
+
+			if currentBlkNum == blkNum {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			currentBlkNum = blkNum
+			newBlockChan <- blockWithTxns{
+				blockNum: blkNum,
+				txns:     block,
+			}
+		}
+	}(logger)
+
+	wg.Add(1)
+	go func(logger *slog.Logger) {
+		defer wg.Done()
+		ticker := time.NewTicker(200 * time.Millisecond)
+		currentBlock := blockWithTxns{}
+		for {
+			select {
+			case block := <-newBlockChan:
+				currentBlock = block
+			case <-ticker.C:
+			}
+
+			if len(currentBlock.txns) == 0 {
+				continue
+			}
+
+			bundleLen := rand.Intn(10)
+			bundleStart := rand.Intn(len(currentBlock.txns))
+			bundleEnd := bundleStart + bundleLen
+			if bundleEnd > len(currentBlock.txns) {
+				bundleEnd = len(currentBlock.txns) - 1
+			}
+
+			err = sendBid(
+				bidderClient,
+				logger,
+				rpcClient,
+				currentBlock.txns[bundleStart:bundleEnd],
+				currentBlock.blockNum,
+				time.Now().UnixMilli(),
+				(time.Now().UnixMilli())+10000,
+			)
+			if err != nil {
+				logger.Error("failed to send bid", "err", err)
 			}
 		}
 	}(logger)
