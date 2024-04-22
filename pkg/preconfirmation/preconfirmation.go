@@ -203,12 +203,14 @@ func (p *Preconfirmation) SendBid(
 	decayStartTimestamp int64,
 	decayEndTimestamp int64,
 ) (chan *preconfpb.PreConfirmation, error) {
+	startTime := time.Now()
 	bid, encryptedBid, err := p.encryptor.ConstructEncryptedBid(txHash, bidAmt, blockNumber, decayStartTimestamp, decayEndTimestamp)
 	if err != nil {
 		p.logger.Error("constructing encrypted bid", "error", err, "txHash", txHash)
 		return nil, err
 	}
-	p.logger.Info("constructed encrypted bid", "encryptedBid", encryptedBid)
+	duration := time.Since(startTime)
+	p.logger.Info("constructed encrypted bid", "encryptedBid", encryptedBid, "duration", duration)
 
 	providers := p.topo.GetPeers(topology.Query{Type: p2p.PeerTypeProvider})
 	if len(providers) == 0 {
@@ -259,11 +261,14 @@ func (p *Preconfirmation) SendBid(
 			_ = providerStream.Close()
 
 			// Process preConfirmation as a bidder
+			verifyStartTime := time.Now()
 			sharedSecretKey, providerAddress, err := p.encryptor.VerifyEncryptedPreConfirmation(provider.Keys.NIKEPublicKey, bid.Digest, encryptedPreConfirmation)
 			if err != nil {
 				logger.Error("verifying provider signature", "error", err)
 				return
 			}
+			verifyDuration := time.Since(verifyStartTime)
+			logger.Info("verified encrypted preconfirmation", "duration", verifyDuration)
 
 			preConfirmation := &preconfpb.PreConfirmation{
 				Bid:          bid,
@@ -337,16 +342,16 @@ func (p *Preconfirmation) handleBid(
 	}
 
 	// Setup defer for possible refund
-    successful := false
-    defer func() {
-        if !successful {
-            // Refund the deducted amount if the bid process did not succeed
-            refundErr := p.allowanceMgr.RefundAllowance(*ethAddress, deductedAmount, bid.BlockNumber)
-            if refundErr != nil {
-                p.logger.Error("refunding allowance", "error", refundErr)
-            }
-        }
-    }()
+	successful := false
+	defer func() {
+		if !successful {
+			// Refund the deducted amount if the bid process did not succeed
+			refundErr := p.allowanceMgr.RefundAllowance(*ethAddress, deductedAmount, bid.BlockNumber)
+			if refundErr != nil {
+				p.logger.Error("refunding allowance", "error", refundErr)
+			}
+		}
+	}()
 
 	// try to enqueue for 5 seconds
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -407,6 +412,7 @@ func (p *Preconfirmation) handleNewL1Block(ctx context.Context, newL1Block *bloc
 			p.logger.Info("provider address does not match the winner", "providerAddress", commitment.ProviderAddress, "winner", newL1Block.Winner)
 			continue
 		}
+		startTime := time.Now()
 		txHash, err := p.commitmentDA.OpenCommitment(
 			ctx,
 			commitment.EncryptedPreConfirmation.CommitmentIndex,
@@ -423,10 +429,11 @@ func (p *Preconfirmation) handleNewL1Block(ctx context.Context, newL1Block *bloc
 			// todo: retry mechanism?
 			p.logger.Error("failed to open commitment", "error", err)
 			continue
-		} else {
-			p.logger.Info("opened commitment", "txHash", txHash)
 		}
+		duration := time.Since(startTime)
+		p.logger.Info("opened commitment", "txHash", txHash, "duration", duration)
 	}
+	
 	err = p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
 	if err != nil {
 		p.logger.Error("failed to delete commitments by block number", "error", err)

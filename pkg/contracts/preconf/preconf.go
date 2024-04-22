@@ -136,12 +136,7 @@ func (p *preconfContract) OpenCommitment(
 		return common.Hash{}, err
 	}
 
-	receipt, err := p.client.WaitForReceipt(ctx, txHash)
-	if err != nil {
-		return common.Hash{}, err
-	}
-
-	p.logger.Info("preconf contract openCommitment successful", "txHash", txHash, "receiptStatus", receipt.Status)
+	p.logger.Info("preconf contract openCommitment successful", "txHash", txHash.String())
 
 	return txHash, nil
 }
