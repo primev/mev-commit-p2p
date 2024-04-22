@@ -82,7 +82,7 @@ func main() {
 	))
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(receivedPreconfs, sentBids)
+	registry.MustRegister(receivedPreconfs, sentBids, sendBidDuration)
 
 	router := http.NewServeMux()
 	router.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
@@ -197,7 +197,7 @@ func main() {
 				currentBlock.txns[bundleStart:bundleEnd],
 				currentBlock.blockNum,
 				time.Now().UnixMilli(),
-				(time.Now().UnixMilli())+10000,
+				(time.Now().UnixMilli())+15000,
 			)
 			if err != nil {
 				logger.Error("failed to send bid", "err", err)
