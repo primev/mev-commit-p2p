@@ -36,7 +36,7 @@ type Preconfirmation struct {
 	encryptor    encryptor.Encryptor
 	topo         Topology
 	streamer     p2p.Streamer
-	allowanceMgr AllowanceManager
+	depositMgr   DepositManager
 	processer    BidProcessor
 	commitmentDA preconfcontract.Interface
 	blockTracker blocktrackercontract.Interface
@@ -64,10 +64,10 @@ type EncrDecrCommitmentStore interface {
 	SetCommitmentIndexByCommitmentDigest(commitmentDigest, commitmentIndex [32]byte) error
 }
 
-type AllowanceManager interface {
+type DepositManager interface {
 	Start(ctx context.Context) <-chan struct{}
-	CheckAndDeductAllowance(ctx context.Context, ethAddress common.Address, bidAmount string, blockNumber int64) (*big.Int, error)
-	RefundAllowance(ethAddress common.Address, amount *big.Int, blockNumber int64) error
+	CheckAndDeductDeposit(ctx context.Context, ethAddress common.Address, bidAmount string, blockNumber int64) (*big.Int, error)
+	RefundDeposit(ethAddress common.Address, amount *big.Int, blockNumber int64) error
 }
 
 func New(
@@ -75,7 +75,7 @@ func New(
 	topo Topology,
 	streamer p2p.Streamer,
 	encryptor encryptor.Encryptor,
-	allowanceMgr AllowanceManager,
+	depositMgr DepositManager,
 	processor BidProcessor,
 	commitmentDA preconfcontract.Interface,
 	blockTracker blocktrackercontract.Interface,
@@ -88,7 +88,7 @@ func New(
 		topo:         topo,
 		streamer:     streamer,
 		encryptor:    encryptor,
-		allowanceMgr: allowanceMgr,
+		depositMgr:   depositMgr,
 		processer:    processor,
 		commitmentDA: commitmentDA,
 		blockTracker: blockTracker,
@@ -335,9 +335,9 @@ func (p *Preconfirmation) handleBid(
 		return err
 	}
 
-	deductedAmount, err := p.allowanceMgr.CheckAndDeductAllowance(ctx, *ethAddress, bid.BidAmount, bid.BlockNumber)
+	deductedAmount, err := p.depositMgr.CheckAndDeductDeposit(ctx, *ethAddress, bid.BidAmount, bid.BlockNumber)
 	if err != nil {
-		p.logger.Error("checking allowance", "error", err)
+		p.logger.Error("checking deposit", "error", err)
 		return err
 	}
 
@@ -346,9 +346,9 @@ func (p *Preconfirmation) handleBid(
 	defer func() {
 		if !successful {
 			// Refund the deducted amount if the bid process did not succeed
-			refundErr := p.allowanceMgr.RefundAllowance(*ethAddress, deductedAmount, bid.BlockNumber)
+			refundErr := p.depositMgr.RefundDeposit(*ethAddress, deductedAmount, bid.BlockNumber)
 			if refundErr != nil {
-				p.logger.Error("refunding allowance", "error", refundErr)
+				p.logger.Error("refunding deposit", "error", refundErr)
 			}
 		}
 	}()
@@ -433,7 +433,7 @@ func (p *Preconfirmation) handleNewL1Block(ctx context.Context, newL1Block *bloc
 		duration := time.Since(startTime)
 		p.logger.Info("opened commitment", "txHash", txHash, "duration", duration)
 	}
-	
+
 	err = p.ecds.DeleteCommitmentByBlockNumber(newL1Block.BlockNumber.Int64())
 	if err != nil {
 		p.logger.Error("failed to delete commitments by block number", "error", err)

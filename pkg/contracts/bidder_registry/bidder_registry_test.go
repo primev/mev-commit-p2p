@@ -20,13 +20,13 @@ func TestBidderRegistryContract(t *testing.T) {
 
 	owner := common.HexToAddress("abcd")
 
-	t.Run("PrepayAllowance", func(t *testing.T) {
+	t.Run("Deposit", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		txHash := common.HexToHash("abcdef")
 		amount := big.NewInt(1000000000000000000)
 		window := big.NewInt(1)
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("prepayAllowanceForSpecificWindow", window)
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("depositForSpecificWindow", window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,18 +74,18 @@ func TestBidderRegistryContract(t *testing.T) {
 			mockClient,
 			util.NewTestLogger(os.Stdout),
 		)
-		err = registryContract.PrepayAllowanceForSpecificWindow(context.Background(), amount, big.NewInt(1))
+		err = registryContract.DepositForSpecificWindow(context.Background(), amount, big.NewInt(1))
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("GetAllowance", func(t *testing.T) {
+	t.Run("GetDeposit", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 		address := common.HexToAddress("abcdef")
 		window := big.NewInt(1)
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("getAllowance", address, window)
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("getDeposit", address, window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +114,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			mockClient,
 			util.NewTestLogger(os.Stdout),
 		)
-		stakeAmt, err := registryContract.GetAllowance(context.Background(), address, window)
+		stakeAmt, err := registryContract.GetDeposit(context.Background(), address, window)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,7 +128,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		amount := big.NewInt(1000000000000000000)
 
-		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("minAllowance")
+		expCallData, err := bidder_registrycontract.BidderRegistryABI().Pack("minDeposit")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -158,7 +158,7 @@ func TestBidderRegistryContract(t *testing.T) {
 			util.NewTestLogger(os.Stdout),
 		)
 
-		stakeAmt, err := registryContract.GetMinAllowance(context.Background())
+		stakeAmt, err := registryContract.GetMinDeposit(context.Background())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -168,7 +168,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		}
 	})
 
-	t.Run("CheckBidderAllowance", func(t *testing.T) {
+	t.Run("CheckBidderDeposit", func(t *testing.T) {
 		registryContractAddr := common.HexToAddress("abcd")
 		blocksPerWindow := big.NewInt(64)
 		amount := new(big.Int).Mul(big.NewInt(1000000000000000000), blocksPerWindow)
@@ -204,7 +204,7 @@ func TestBidderRegistryContract(t *testing.T) {
 		)
 
 		window := big.NewInt(1)
-		isRegistered := registryContract.CheckBidderAllowance(context.Background(), address, window, blocksPerWindow)
+		isRegistered := registryContract.CheckBidderDeposit(context.Background(), address, window, blocksPerWindow)
 		if !isRegistered {
 			t.Fatal("expected bidder to be registered")
 		}

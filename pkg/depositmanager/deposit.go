@@ -1,4 +1,4 @@
-package allowancemanager
+package depositmanager
 
 import (
 	"context"
@@ -19,8 +19,8 @@ import (
 )
 
 type BidderRegistry interface {
-	CheckBidderAllowance(context.Context, common.Address, *big.Int, *big.Int) bool
-	GetMinAllowance(ctx context.Context) (*big.Int, error)
+	CheckBidderDeposit(context.Context, common.Address, *big.Int, *big.Int) bool
+	GetMinDeposit(ctx context.Context) (*big.Int, error)
 }
 
 type Store interface {
@@ -30,27 +30,27 @@ type Store interface {
 	RefundBalanceForBlock(bidder common.Address, amount *big.Int, blockNumber int64) error
 }
 
-type AllowanceManager struct {
+type DepositManager struct {
 	bidderRegistry  BidderRegistry
 	blockTracker    blocktrackercontract.Interface
 	commitmentDA    preconfcontract.Interface
 	store           Store
 	evtMgr          events.EventManager
 	blocksPerWindow atomic.Uint64 // todo: move to the store
-	minAllowance    atomic.Int64  // todo: move to the store
+	minDeposit    atomic.Int64  // todo: move to the store
 	currentWindow   atomic.Int64  // todo: move to the store
 	logger          *slog.Logger
 }
 
-func NewAllowanceManager(
+func NewDepositManager(
 	br BidderRegistry,
 	blockTracker blocktrackercontract.Interface,
 	commitmentDA preconfcontract.Interface,
 	store Store,
 	evtMgr events.EventManager,
 	logger *slog.Logger,
-) *AllowanceManager {
-	return &AllowanceManager{
+) *DepositManager {
+	return &DepositManager{
 		bidderRegistry: br,
 		blockTracker:   blockTracker,
 		commitmentDA:   commitmentDA,
@@ -60,7 +60,7 @@ func NewAllowanceManager(
 	}
 }
 
-func (a *AllowanceManager) Start(ctx context.Context) <-chan struct{} {
+func (a *DepositManager) Start(ctx context.Context) <-chan struct{} {
 	doneChan := make(chan struct{})
 
 	eg, egCtx := errgroup.WithContext(ctx)
@@ -84,7 +84,7 @@ func (a *AllowanceManager) Start(ctx context.Context) <-chan struct{} {
 			"BidderRegistered",
 			func(bidderReg *bidderregistry.BidderregistryBidderRegistered) error {
 				// todo: do we need to check if commiter is connected to this bidder?
-				return a.store.SetBalance(bidderReg.Bidder, bidderReg.WindowNumber, bidderReg.PrepaidAmount)
+				return a.store.SetBalance(bidderReg.Bidder, bidderReg.WindowNumber, bidderReg.DepositedAmount)
 			},
 		)
 
@@ -107,14 +107,14 @@ func (a *AllowanceManager) Start(ctx context.Context) <-chan struct{} {
 	go func() {
 		defer close(doneChan)
 		if err := eg.Wait(); err != nil {
-			a.logger.Error("error in AllowanceManager", "error", err)
+			a.logger.Error("error in DepositManager", "error", err)
 		}
 	}()
 
 	return doneChan
 }
 
-func (a *AllowanceManager) CheckAndDeductAllowance(ctx context.Context, address common.Address, bidAmountStr string, blockNumber int64) (*big.Int, error) {
+func (a *DepositManager) CheckAndDeductDeposit(ctx context.Context, address common.Address, bidAmountStr string, blockNumber int64) (*big.Int, error) {
 	if a.blocksPerWindow.Load() == 0 {
 		blocksPerWindow, err := a.blockTracker.GetBlocksPerWindow(ctx)
 		if err != nil {
@@ -124,14 +124,14 @@ func (a *AllowanceManager) CheckAndDeductAllowance(ctx context.Context, address 
 		a.blocksPerWindow.Store(blocksPerWindow)
 	}
 
-	if a.minAllowance.Load() == 0 {
-		minAllowance, err := a.bidderRegistry.GetMinAllowance(ctx)
+	if a.minDeposit.Load() == 0 {
+		minDeposit, err := a.bidderRegistry.GetMinDeposit(ctx)
 		if err != nil {
-			a.logger.Error("getting min allowance", "error", err)
-			return nil, status.Errorf(codes.Internal, "failed to get min allowance: %v", err)
+			a.logger.Error("getting min deposit", "error", err)
+			return nil, status.Errorf(codes.Internal, "failed to get min deposit: %v", err)
 
 		}
-		a.minAllowance.Store(minAllowance.Int64())
+		a.minDeposit.Store(minDeposit.Int64())
 	}
 
 	bidAmount, ok := new(big.Int).SetString(bidAmountStr, 10)
@@ -154,26 +154,26 @@ func (a *AllowanceManager) CheckAndDeductAllowance(ctx context.Context, address 
 		return nil, status.Errorf(codes.FailedPrecondition, "balance not found")
 	}
 
-	a.logger.Info("checking bidder allowance",
+	a.logger.Info("checking bidder deposit",
 		"stake", balance.Uint64(),
 		"blocksPerWindow", a.blocksPerWindow.Load(),
-		"minStake", a.minAllowance.Load(),
+		"minStake", a.minDeposit.Load(),
 		"window", windowToCheck.Uint64(),
 		"address", address.Hex(),
 	)
 
 	blocksPerWindow := new(big.Int).SetUint64(a.blocksPerWindow.Load())
-	minAllowance := big.NewInt(a.minAllowance.Load())
+	minDeposit := big.NewInt(a.minDeposit.Load())
 
 	// todo: make sense to do division only once, when bidder deposit funds,
-	// not everytime, when checking allowance
+	// not everytime, when checking deposit
 	effectiveStake := new(big.Int).Div(new(big.Int).Set(balance), blocksPerWindow)
 
-	isEnoughAllowance := effectiveStake.Cmp(minAllowance) >= 0
+	isEnoughDeposit := effectiveStake.Cmp(minDeposit) >= 0
 
-	if !isEnoughAllowance {
-		a.logger.Error("bidder does not have enough allowance", "ethAddress", address)
-		return nil, status.Errorf(codes.FailedPrecondition, "bidder not allowed")
+	if !isEnoughDeposit {
+		a.logger.Error("bidder does not have enough deposit", "ethAddress", address)
+		return nil, status.Errorf(codes.FailedPrecondition, "bidder do not have enough deposit")
 	}
 
 	deductedBalance, err := a.store.DeductAndCheckBalanceForBlock(address, effectiveStake, bidAmount, blockNumber)
@@ -184,6 +184,6 @@ func (a *AllowanceManager) CheckAndDeductAllowance(ctx context.Context, address 
 	return deductedBalance, nil
 }
 
-func (a *AllowanceManager) RefundAllowance(address common.Address, deductedAmount *big.Int, blockNumber int64) error {
+func (a *DepositManager) RefundDeposit(address common.Address, deductedAmount *big.Int, blockNumber int64) error {
 	return a.store.RefundBalanceForBlock(address, deductedAmount, blockNumber)
 }

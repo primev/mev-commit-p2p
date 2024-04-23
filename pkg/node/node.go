@@ -24,7 +24,7 @@ import (
 	bidderapiv1 "github.com/primevprotocol/mev-commit/gen/go/bidderapi/v1"
 	preconfpb "github.com/primevprotocol/mev-commit/gen/go/preconfirmation/v1"
 	providerapiv1 "github.com/primevprotocol/mev-commit/gen/go/providerapi/v1"
-	"github.com/primevprotocol/mev-commit/pkg/allowancemanager"
+	"github.com/primevprotocol/mev-commit/pkg/depositmanager"
 	"github.com/primevprotocol/mev-commit/pkg/apiserver"
 	bidder_registrycontract "github.com/primevprotocol/mev-commit/pkg/contracts/bidder_registry"
 	blocktrackercontract "github.com/primevprotocol/mev-commit/pkg/contracts/block_tracker"
@@ -250,7 +250,7 @@ func NewNode(opts *Options) (*Node, error) {
 
 		var (
 			bidProcessor preconfirmation.BidProcessor     = noOpBidProcessor{}
-			allowanceMgr preconfirmation.AllowanceManager = noOpAllowanceManager{}
+			depositMgr preconfirmation.DepositManager = noOpDepositManager{}
 		)
 
 		blockTrackerAddr := common.HexToAddress(opts.BlockTrackerContract)
@@ -289,20 +289,20 @@ func NewNode(opts *Options) (*Node, error) {
 			providerapiv1.RegisterProviderServer(grpcServer, providerAPI)
 			bidProcessor = providerAPI
 			srv.RegisterMetricsCollectors(providerAPI.Metrics()...)
-			allowanceMgr = allowancemanager.NewAllowanceManager(bidderRegistry,
+			depositMgr = depositmanager.NewDepositManager(bidderRegistry,
 				blockTracker,
 				commitmentDA,
 				store,
 				evtMgr,
-				opts.Logger.With("component", "allowancemanager"),
+				opts.Logger.With("component", "depositmanager"),
 			)
-			allowanceMgr.Start(ctx)
+			depositMgr.Start(ctx)
 			preconfProto := preconfirmation.New(
 				keyKeeper.GetAddress(),
 				topo,
 				p2pSvc,
 				preconfEncryptor,
-				allowanceMgr,
+				depositMgr,
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
@@ -331,7 +331,7 @@ func NewNode(opts *Options) (*Node, error) {
 				topo,
 				p2pSvc,
 				preconfEncryptor,
-				allowanceMgr,
+				depositMgr,
 				bidProcessor,
 				commitmentDA,
 				blockTracker,
@@ -564,16 +564,16 @@ func (noOpBidProcessor) ProcessBid(
 	return statusC, nil
 }
 
-type noOpAllowanceManager struct{}
+type noOpDepositManager struct{}
 
-func (noOpAllowanceManager) Start(_ context.Context) <-chan struct{} {
+func (noOpDepositManager) Start(_ context.Context) <-chan struct{} {
 	return nil
 }
 
-func (noOpAllowanceManager) CheckAndDeductAllowance(_ context.Context, _ common.Address, _ string, _ int64) (*big.Int, error) {
+func (noOpDepositManager) CheckAndDeductDeposit(_ context.Context, _ common.Address, _ string, _ int64) (*big.Int, error) {
 	return big.NewInt(0), nil
 }
 
-func (noOpAllowanceManager) RefundAllowance(_ common.Address, _ *big.Int, _ int64) error {
+func (noOpDepositManager) RefundDeposit(_ common.Address, _ *big.Int, _ int64) error {
 	return nil
 }

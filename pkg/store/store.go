@@ -153,11 +153,11 @@ type BidderBalancesStore struct {
 	mu              sync.RWMutex
 }
 
-func (bbs *BidderBalancesStore) SetBalance(bidder common.Address, windowNumber *big.Int, prepaidAmount *big.Int) error {
+func (bbs *BidderBalancesStore) SetBalance(bidder common.Address, windowNumber, depositedAmount *big.Int) error {
 	bbs.mu.Lock()
 	defer bbs.mu.Unlock()
 	bssKey := getBBSKey(bidder, windowNumber)
-	bbs.balances[bssKey] = prepaidAmount
+	bbs.balances[bssKey] = depositedAmount
 	return nil
 }
 

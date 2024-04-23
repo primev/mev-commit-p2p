@@ -165,17 +165,17 @@ func newTestLogger(t *testing.T, w io.Writer) *slog.Logger {
 	return slog.New(testLogger)
 }
 
-type testAllowanceManager struct{}
+type testDepositManager struct{}
 
-func (t *testAllowanceManager) Start(ctx context.Context) <-chan struct{} {
+func (t *testDepositManager) Start(ctx context.Context) <-chan struct{} {
 	return nil
 }
 
-func (t *testAllowanceManager) CheckAndDeductAllowance(ctx context.Context, address common.Address, bidAmountStr string, blockNumber int64) (*big.Int, error) {
+func (t *testDepositManager) CheckAndDeductDeposit(ctx context.Context, address common.Address, bidAmountStr string, blockNumber int64) (*big.Int, error) {
 	return big.NewInt(0), nil
 }
 
-func (t *testAllowanceManager) RefundAllowance(address common.Address, deductedAmount *big.Int, blockNumber int64) error {
+func (t *testDepositManager) RefundDeposit(address common.Address, deductedAmount *big.Int, blockNumber int64) error {
 	return nil
 }
 
@@ -262,13 +262,13 @@ func TestPreconfBidSubmission(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		allowanceMgr := &testAllowanceManager{}
+		depositMgr := &testDepositManager{}
 		p := preconfirmation.New(
 			client.EthAddress,
 			topo,
 			svc,
 			signer,
-			allowanceMgr,
+			depositMgr,
 			proc,
 			&testCommitmentDA{},
 			&testBlockTrackerContract{blockNumberToWinner: make(map[uint64]common.Address), blocksPerWindow: 64},

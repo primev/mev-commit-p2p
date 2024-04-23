@@ -22,16 +22,16 @@ var bidderRegistryABI = func() abi.ABI {
 }
 
 type Interface interface {
-	// PrepayAllowanceForSpecificWindow registers a bidder with the bidder_registry contract for a specific window.
-	PrepayAllowanceForSpecificWindow(ctx context.Context, amount, window *big.Int) error
-	// GetAllowance returns the stake of a bidder.
-	GetAllowance(ctx context.Context, address common.Address, window *big.Int) (*big.Int, error)
-	// GetMinAllowance returns the minimum stake required to register as a bidder.
-	GetMinAllowance(ctx context.Context) (*big.Int, error)
+	// DepositForSpecificWindow registers a bidder with the bidder_registry contract for a specific window.
+	DepositForSpecificWindow(ctx context.Context, amount, window *big.Int) error
+	// GetDeposit returns the stake of a bidder.
+	GetDeposit(ctx context.Context, address common.Address, window *big.Int) (*big.Int, error)
+	// GetMinDeposit returns the minimum stake required to register as a bidder.
+	GetMinDeposit(ctx context.Context) (*big.Int, error)
 	// CheckBidderRegistred returns true if bidder is registered
-	CheckBidderAllowance(ctx context.Context, address common.Address, window *big.Int, blocksPerWindow *big.Int) bool
-	// WithdrawAllowance withdraws the stake of a bidder.
-	WithdrawAllowance(ctx context.Context, window *big.Int) error
+	CheckBidderDeposit(ctx context.Context, address common.Address, window, blocksPerWindow *big.Int) bool
+	// WithdrawDeposit withdraws the stake of a bidder.
+	WithdrawDeposit(ctx context.Context, window *big.Int) error
 }
 
 type bidderRegistryContract struct {
@@ -57,8 +57,8 @@ func New(
 	}
 }
 
-func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Context, amount, window *big.Int) error {
-	callData, err := r.bidderRegistryABI.Pack("prepayAllowanceForSpecificWindow", window)
+func (r *bidderRegistryContract) DepositForSpecificWindow(ctx context.Context, amount, window *big.Int) error {
+	callData, err := r.bidderRegistryABI.Pack("depositForSpecificWindow", window)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return err
@@ -80,7 +80,7 @@ func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Co
 
 	if receipt.Status != types.ReceiptStatusSuccessful {
 		r.logger.Error(
-			"prepay failed for bidder registry",
+			"deposit failed for bidder registry",
 			"txnHash", txnHash,
 			"receipt", receipt,
 		)
@@ -89,7 +89,7 @@ func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Co
 
 	var bidderRegistered struct {
 		Bidder        common.Address
-		PrepaidAmount *big.Int
+		DepositedAmount *big.Int
 		WindowNumber  *big.Int
 	}
 	for _, log := range receipt.Logs {
@@ -99,23 +99,23 @@ func (r *bidderRegistryContract) PrepayAllowanceForSpecificWindow(ctx context.Co
 
 		err := r.bidderRegistryABI.UnpackIntoInterface(&bidderRegistered, "BidderRegistered", log.Data)
 		if err != nil {
-			r.logger.Debug("Failed to unpack event", "err", err)
+			r.logger.Debug("failed to unpack event", "err", err)
 			continue
 		}
-		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "prepaidAmount", bidderRegistered.PrepaidAmount.String(), "windowNumber", bidderRegistered.WindowNumber.Int64())
+		r.logger.Info("bidder registered", "address", bidderRegistered.Bidder, "depositedAmount", bidderRegistered.DepositedAmount.String(), "windowNumber", bidderRegistered.WindowNumber.Int64())
 	}
 
-	r.logger.Info("prepay successful for bidder registry", "txnHash", txnHash, "bidder", bidderRegistered.Bidder)
+	r.logger.Info("deposit successful for bidder registry", "txnHash", txnHash, "bidder", bidderRegistered.Bidder)
 
 	return nil
 }
 
-func (r *bidderRegistryContract) GetAllowance(
+func (r *bidderRegistryContract) GetDeposit(
 	ctx context.Context,
 	address common.Address,
 	window *big.Int,
 ) (*big.Int, error) {
-	callData, err := r.bidderRegistryABI.Pack("getAllowance", address, window)
+	callData, err := r.bidderRegistryABI.Pack("getDeposit", address, window)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -129,7 +129,7 @@ func (r *bidderRegistryContract) GetAllowance(
 		return nil, err
 	}
 
-	results, err := r.bidderRegistryABI.Unpack("getAllowance", result)
+	results, err := r.bidderRegistryABI.Unpack("getDeposit", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
@@ -138,8 +138,8 @@ func (r *bidderRegistryContract) GetAllowance(
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int, error) {
-	callData, err := r.bidderRegistryABI.Pack("minAllowance")
+func (r *bidderRegistryContract) GetMinDeposit(ctx context.Context) (*big.Int, error) {
+	callData, err := r.bidderRegistryABI.Pack("minDeposit")
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
 		return nil, err
@@ -153,7 +153,7 @@ func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int,
 		return nil, err
 	}
 
-	results, err := r.bidderRegistryABI.Unpack("minAllowance", result)
+	results, err := r.bidderRegistryABI.Unpack("minDeposit", result)
 	if err != nil {
 		r.logger.Error("error unpacking result", "error", err)
 		return nil, err
@@ -162,7 +162,7 @@ func (r *bidderRegistryContract) GetMinAllowance(ctx context.Context) (*big.Int,
 	return abi.ConvertType(results[0], new(big.Int)).(*big.Int), nil
 }
 
-func (r *bidderRegistryContract) WithdrawAllowance(ctx context.Context, window *big.Int) error {
+func (r *bidderRegistryContract) WithdrawDeposit(ctx context.Context, window *big.Int) error {
 	callData, err := r.bidderRegistryABI.Pack("withdrawBidderAmountFromWindow", r.owner, window)
 	if err != nil {
 		r.logger.Error("error packing call data", "error", err)
@@ -215,24 +215,24 @@ func (r *bidderRegistryContract) WithdrawAllowance(ctx context.Context, window *
 	return nil
 }
 
-func (r *bidderRegistryContract) CheckBidderAllowance(
+func (r *bidderRegistryContract) CheckBidderDeposit(
 	ctx context.Context,
 	address common.Address,
 	window *big.Int,
 	blocksPerWindow *big.Int,
 ) bool {
-	minStake, err := r.GetMinAllowance(ctx)
+	minStake, err := r.GetMinDeposit(ctx)
 	if err != nil {
 		r.logger.Error("error getting min stake", "error", err)
 		return false
 	}
 
-	stake, err := r.GetAllowance(ctx, address, window)
+	stake, err := r.GetDeposit(ctx, address, window)
 	if err != nil {
 		r.logger.Error("error getting stake", "error", err)
 		return false
 	}
-	r.logger.Info("checking bidder allowance",
+	r.logger.Info("checking bidder deposit",
 		"stake", stake.Uint64(),
 		"blocksPerWindow", blocksPerWindow.Uint64(),
 		"minStake", minStake.Uint64(),
