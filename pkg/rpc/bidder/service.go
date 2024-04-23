@@ -3,6 +3,7 @@ package bidderapi
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"log/slog"
 	"math/big"
 	"strings"
@@ -124,16 +125,12 @@ func (s *Service) PrepayAllowance(
 		return nil, status.Errorf(codes.Internal, "getting current window: %v", err)
 	}
 
-	var windowToDeposit *big.Int
-	if r.WindowNumber == nil {
-		// adding +2 as oracle working 2 windows behind the current window
-		windowToDeposit = new(big.Int).SetUint64(currentWindow + 2)
-	} else {
-		windowToDeposit = new(big.Int).SetUint64(r.WindowNumber.Value)
+	windowToDeposit, err := s.calculateWindowToDeposit(ctx, r, currentWindow)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "calculating window to deposit: %v", err)
 	}
-
 	if _, ok := s.depositedWindows[windowToDeposit]; ok {
-		return nil, status.Errorf(codes.FailedPrecondition, "allowance already pre-paid for window %d", currentWindow+1)
+		return nil, status.Errorf(codes.FailedPrecondition, "allowance already pre-paid for window %d", windowToDeposit.Int64())
 	}
 
 	for window := range s.depositedWindows {
@@ -166,6 +163,23 @@ func (s *Service) PrepayAllowance(
 	s.depositedWindows[windowToDeposit] = struct{}{}
 
 	return &bidderapiv1.PrepayResponse{Amount: stakeAmount.String(), WindowNumber: wrapperspb.UInt64(windowToDeposit.Uint64())}, nil
+}
+
+func (s *Service) calculateWindowToDeposit(ctx context.Context, r *bidderapiv1.PrepayRequest, currentWindow uint64) (*big.Int, error) {
+	if r.WindowNumber != nil {
+		// Directly use the specified window number if available.
+		return new(big.Int).SetUint64(r.WindowNumber.Value), nil
+	} else if r.BlockNumber != nil {
+		// Calculate the window based on the block number.
+		blocksPerWindow, err := s.blockTrackerContract.GetBlocksPerWindow(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting window for block: %w", err)
+		}
+		return new(big.Int).SetUint64((r.BlockNumber.Value-1)/blocksPerWindow + 1), nil
+	}
+	// Default to two windows ahead of the current window if no specific block or window is given.
+	// This is for the case where the oracle works 2 windows behind the current window.
+	return new(big.Int).SetUint64(currentWindow + 2), nil
 }
 
 func (s *Service) GetAllowance(

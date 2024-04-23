@@ -98,6 +98,12 @@ paths:
           required: false
           type: string
           format: uint64
+        - name: blockNumber
+          description: Optional block number for querying allowance. If specified, calculate window based on this block number.
+          in: query
+          required: false
+          type: string
+          format: uint64
 definitions:
   bidderapiv1Bid:
     type: object

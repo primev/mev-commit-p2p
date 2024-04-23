@@ -75,6 +75,14 @@ message PrepayRequest {
       message: "windowNumber must be a positive integer if specified.",
       expression: "this == null || (this > 0)"
     }];
+  google.protobuf.UInt64Value blockNumber = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Optional block number for querying allowance. If specified, calculate window based on this block number."
+    }, (buf.validate.field).cel = {
+      id: "blockNumber",
+      message: "blockNumber must be a positive integer if specified.",
+      expression: "this == null || (this > 0)"
+    }];
 };
 
 message PrepayResponse {
