@@ -126,6 +126,7 @@ func (r *registryContract) GetMinStake(ctx context.Context) (*big.Int, error) {
 		CallData: callData,
 	})
 	if err != nil {
+		r.logger.Error("error calling contract", "error", err)
 		return nil, err
 	}
 

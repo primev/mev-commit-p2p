@@ -13,7 +13,7 @@ require (
 	github.com/libp2p/go-msgio v0.3.0
 	github.com/multiformats/go-multiaddr v0.12.2
 	github.com/multiformats/go-multiaddr-dns v0.3.1
-	github.com/primevprotocol/contracts-abi v0.2.3
+	github.com/primevprotocol/contracts-abi v0.2.4-0.20240423171419-a959d3727058
 	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.27.1

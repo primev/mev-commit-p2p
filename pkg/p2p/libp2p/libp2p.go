@@ -13,7 +13,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
-	"github.com/primevprotocol/mev-commit/pkg/keysigner"
+	"github.com/primevprotocol/mev-commit/pkg/keykeeper"
 	"github.com/primevprotocol/mev-commit/pkg/util"
 	"google.golang.org/grpc/status"
 
@@ -58,7 +58,7 @@ type ProviderRegistry interface {
 }
 
 type Options struct {
-	KeySigner      keysigner.KeySigner
+	KeyKeeper      keykeeper.KeyKeeper
 	Secret         string
 	PeerType       p2p.PeerType
 	Register       handshake.ProviderRegistry
@@ -71,11 +71,11 @@ type Options struct {
 }
 
 func New(opts *Options) (*Service, error) {
-	privKey, err := opts.KeySigner.GetPrivateKey()
+	privKey, err := opts.KeyKeeper.GetPrivateKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get priv key: %w", err)
 	}
-	defer opts.KeySigner.ZeroPrivateKey(privKey)
+	defer opts.KeyKeeper.ZeroPrivateKey(privKey)
 
 	padded32BytePrivKey := util.PadKeyTo32Bytes(privKey.D)
 	libp2pKey, err := libp2pcrypto.UnmarshalSecp256k1PrivateKey(padded32BytePrivKey)
@@ -163,7 +163,7 @@ func New(opts *Options) (*Service, error) {
 	}
 
 	hsSvc, err := handshake.New(
-		opts.KeySigner,
+		opts.KeyKeeper,
 		opts.PeerType,
 		opts.Secret,
 		signer.New(),
